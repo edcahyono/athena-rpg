@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ATHENA RPG — Usage & Cost</title>
+<style>
+  :root { --ink:#202020; --paper:#f8f8f0; --accent:#2a6e46; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin:0; background:#10101a; color:var(--paper);
+    font-family:"Courier New", ui-monospace, monospace;
+    display:flex; align-items:flex-start; justify-content:center; min-height:100vh; padding:40px 16px;
+  }
+  .card {
+    background:var(--paper); color:var(--ink); border:4px solid var(--ink); border-radius:6px;
+    box-shadow:0 0 0 3px var(--paper), 0 6px 0 3px rgba(0,0,0,.45);
+    width:720px; max-width:100%; padding:20px 24px;
+  }
+  h1 { margin:0 0 4px; font-size:20px; letter-spacing:1px; }
+  .sub { color:#666; font-size:12px; margin-bottom:16px; }
+  h2 { font-size:15px; border-bottom:3px solid var(--ink); padding-bottom:6px; margin:20px 0 8px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px dashed #bbb; }
+  th { border-bottom:2px solid var(--ink); }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .bar { background:#ddd; height:12px; border:2px solid var(--ink); position:relative; min-width:120px; }
+  .bar > div { background:var(--accent); height:100%; }
+  .big { font-size:26px; font-weight:bold; }
+  .kpis { display:flex; gap:14px; margin:10px 0 4px; flex-wrap:wrap; }
+  .kpi { flex:1; min-width:150px; border:3px solid var(--ink); border-radius:4px; padding:10px 12px; background:#fff; }
+  .kpi .label { font-size:11px; color:#666; }
+  input, button {
+    font-family:inherit; font-size:14px; padding:8px 10px;
+    border:3px solid var(--ink); border-radius:4px;
+  }
+  button { background:var(--accent); color:#fff; cursor:pointer; font-weight:bold; }
+  #login { display:flex; gap:8px; flex-wrap:wrap; margin:14px 0; }
+  .err { color:#a03030; font-size:13px; }
+  .muted { color:#666; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>💳 ATHENA RPG — Usage &amp; Cost</h1>
+  <div class="sub">Model calls, tokens, and estimated spend · admin only · <a href="/">back to game… (game runs on the Vite port in dev)</a></div>
+
+  <div id="login">
+    <input id="u" placeholder="username" autocomplete="username" />
+    <input id="p" placeholder="password" type="password" autocomplete="current-password" />
+    <button id="go">Sign in</button>
+    <span class="err" id="err"></span>
+  </div>
+
+  <div id="dash" hidden>
+    <div class="kpis">
+      <div class="kpi"><div class="label">EST. TOTAL SPEND</div><div class="big" id="k-cost">—</div></div>
+      <div class="kpi"><div class="label">TOTAL CALLS</div><div class="big" id="k-calls">—</div></div>
+      <div class="kpi"><div class="label">TODAY</div><div class="big" id="k-today">—</div></div>
+    </div>
+
+    <h2>By model</h2>
+    <table id="t-model"><thead><tr><th>Model</th><th class="num">Calls</th><th class="num">Tokens in</th><th class="num">Tokens out</th><th class="num">Est. cost</th></tr></thead><tbody></tbody></table>
+
+    <h2>Last 14 days</h2>
+    <table id="t-days"><thead><tr><th>Day</th><th class="num">Calls</th><th class="num">Tokens in / out</th><th></th><th class="num">Est. cost</th></tr></thead><tbody></tbody></table>
+
+    <p class="muted">Estimates use published per-token pricing (see server/anthropic.js); actual billing may differ slightly. Data covers all sessions on this server.</p>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => n.toLocaleString();
+const usd = (n) => "$" + n.toFixed(2);
+let auth = sessionStorage.getItem("usage-auth") || "";
+
+async function load() {
+  const res = await fetch("/api/usage-data", { headers: { Authorization: "Basic " + auth } });
+  if (res.status === 401) { sessionStorage.removeItem("usage-auth"); $("err").textContent = auth ? "Wrong username or password." : ""; return false; }
+  const d = await res.json();
+  $("login").hidden = true;
+  $("dash").hidden = false;
+  $("k-cost").textContent = usd(d.total.costUSD);
+  $("k-calls").textContent = fmt(d.total.calls);
+  $("k-today").textContent = usd(d.today.costUSD) + " · " + fmt(d.today.calls) + " calls";
+
+  const mb = $("t-model").querySelector("tbody");
+  mb.innerHTML = Object.entries(d.byModel).map(([m, v]) =>
+    `<tr><td>${m}</td><td class="num">${fmt(v.calls)}</td><td class="num">${fmt(v.inputTokens)}</td><td class="num">${fmt(v.outputTokens)}</td><td class="num">${usd(v.costUSD)}</td></tr>`
+  ).join("") || `<tr><td colspan="5" class="muted">No calls recorded yet.</td></tr>`;
+
+  const days = Object.entries(d.byDay || {}).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14);
+  const maxCost = Math.max(0.0001, ...days.map(([, v]) => v.costUSD));
+  const db = $("t-days").querySelector("tbody");
+  db.innerHTML = days.map(([day, v]) =>
+    `<tr><td>${day}</td><td class="num">${fmt(v.calls)}</td><td class="num">${fmt(v.inputTokens)} / ${fmt(v.outputTokens)}</td>
+     <td><div class="bar"><div style="width:${Math.round((v.costUSD / maxCost) * 100)}%"></div></div></td>
+     <td class="num">${usd(v.costUSD)}</td></tr>`
+  ).join("") || `<tr><td colspan="5" class="muted">No calls recorded yet.</td></tr>`;
+  return true;
+}
+
+$("go").onclick = async () => {
+  auth = btoa($("u").value + ":" + $("p").value);
+  if (await load()) sessionStorage.setItem("usage-auth", auth);
+};
+$("p").addEventListener("keydown", (e) => { if (e.key === "Enter") $("go").click(); });
+if (auth) load();
+setInterval(() => { if (!$("dash").hidden) load(); }, 30000); // live-ish refresh
+</script>
+</body>
+</html>

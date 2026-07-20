@@ -1,0 +1,80 @@
+{
+  "_readme": "Grader calibration fixtures. ⚠ ALL PLACEHOLDERS — replace with real sample answers (great/mediocre/bad per track) supplied by the program owner. Each sample: the conversation context the learner had, the 2 quiz questions, their answers, and the verdict a human grader would expect. Run with: npm run eval:grader",
+  "samples": [
+    {
+      "id": "marketing-great",
+      "trackId": "marketing",
+      "quality": "great",
+      "expect": "pass",
+      "convo": "Learner: What happened to brand favorability after BCI?\nManager: Tracked favorability slid from ~75% to ~42% after the 2021 BCI cotton incident. Guochao shifted consumers from brand worship to value identification.\nLearner: Why is discounting dangerous for the CMO?\nManager: Her fear is Nike sliding from premium sports brand to ordinary discount brand — once the premium is gone it never comes back.",
+      "questions": [
+        "What happened to Nike's brand favorability after BCI, and what shift is guochao driving?",
+        "Why does the CMO consider discount-led recovery more dangerous than losing share?"
+      ],
+      "answers": [
+        "Favorability fell from about 75% to 42% after the 2021 BCI incident, and guochao is shifting young consumers from brand worship to value identification, which favors local brands.",
+        "Because discounting erodes the brand premium irreversibly — Nike would slide from premium sports brand to an ordinary discount brand, which is worse than temporary share loss."
+      ]
+    },
+    {
+      "id": "marketing-mediocre",
+      "trackId": "marketing",
+      "quality": "mediocre",
+      "expect": "partial",
+      "convo": "Learner: What happened to brand favorability after BCI?\nManager: Tracked favorability slid from ~75% to ~42% after the 2021 BCI cotton incident. Guochao shifted consumers from brand worship to value identification.",
+      "questions": [
+        "What happened to Nike's brand favorability after BCI, and what shift is guochao driving?",
+        "Why does the CMO consider discount-led recovery more dangerous than losing share?"
+      ],
+      "answers": [
+        "The brand image got worse after the cotton thing and Chinese consumers like local brands more now.",
+        "Discounts are bad for the brand image in the long run."
+      ]
+    },
+    {
+      "id": "marketing-bad-confidently-wrong",
+      "trackId": "marketing",
+      "quality": "bad",
+      "expect": "fail",
+      "convo": "Learner: What happened to brand favorability after BCI?\nManager: Tracked favorability slid from ~75% to ~42% after the 2021 BCI cotton incident.",
+      "questions": [
+        "What happened to Nike's brand favorability after BCI, and what shift is guochao driving?",
+        "Why does the CMO consider discount-led recovery more dangerous than losing share?"
+      ],
+      "answers": [
+        "Favorability actually rose from 42% to 75% after BCI because Chinese consumers respected Nike's stance, and guochao is pushing consumers toward global brands.",
+        "The CMO loves discounts — she thinks they're the fastest way to rebuild the brand."
+      ]
+    },
+    {
+      "id": "finance-great",
+      "trackId": "finance",
+      "quality": "great",
+      "expect": "pass",
+      "convo": "Learner: What does revenue quality mean?\nManager: Healthy full-price sustainable revenue vs discount-stimulated volume. FY2025 revenue $6.586B down 13%, EBIT $1.602B down 31%. Nike doesn't disclose Greater China net profit — EBIT is the metric.",
+      "questions": [
+        "What is revenue quality and why does discount-led recovery threaten it?",
+        "Which profitability metric does Nike actually disclose for Greater China?"
+      ],
+      "answers": [
+        "Revenue quality distinguishes healthy full-price, sustainable revenue from volume bought with discounts — discount-led recovery erodes margin and trains customers to wait for markdowns.",
+        "EBIT — Nike does not report Greater China net profit or inventory as standalone metrics."
+      ]
+    },
+    {
+      "id": "finance-bad-empty",
+      "trackId": "finance",
+      "quality": "bad",
+      "expect": "fail",
+      "convo": "(no prior conversation)",
+      "questions": [
+        "What is revenue quality and why does discount-led recovery threaten it?",
+        "Which profitability metric does Nike actually disclose for Greater China?"
+      ],
+      "answers": [
+        "idk, revenue is money",
+        "profit I guess"
+      ]
+    }
+  ]
+}

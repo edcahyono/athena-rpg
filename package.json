@@ -1,0 +1,30 @@
+{
+  "name": "athena-rpg",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ATHENA RPG — retro top-down corporate training game for Deloitte CCNAP (Nike Greater China case)",
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,magenta \"npm run dev:server\" \"npm run dev:web\"",
+    "dev:server": "node server/server.js",
+    "dev:web": "vite",
+    "build": "vite build",
+    "start": "npm run build && node server/server.js",
+    "ingest": "node server/rag/ingest.js",
+    "eval:grader": "node server/eval/graderEval.js",
+    "eval:injection": "node server/eval/injectionEval.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "mammoth": "^1.12.0",
+    "pdf-parse": "^2.4.5",
+    "phaser": "^3.87.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

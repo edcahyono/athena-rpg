@@ -1,0 +1,14 @@
+{
+  "builtAt": "2026-07-17T04:30:39.309Z",
+  "embeddings": "voyage-3.5",
+  "personas": [
+    "ceo",
+    "cfo",
+    "cmo",
+    "coo",
+    "cpo",
+    "cto",
+    "chro"
+  ],
+  "totalChunks": 43
+}

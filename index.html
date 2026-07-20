@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATHENA RPG — Deloitte CCNAP</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <div id="game-root">
+    <div id="hud">
+      <button id="hud-menu" title="Pause / Menu (M)">⏸</button>
+      <span id="hud-floor">F12</span>
+      <div id="cred-bar"><div id="cred-fill"></div><span id="cred-label"></span></div>
+      <button id="hud-notebook" title="Notebook (Q)">📓</button>
+      <button id="hud-fullscreen" title="Fullscreen (F)">⛶</button>
+    </div>
+    <div id="objective"><span id="obj-icon">🎯</span><span id="obj-label"></span><span id="obj-why"></span></div>
+    <div id="timerbar" hidden><span id="timer-label"></span><div id="timer-track"><div id="timer-fill"></div></div></div>
+    <div id="phaser"></div>
+
+    <!-- Retro dialogue textbox — used for ALL conversations (scripted + AI) -->
+    <div id="dialogue" hidden>
+      <div id="dlg-name"></div>
+      <div id="dlg-text"></div>
+      <div id="dlg-choices" hidden></div>
+      <div id="dlg-input-row" hidden>
+        <input id="dlg-input" type="text" maxlength="1900" autocomplete="off" />
+        <button id="dlg-send">ASK</button>
+        <button id="dlg-check" hidden>CHECK</button>
+        <button id="dlg-leave">LEAVE</button>
+      </div>
+      <div id="dlg-hint">▼</div>
+    </div>
+
+    <!-- Generic modal panel (elevator / notebook / prep / checks / menu) -->
+    <div id="panel-backdrop" hidden><div id="panel"></div></div>
+    <div id="toasts"></div>
+
+    <!-- Intro cutscene caption band (Phaser animates the scene behind it) -->
+    <div id="cutscene" hidden>
+      <div id="cutscene-text"></div>
+      <div class="cs-hint">▼</div>
+    </div>
+
+    <!-- First-run: language choice -->
+    <div id="langselect" hidden>
+      <div class="ls-box">
+        <img class="ls-mark" src="/brand/mark_green_transparent.png" alt="" />
+        <img class="ls-word" src="/brand/athena_green_glow_transparent.png" alt="ATHENA" />
+        <div class="ls-sub">Wisdom Wields Victory</div>
+        <button id="lang-en">ENGLISH</button>
+        <button id="lang-zh">中文（简体）</button>
+      </div>
+    </div>
+
+    <!-- Main menu / title screen (also the "quit to menu" landing) -->
+    <div id="mainmenu" hidden>
+      <div class="ls-box">
+        <img class="ls-mark" src="/brand/mark_green_transparent.png" alt="" />
+        <img class="ls-word" src="/brand/athena_green_glow_transparent.png" alt="ATHENA" />
+        <div class="ls-sub" id="mm-sub"></div>
+        <button id="mm-continue"></button>
+        <button id="mm-lang" class="secondary"></button>
+        <button id="mm-full" class="secondary"></button>
+      </div>
+    </div>
+
+    <!-- First-run: character creator -->
+    <div id="creator" hidden>
+      <div class="cr-box">
+        <h2 id="creator-title">CREATE YOUR ANALYST</h2>
+        <div class="cr-body">
+          <div class="cr-preview-wrap"><canvas id="creator-preview" width="120" height="168"></canvas></div>
+          <div id="creator-rows"></div>
+        </div>
+        <div class="cr-actions">
+          <button id="creator-back">◀ BACK</button>
+          <button id="creator-random">🎲</button>
+          <button id="creator-start">▶ START</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

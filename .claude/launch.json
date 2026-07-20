@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "athena-rpg",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/edcahyono/Downloads/athena-rpg",
+      "port": 5175
+    }
+  ]
+}
