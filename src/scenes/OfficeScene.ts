@@ -22,7 +22,14 @@ const RUG = new Set(["c", "g"]);
 
 // Ambient NPCs that stay on their feet (they stroll/clean rather than sit at a
 // desk). Everyone else is seated in an office chair at their station.
-const STANDING = new Set(["guard"]);
+const STANDING = new Set(["guard", "cleaner"]);
+
+// Ambient NPCs that stroll/clean along a fixed patrol route (tile coords).
+const WANDER = new Set(["guard", "cleaner"]);
+const PATROLS: Record<string, [number, number][]> = {
+  guard: [[4, 12], [20, 12]],                    // security paces the lobby
+  cleaner: [[2, 5], [21, 5], [21, 10], [2, 10]], // cleaner loops the office margins
+};
 
 // Module-level so floor changes (scene restarts) don't re-show the panel.
 let welcomeShown = false;
@@ -34,6 +41,7 @@ export default class OfficeScene extends Phaser.Scene {
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private npcs: { def: NpcDef; sprite: Phaser.GameObjects.Sprite }[] = [];
   private npcLabels: { def: NpcDef; name: Phaser.GameObjects.Text; role: Phaser.GameObjects.Text }[] = [];
+  private wanderers: { def: NpcDef; sprite: Phaser.GameObjects.Sprite; shadow: Phaser.GameObjects.Image; name: Phaser.GameObjects.Text; role: Phaser.GameObjects.Text; path: { x: number; y: number }[]; idx: number; dir: string; pauseUntil: number }[] = [];
   private props: { char: string; x: number; y: number }[] = [];
   private elevators: { x: number; y: number }[] = [];
   private prompt!: Phaser.GameObjects.Text;
@@ -55,6 +63,7 @@ export default class OfficeScene extends Phaser.Scene {
   create() {
     this.npcs = [];
     this.npcLabels = [];
+    this.wanderers = [];
     this.props = [];
     this.elevators = [];
     const layout = LAYOUTS[this.floor];
@@ -102,12 +111,16 @@ export default class OfficeScene extends Phaser.Scene {
         continue;
       }
       const x = def.tx * TILE + TILE / 2, y = def.ty * TILE + TILE / 2;
+      const wander = WANDER.has(def.id);
       const seated = !STANDING.has(def.id);
       if (seated) this.add.image(x, y - 2, "tile-chair").setDepth(y - 1); // chair behind the desk worker
-      this.add.image(x, y + 10, "shadow").setDepth(y - 1);
+      const shadow = this.add.image(x, y + 10, "shadow").setDepth(y - 1);
       const s = this.add.sprite(x, y + (seated ? 3 : 0), `char-${def.color}-down-0`).setDepth(y);
-      const body = walls.create(x, y, `char-${def.color}-down-0`) as Phaser.Physics.Arcade.Sprite;
-      body.setVisible(false).setSize(20, 20).refreshBody();
+      // Strollers move freely, so they get no static collider (won't block paths).
+      if (!wander) {
+        const body = walls.create(x, y, `char-${def.color}-down-0`) as Phaser.Physics.Arcade.Sprite;
+        body.setVisible(false).setSize(20, 20).refreshBody();
+      }
       const nameText = this.add.text(x, y - 30, L(def.name), {
         fontFamily: "Courier New", fontSize: "11px", fontStyle: "bold", color: "#ffffff",
         stroke: "#000000", strokeThickness: 3,
@@ -118,6 +131,10 @@ export default class OfficeScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(10000);
       this.npcs.push({ def, sprite: s });
       this.npcLabels.push({ def, name: nameText, role: roleText });
+      if (wander) {
+        const path = (PATROLS[def.id] || [[def.tx, def.ty]]).map(([px, py]) => ({ x: px * TILE + TILE / 2, y: py * TILE + TILE / 2 }));
+        this.wanderers.push({ def, sprite: s, shadow, name: nameText, role: roleText, path, idx: 0, dir: "down", pauseUntil: 0 });
+      }
     }
 
     this.prompt = this.add.text(0, 0, "[E]", {
@@ -324,6 +341,8 @@ export default class OfficeScene extends Phaser.Scene {
     }
     this.player.setDepth(this.player.y);
 
+    if (this.wanderers.length) this.updateWanderers(time);
+
     // interaction prompt
     const near = this.nearestNpc() || this.nearestProp();
     if (near && !ui.busy) {
@@ -338,6 +357,33 @@ export default class OfficeScene extends Phaser.Scene {
     if (time - this.lastSave > 20000 && state) {
       this.lastSave = time;
       api.save({ floor: this.floor, x: this.player.x, y: this.player.y });
+    }
+  }
+
+  /** Ambient strollers (security, cleaner) pace a fixed route, pausing at each
+   *  stop; frozen while a dialogue/panel is open so they don't wander off. */
+  private updateWanderers(time: number) {
+    for (const w of this.wanderers) {
+      if (ui.busy || time < w.pauseUntil) {
+        w.sprite.setTexture(`char-${w.def.color}-${w.dir}-0`);
+        continue;
+      }
+      const t = w.path[w.idx];
+      const dx = t.x - w.sprite.x, dy = t.y - w.sprite.y;
+      const d = Math.hypot(dx, dy);
+      if (d < 2) {
+        w.idx = (w.idx + 1) % w.path.length;
+        w.pauseUntil = time + 700 + Math.random() * 1400; // pause to stretch / mop
+        continue;
+      }
+      const step = 42 / 60; // ~42 px per second at 60fps
+      const nx = w.sprite.x + (dx / d) * step, ny = w.sprite.y + (dy / d) * step;
+      w.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+      const frame = Math.floor(time / 170) % 2;
+      w.sprite.setPosition(nx, ny).setTexture(`char-${w.def.color}-${w.dir}-${frame}`).setDepth(ny);
+      w.shadow.setPosition(nx, ny + 10).setDepth(ny - 1);
+      w.name.setPosition(nx, ny - 30);
+      w.role.setPosition(nx, ny - 19);
     }
   }
 }

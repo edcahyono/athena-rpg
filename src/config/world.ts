@@ -178,6 +178,13 @@ export const NPCS: NpcDef[] = [
       { en: "Pick whichever track you like — there's no set order. That's the one nice thing about this place.", zh: "想走哪条线就走哪条——没有固定顺序。这地方唯一的好处就是这个。" },
     ] },
 
+  { id: "cleaner", name: { en: "Auntie Mei", zh: "梅姨" }, role: { en: "Cleaning Service", zh: "保洁" }, floor: 13, tx: 3, ty: 6, color: 0x9a5a7b, kind: "flavor",
+    lines: [
+      { en: "Mind your feet — just mopped there. You consultants never look down.", zh: "看着点脚下——刚拖过。你们这些顾问从来不看地。" },
+      { en: "I clean this floor every night. The things I could tell you about who works late…", zh: "这层我每天晚上都打扫。谁老加班，我可有的说……" },
+      { en: "Aiyah, so many empty coffee cups. Strategy runs on caffeine, hm?", zh: "哎呀，这么多空咖啡杯。战略都是咖啡因撑起来的吧？" },
+    ] },
+
   // ---- Floor 14: gatekeepers — Strategy, Finance, Ops, HR ----
   { id: "gk-strategy", name: { en: "Wu Jianguo", zh: "吴建国" }, role: { en: "Senior Manager · Strategy & Business Design", zh: "高级经理 · 战略与业务设计" }, floor: 14, tx: 6, ty: 6, color: 0x2f4f6f, kind: "task", taskId: "track-strategy", trackId: "strategy" },
   { id: "gk-finance", name: { en: "Priya", zh: "普莉亚" }, role: { en: "Senior Consultant · Finance Transformation", zh: "高级顾问 · 财务转型" }, floor: 14, tx: 16, ty: 6, color: 0x6e3b8a, kind: "task", taskId: "track-finance", trackId: "finance" },
