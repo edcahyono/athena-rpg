@@ -205,6 +205,44 @@ export default class BootScene extends Phaser.Scene {
       g.fillStyle(0xc9a24b); g.fillRect(15, 15, 2, 2);
     });
 
+    // Office chair — ergonomic back, seen from behind (NPCs face the viewer, so
+    // the backrest + armrests frame the seated person).
+    this.tex("tile-chair", T, T, (g) => {
+      g.fillStyle(OUTLINE); g.fillRoundedRect(5, 2, 22, 23, 5);
+      g.fillStyle(0x2f3440); g.fillRoundedRect(6, 3, 20, 21, 4); // backrest
+      g.fillStyle(0x3d4453); g.fillRoundedRect(8, 5, 16, 9, 3); // upper cushion sheen
+      g.fillStyle(0x232833); g.fillRect(3, 15, 4, 9); g.fillRect(25, 15, 4, 9); // armrests
+      g.fillStyle(OUTLINE); g.fillRect(6, 22, 20, 3); // seat lip
+      g.fillStyle(0x1a1d24); g.fillRect(14, 25, 4, 6); // stem
+    });
+
+    // Matte-glass window (standard grey wall) — frosted panes, frame, faint skyline.
+    this.tex("tile-window", T, T, (g) => {
+      g.fillStyle(0x556077); g.fillRect(0, 0, T, T); // wall base (matches tile-wall)
+      g.fillStyle(0x6b7691); g.fillRect(0, 0, T, 6);
+      g.fillStyle(0x2c3242); g.fillRect(3, 5, 26, 22); // frame
+      g.fillStyle(0x8fb8d6); g.fillRect(5, 7, 22, 18); // glass / sky
+      g.fillStyle(0xa9cde4); g.fillRect(5, 7, 22, 6); // brighter sky top
+      g.fillStyle(0x7aa6c6, 0.6); g.fillRect(6, 16, 5, 9); g.fillRect(14, 13, 4, 12); g.fillRect(21, 18, 4, 7); // skyline
+      g.fillStyle(0xdff0fb, 0.35); g.fillRect(6, 8, 8, 3); // frosted glare
+      g.fillStyle(0x2c3242); g.fillRect(15, 7, 2, 18); g.fillRect(5, 15, 22, 2); // mullions
+      g.fillStyle(0x1f2430); g.fillRect(0, T - 5, T, 5); // baseboard
+    });
+
+    // Executive matte-glass window (walnut frame + gold sill) for F15/F16.
+    this.tex("tile-exec-window", T, T, (g) => {
+      g.fillStyle(0x3a2a22); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x4a362b); g.fillRect(0, 0, T, 6);
+      g.fillStyle(0xc9a24b); g.fillRect(2, 6, 28, 1); // gold sill line
+      g.fillStyle(0x2c1f19); g.fillRect(3, 7, 26, 20); // frame
+      g.fillStyle(0x93b7d0); g.fillRect(5, 9, 22, 16); // glass
+      g.fillStyle(0xb0d0e6); g.fillRect(5, 9, 22, 5); // sky top
+      g.fillStyle(0x6f97b5, 0.6); g.fillRect(6, 17, 5, 8); g.fillRect(14, 14, 4, 11); g.fillRect(21, 19, 4, 6); // skyline
+      g.fillStyle(0xe6d19a, 0.3); g.fillRect(6, 10, 7, 3); // warm frosted glare
+      g.fillStyle(0x2c1f19); g.fillRect(15, 9, 2, 16); g.fillRect(5, 16, 22, 2); // mullions
+      g.fillStyle(0x1f1611); g.fillRect(0, T - 4, T, 4);
+    });
+
     this.tex("shadow", 20, 8, (g) => {
       g.fillStyle(0x000000, 0.25); g.fillEllipse(10, 4, 20, 8);
     });

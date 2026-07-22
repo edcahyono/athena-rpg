@@ -10,10 +10,10 @@ import { PERSONAS, MID_PERSONAS } from "../../shared/personas.config.js";
 import type { BL } from "../i18n";
 
 export const TILE = 32;
-export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D"]);
+export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D", "n", "N"]);
 
 const LOBBY = [
-  "#########################",
+  "####nnnnnnnnnnnnnnnnn####",
   "#p.....EE......EE......p#",
   "#.......................#",
   "#.......................#",
@@ -32,7 +32,7 @@ const LOBBY = [
 ];
 
 const OFFICE = [
-  "#########################",
+  "####nnnnnnnnnnnnnnnnn####",
   "#p.....EE......EE......p#",
   "#.......................#",
   "#..dd..dd....dd..dd.....#",
@@ -54,9 +54,9 @@ const OFFICE = [
 // (W = executive wall/glass partition, D = executive desk, g = plush carpet)
 // open onto a central corridor. Four along the top, three along the bottom.
 const EXEC = [
-  "#########################",
+  "###NNNNNNNNNNNNNNNNNNN###",
   "#p.....EE......EE......p#",
-  "#WWWWW.WWWWW.WWWWW.WWWWW#",
+  "#WNNNW.WNNNW.WNNNW.WNNNW#",
   "#WDDDW.WDDDW.WDDDW.WDDDW#",
   "#WgggW.WgggW.WgggW.WgggW#",
   "#.......................#",
@@ -67,13 +67,13 @@ const EXEC = [
   "#.......................#",
   "#...WgggW.WgggW.WgggW...#",
   "#...WDDDW.WDDDW.WDDDW...#",
-  "#...WWWWW.WWWWW.WWWWW...#",
+  "#...WNNNW.WNNNW.WNNNW...#",
   "#p.....................p#",
   "#########################",
 ];
 
 const BOARDROOM = [
-  "#########################",
+  "###NNNNNNNNNNNNNNNNNNN###",
   "#p.....EE......EE......p#",
   "#.......................#",
   "#.......................#",

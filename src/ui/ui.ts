@@ -326,6 +326,47 @@ export function closePanel() {
   $("panel-backdrop").hidden = true;
 }
 
+/**
+ * Elevator transition — a DOM door overlay so floor changes feel like an actual
+ * ride. `elevatorClose` shuts the doors and ticks the floor number toward the
+ * target; the scene then restarts behind the closed doors; the new floor's
+ * create() calls `elevatorOpen` to slide them apart. The overlay is DOM, so it
+ * survives Phaser's scene.restart untouched.
+ */
+let elevatorEl: HTMLElement | null = null;
+export function elevatorClose(from: number, to: number): Promise<void> {
+  return new Promise((resolve) => {
+    ui.cutscene = true; // block movement during the ride
+    const el = document.createElement("div");
+    el.id = "elevator-anim";
+    el.innerHTML = `<div class="elev-door elev-left"></div><div class="elev-door elev-right"></div><div class="elev-floornum">F${from}</div>`;
+    $("game-root").appendChild(el);
+    elevatorEl = el;
+    const num = el.querySelector(".elev-floornum") as HTMLElement;
+    requestAnimationFrame(() => el.classList.add("closing"));
+    // Doors shut (~570ms), then tick the floor counter to the destination.
+    setTimeout(() => {
+      let cur = from;
+      const dir = to > from ? 1 : -1;
+      const tick = () => {
+        if (cur === to) return resolve();
+        cur += dir;
+        num.textContent = `F${cur}`;
+        setTimeout(tick, 150);
+      };
+      tick();
+    }, 580);
+  });
+}
+export function elevatorOpen(to: number): void {
+  const el = elevatorEl;
+  if (!el) { ui.cutscene = false; return; }
+  const num = el.querySelector(".elev-floornum") as HTMLElement | null;
+  if (num) num.textContent = `F${to}`;
+  el.classList.remove("closing"); // doors slide back open
+  setTimeout(() => { el.remove(); elevatorEl = null; ui.cutscene = false; }, 560);
+}
+
 /** Elevator floor select. Resolves with floor number or null. */
 export function elevatorPanel(current: number): Promise<number | null> {
   return new Promise((resolve) => {

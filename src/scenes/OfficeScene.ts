@@ -2,7 +2,7 @@
 import Phaser from "phaser";
 import { TILE, BLOCKING, LAYOUTS, NPCS, NpcDef, PROP_LINES, spawnPoint } from "../config/world";
 import { api, state } from "../net/api";
-import { ui, updateHUD, updateObjectiveBanner, elevatorPanel, questLogPanel, workspacePanel, menuPanel, toast, applyStaticLabels, welcomePanel, setRelabelHandler } from "../ui/ui";
+import { ui, updateHUD, updateObjectiveBanner, elevatorPanel, elevatorClose, elevatorOpen, questLogPanel, workspacePanel, menuPanel, toast, applyStaticLabels, welcomePanel, setRelabelHandler } from "../ui/ui";
 import { interact, interactProp } from "../game/interactions";
 import { computeObjective, Objective } from "../game/objective";
 import { L, fmt, UI } from "../i18n";
@@ -13,10 +13,16 @@ const TEX: Record<string, string> = {
   E: "tile-elevator", r: "tile-reception", c: "tile-carpet", k: "tile-cooler", o: "tile-copier",
   // Floor 15 executive offices
   W: "tile-exec-wall", D: "tile-exec-desk", g: "tile-exec-carpet",
+  // Matte-glass windows (n = standard grey wall, N = executive walnut)
+  n: "tile-window", N: "tile-exec-window",
 };
 
 // Walkable rug tiles render under the player (low depth) instead of at row depth.
 const RUG = new Set(["c", "g"]);
+
+// Ambient NPCs that stay on their feet (they stroll/clean rather than sit at a
+// desk). Everyone else is seated in an office chair at their station.
+const STANDING = new Set(["guard"]);
 
 // Module-level so floor changes (scene restarts) don't re-show the panel.
 let welcomeShown = false;
@@ -41,8 +47,9 @@ export default class OfficeScene extends Phaser.Scene {
     super("office");
   }
 
-  init(data: { floor?: number }) {
+  init(data: { floor?: number; viaElevator?: boolean }) {
     this.floor = data.floor ?? state?.client?.floor ?? 12;
+    (this as any).viaElevator = !!data.viaElevator;
   }
 
   create() {
@@ -95,8 +102,10 @@ export default class OfficeScene extends Phaser.Scene {
         continue;
       }
       const x = def.tx * TILE + TILE / 2, y = def.ty * TILE + TILE / 2;
+      const seated = !STANDING.has(def.id);
+      if (seated) this.add.image(x, y - 2, "tile-chair").setDepth(y - 1); // chair behind the desk worker
       this.add.image(x, y + 10, "shadow").setDepth(y - 1);
-      const s = this.add.sprite(x, y, `char-${def.color}-down-0`).setDepth(y);
+      const s = this.add.sprite(x, y + (seated ? 3 : 0), `char-${def.color}-down-0`).setDepth(y);
       const body = walls.create(x, y, `char-${def.color}-down-0`) as Phaser.Physics.Arcade.Sprite;
       body.setVisible(false).setSize(20, 20).refreshBody();
       const nameText = this.add.text(x, y - 30, L(def.name), {
@@ -164,6 +173,9 @@ export default class OfficeScene extends Phaser.Scene {
     api.save({ floor: this.floor, x: this.player.x, y: this.player.y });
 
     if (firstDay) this.runIntroCutscene();
+
+    // Arrived by elevator → slide the doors open on the freshly-built floor.
+    if ((this as any).viaElevator) elevatorOpen(this.floor);
   }
 
   /** Day one: Athena walks in from the entrance straight to her supervisor. */
@@ -212,7 +224,12 @@ export default class OfficeScene extends Phaser.Scene {
     const npc = this.nearestNpc();
     if (npc) {
       npc.sprite.setTexture(`char-${npc.def.color}-${this.faceMe(npc.sprite)}-0`);
+      // Seated workers rise to greet you, then settle back when you leave.
+      const standing = STANDING.has(npc.def.id);
+      const seatY = npc.sprite.y;
+      if (!standing) this.tweens.add({ targets: npc.sprite, y: seatY - 7, duration: 150, ease: "Quad.out" });
       await interact(npc.def, this.floor);
+      if (!standing) this.tweens.add({ targets: npc.sprite, y: seatY, duration: 150, ease: "Quad.in" });
       updateHUD(this.floor);
       return;
     }
@@ -222,8 +239,8 @@ export default class OfficeScene extends Phaser.Scene {
       const target = await elevatorPanel(this.floor);
       if (target !== null) {
         await api.save({ floor: target, x: 0, y: 0 });
-        toast(fmt(UI.floorToast, { n: target }));
-        this.scene.restart({ floor: target });
+        await elevatorClose(this.floor, target); // doors shut + ride to the floor
+        this.scene.restart({ floor: target, viaElevator: true }); // rebuild behind closed doors
       }
       return;
     }
