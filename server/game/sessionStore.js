@@ -14,6 +14,8 @@ import { fileURLToPath } from "node:url";
 import { PERSONAS, MID_PERSONAS } from "../../shared/personas.config.js";
 import { GAME_CONFIG } from "../../shared/gameConfig.js";
 import { TRACKS } from "../../shared/gameContent.js";
+import { newEngagement, syncEngagement } from "../../shared/phases.js";
+import { newWorkspace } from "../../shared/workspace.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FILE = path.join(__dirname, "..", "data", "sessions.json");
@@ -71,6 +73,9 @@ function newSession(id) {
     updatedAt: Date.now(),
     credibility: 0,
     flags: { metSupervisor: false, interimDone: false, boardDone: false, debriefDone: false },
+    engagement: newEngagement(), // 5-phase consulting spine (shared/phases.js)
+    workspace: newWorkspace(), // engagement binder + data packs (shared/workspace.js)
+    settings: { recipient: "board" }, // final-pitch recipient: "board" | "professorGuo" (Wave 3)
     tasks: {}, // taskId -> { status: "passed"|"partial"|"failed", delta, feedback }
     personas,
     gatekeepers,
@@ -100,6 +105,11 @@ export function getSession(id, create = true) {
     for (const trackId of Object.keys(TRACKS)) s.gatekeepers[trackId] = { transcript: [], quiz: null, knownGaps: [] };
   }
   if (s.flags.interimDone === undefined) s.flags.interimDone = false;
+  // Migrate sessions persisted before the engagement-phase spine existed.
+  if (!s.engagement) s.engagement = newEngagement();
+  if (!s.workspace) s.workspace = newWorkspace();
+  if (s.workspace && !s.workspace.interviews) s.workspace.interviews = [];
+  if (!s.settings) s.settings = { recipient: "board" };
   // Migrate sessions persisted before the mid-level roster existed.
   for (const p of MID_PERSONAS) {
     if (!s.personas[p.id]) s.personas[p.id] = { used: 0, warmth: 0, active: null, transcript: [] };
@@ -148,6 +158,9 @@ export function publicState(s) {
     updatedAt: s.updatedAt, // powers the "welcome back" panel after a break
     credibility: s.credibility,
     flags: s.flags,
+    engagement: syncEngagement(s),
+    workspace: s.workspace, // raw binder; client resolves via shared/workspace.js
+    settings: s.settings, // final-pitch recipient (Wave 3)
     tasks: s.tasks,
     personas,
     gatekeepers,

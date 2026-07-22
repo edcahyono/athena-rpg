@@ -6,6 +6,9 @@
 import { state, api, sessionId } from "../net/api";
 import { GAME_CONFIG, unlockedFloor } from "../../shared/gameConfig.js";
 import { TRACKS } from "../../shared/gameContent.js";
+import { PHASES } from "../../shared/phases.js";
+import { workspaceView } from "../../shared/workspace.js";
+import { COMPETENCIES } from "../../shared/competencies.js";
 import { PERSONA_MAP } from "../../shared/personas.config.js";
 import { NPCS } from "../config/world";
 import { computeObjective } from "../game/objective";
@@ -48,6 +51,7 @@ export function applyStaticLabels() {
   $("hud-fullscreen").textContent = "⛶";
   $("hud-fullscreen").title = L(UI.fullscreen);
   $("hud-notebook").title = L(UI.notebook);
+  const binder = document.getElementById("hud-binder"); if (binder) binder.title = L(UI.wsBtn);
   ($("dlg-input") as HTMLInputElement).placeholder = L(UI.askPh);
   $("dlg-send").textContent = L(UI.ask);
   $("dlg-leave").textContent = L(UI.leave);
@@ -59,6 +63,32 @@ export function updateHUD(floor: number) {
   const pct = Math.min(100, Math.round((state.credibility / CRED_TARGET) * 100));
   ($("cred-fill") as HTMLElement).style.width = `${pct}%`;
   $("cred-label").textContent = `${L(UI.credibility)} ${state.credibility}`;
+  renderTracker();
+}
+
+/**
+ * Engagement Tracker — the always-visible 5-phase spine (the v2 backbone).
+ * Reads the server-authoritative engagement state; each step shows done /
+ * in-progress / locked so the player always knows where they are in the
+ * consulting lifecycle, not just where they are in the building.
+ */
+function renderTracker() {
+  const eng = state?.engagement;
+  const bar = $("tracker");
+  if (!eng || !state.flags.metSupervisor) { bar.hidden = true; return; }
+  bar.hidden = false;
+  $("tracker-title").textContent = L(UI.trackerTitle);
+  const steps = $("tracker-steps");
+  steps.innerHTML = "";
+  for (const ph of PHASES) {
+    const done = !!eng.completed[ph.id];
+    const current = eng.phase === ph.id && !done;
+    const el = document.createElement("span");
+    el.className = "tstep" + (done ? " done" : current ? " current" : " locked");
+    el.textContent = `${done ? "✓" : current ? "▸" : "•"} ${L(ph.short)}`;
+    el.title = `${L(ph.name)} — ${done ? L(UI.phaseDone) : current ? L(UI.phaseCurrent) : L(UI.phaseLocked)}\n${L(ph.deliverable)}`;
+    steps.appendChild(el);
+  }
 }
 
 export function toast(msg: string) {
@@ -319,10 +349,12 @@ export function elevatorPanel(current: number): Promise<number | null> {
   });
 }
 
-/** Free-response check panel. Resolves with answer text or null. */
-export function taskPanel(title: string, prompt: string): Promise<string | null> {
+/** Free-response check panel. Resolves with answer text or null.
+ *  `note` (optional) shows prior reviewer feedback as context on a revise pass. */
+export function taskPanel(title: string, prompt: string, note?: string): Promise<string | null> {
   return new Promise((resolve) => {
-    const p = openPanel(`<h2>📋 ${esc(title)}</h2><p>${esc(prompt)}</p>
+    const noteBlock = note ? `<p class="warnbox">${esc(note)}</p>` : "";
+    const p = openPanel(`<h2>📋 ${esc(title)}</h2><p>${esc(prompt)}</p>${noteBlock}
       <textarea id="ptext" placeholder="${L(UI.writeAnswerPh)}"></textarea>
       <div class="row"><button id="psubmit">${L(UI.submitAnswer)}</button><button id="pcancel">${L(UI.notYet)}</button></div>`);
     (p.querySelector("#psubmit") as HTMLButtonElement).onclick = () => {
@@ -486,9 +518,24 @@ export function reviewWorkPanel(reviewerId: string, reviewerLabel: string): Prom
   });
 }
 
+/** Board verdict — deliverable score 0-100 + per-executive fulfilled checklist. */
+export function boardResultPanel(score: number, checklist: { short: string; name: string; fulfilled: boolean }[]): Promise<void> {
+  return new Promise((resolve) => {
+    const rows = (checklist || []).map((c) =>
+      `<div class="dir-row"><span class="who"><b>${esc(c.short)}</b> — ${esc(c.name)}</span><span class="status">${c.fulfilled ? L(UI.fulfilledYes) : L(UI.fulfilledNo)}</span></div>`
+    ).join("");
+    const p = openPanel(`<h2>${L(UI.boardScoreTitle)}</h2>
+      <div class="pbar"><div style="width:${Math.max(0, Math.min(100, score))}%"></div><span>${L(UI.boardScoreLabel)}: ${score}/100</span></div>
+      <h2 style="margin-top:14px">${L(UI.boardChecklistTitle)}</h2>
+      ${rows}
+      <div class="row"><button id="pclose" class="primary">${L(UI.close)}</button></div>`);
+    (p.querySelector("#pclose") as HTMLButtonElement).onclick = () => { closePanel(); resolve(); };
+  });
+}
+
 /** Board deck panel — upload/paste the final 5-year strategy; resolves with the
- *  per-executive evaluations (or null if cancelled). */
-export function boardDeckPanel(): Promise<any[] | null> {
+ *  full review response {evals, score, checklist} (or null if cancelled). */
+export function boardDeckPanel(): Promise<any | null> {
   return new Promise((resolve) => {
     const p = openPanel(`<h2>${L(UI.boardDeckTitle)}</h2>
       <p class="muted">${L(UI.boardDeckHint)}</p>
@@ -507,7 +554,7 @@ export function boardDeckPanel(): Promise<any[] | null> {
       try {
         const res = await api.boardReviewDeck(text);
         closePanel();
-        resolve(res.evals || []);
+        resolve(res);
       } catch (err: any) {
         (p.querySelector("#deck-result") as HTMLElement).innerHTML = `<p class="muted">${esc(err.message)}</p>`;
         btn.disabled = false;
@@ -674,6 +721,116 @@ export function questLogPanel() {
     a.download = "athena-notebook.txt";
     a.click();
   };
+}
+
+/**
+ * Skills-you're-building reference (Wave 3 / Part A) — makes the learning
+ * outcomes explicit: what each activity trains and how it's assessed.
+ */
+export function competenciesPanel() {
+  const rows = COMPETENCIES.map((c: any) => `<div class="skill-row"><h3>${c.alice ? "★ " : ""}${esc(L(c.skill))}</h3>
+    <p><b>${L(UI.skillExercised)}:</b> ${esc(L(c.exercisedBy))}</p>
+    <p class="muted"><b>${L(UI.skillEvidence)}:</b> ${esc(L(c.evidence))}</p></div>`).join("");
+  const p = openPanel(`<h2>${L(UI.skillsTitle)}</h2><p class="muted">${L(UI.skillsIntro)}</p>${rows}
+    <div class="row"><button id="pclose">${L(UI.close)}</button></div>`);
+  (p.querySelector("#pclose") as HTMLButtonElement).onclick = () => closePanel();
+}
+
+/**
+ * The Engagement Binder (Wave 2) — the formal workspace. Data packs arrive
+ * automatically; the player authors pain points → findings (cite evidence) →
+ * recommendations (cite findings). Re-renders after every add/remove so the
+ * unsupported / unreconciled flags update live. workspaceView (shared) computes
+ * the flags and resolves bilingual pack text in the current language.
+ */
+export function workspacePanel() {
+  const render = () => {
+    const v = workspaceView(state.workspace, lang);
+    const chip = (id: string, label: string) => `<label class="ws-chk"><input type="checkbox" value="${id}"> ${esc(label)}</label>`;
+    const packChips = v.dataPacks.map((p) => chip(p.id, p.title)).join("") || `<span class="muted">${L(UI.wsNoPacks)}</span>`;
+    const painChips = v.painPoints.map((p) => chip(p.id, p.statement.slice(0, 48))).join("") || `<span class="muted">${L(UI.wsEmpty)}</span>`;
+    const findChips = v.findings.map((f) => chip(f.id, f.statement.slice(0, 48))).join("") || `<span class="muted">${L(UI.wsEmpty)}</span>`;
+
+    const packCards = v.dataPacks.length
+      ? v.dataPacks.map((p) => `<div class="ws-pack"><b>${esc(p.title)}</b> <span class="ws-src">${esc((p.source || "").toUpperCase())}</span><p>${esc(p.summary)}</p></div>`).join("")
+      : `<p class="muted">${L(UI.wsNoPacks)}</p>`;
+    const warns = v.unreconciled.map((u) => `<p class="warnbox">${fmt(UI.wsUnreconciled, { a: esc(u.titles[0]), b: esc(u.titles[1]) })}</p>`).join("");
+    const row = (kind: string, x: any, badge = "") =>
+      `<div class="ws-item${badge && badge.includes("wsUnsupported") ? " ws-bad" : ""}"><span>${esc(x.statement)}${badge}</span><button class="ws-x" data-kind="${kind}" data-id="${x.id}">${L(UI.wsRemove)}</button></div>`;
+    const painList = v.painPoints.map((p) => row("painPoint", p)).join("") || `<p class="muted">${L(UI.wsEmpty)}</p>`;
+    const findList = v.findings.map((f) => row("finding", f,
+      f.unsupported ? ` <em class="ws-warn">${L(UI.wsUnsupported)}</em>` : ` <em class="ws-ok">${f.evidenceRefs.length} ${L(UI.wsEvidence)}</em>`)).join("") || `<p class="muted">${L(UI.wsEmpty)}</p>`;
+    const recList = v.recommendations.map((r) => row("recommendation", r,
+      r.unsupported ? ` <em class="ws-warn">${L(UI.wsUnsupported)}</em>` : "")).join("") || `<p class="muted">${L(UI.wsEmpty)}</p>`;
+
+    // C2 — interview readouts: one per executive actually interviewed.
+    const execIds = Object.keys(state.personas).filter((id) => state.personas[id].used > 0 && PERSONA_MAP[id] && (PERSONA_MAP as any)[id].tier !== "mid");
+    const roMap: Record<string, any> = Object.fromEntries((state.workspace.interviews || []).map((r) => [r.personaId, r]));
+    const readoutList = execIds.length ? execIds.map((id) => {
+      const ro = roMap[id];
+      return `<div class="ws-ro"><b>${esc(L((PERSONA_MAP as any)[id].shortTitle))}</b> ${ro ? `<em class="ws-ok">${fmt(UI.wsReadoutScore, { n: ro.score })}</em>` : ""}
+        <textarea id="ws-ro-${id}" class="ws-ta" placeholder="${L(UI.wsReadoutPh)}">${esc(ro?.playerSummary || "")}</textarea>
+        <button class="ws-add ws-ro-save" data-id="${id}">${L(UI.wsReadoutSave)}</button>${ro ? `<p class="ws-ro-fb">${esc(ro.feedback)}</p>` : ""}</div>`;
+    }).join("") : `<p class="muted">${L(UI.wsNoInterviews)}</p>`;
+
+    const p = openPanel(`<h2>${L(UI.wsTitle)}</h2>
+      <p class="muted">${L(UI.wsIntro)}</p>
+      <p class="ws-counts">${fmt(UI.wsCounts, { packs: v.counts.packs, pains: v.counts.painPoints, finds: v.counts.findings, recs: v.counts.recommendations, bad: v.counts.unsupported })} · <a id="ws-skills" class="ws-link">${L(UI.wsSkillsBtn)}</a></p>
+      ${warns}
+      <div class="ws-sec"><h3>${L(UI.wsReadouts)}</h3><p class="muted">${L(UI.wsReadoutHint)}</p>${readoutList}</div>
+      <div class="ws-sec"><h3>${L(UI.wsPacks)}</h3><div class="ws-packs">${packCards}</div></div>
+      <div class="ws-sec"><h3>${L(UI.wsPains)}</h3>${painList}
+        <textarea id="ws-pain-t" class="ws-ta" placeholder="${L(UI.wsPainPh)}"></textarea>
+        <div class="ws-chk-label">${L(UI.wsPickEvidencePack)}</div><div class="ws-chks" id="ws-pain-packs">${packChips}</div>
+        <button class="ws-add" id="ws-add-pain">${L(UI.wsAdd)}</button></div>
+      <div class="ws-sec"><h3>${L(UI.wsFindings)}</h3>${findList}
+        <textarea id="ws-find-t" class="ws-ta" placeholder="${L(UI.wsFindingPh)}"></textarea>
+        <div class="ws-chk-label">${L(UI.wsPickEvidencePack)}</div><div class="ws-chks" id="ws-find-packs">${packChips}</div>
+        <div class="ws-chk-label">${L(UI.wsPickEvidencePain)}</div><div class="ws-chks" id="ws-find-pains">${painChips}</div>
+        <button class="ws-add" id="ws-add-find">${L(UI.wsAdd)}</button></div>
+      <div class="ws-sec"><h3>${L(UI.wsRecs)}</h3>${recList}
+        <textarea id="ws-rec-t" class="ws-ta" placeholder="${L(UI.wsRecPh)}"></textarea>
+        <div class="ws-chk-label">${L(UI.wsPickFindings)}</div><div class="ws-chks" id="ws-rec-finds">${findChips}</div>
+        <button class="ws-add" id="ws-add-rec">${L(UI.wsAdd)}</button></div>
+      <div class="row"><button id="pclose">${L(UI.close)}</button></div>`);
+
+    const checked = (sel: string) => Array.from(p.querySelectorAll<HTMLInputElement>(`${sel} input:checked`)).map((c) => c.value);
+    const val = (id: string) => (p.querySelector(id) as HTMLTextAreaElement).value.trim();
+    p.querySelectorAll<HTMLElement>(".ws-x").forEach((b) => {
+      b.onclick = async () => { await api.workspaceRemove(b.dataset.kind!, b.dataset.id!); render(); };
+    });
+    (p.querySelector("#ws-add-pain") as HTMLButtonElement).onclick = async () => {
+      const t = val("#ws-pain-t"); if (!t) return toast(L(UI.writeSomething));
+      await api.workspaceAdd("painPoint", { statement: t, refs: checked("#ws-pain-packs") }); render();
+    };
+    (p.querySelector("#ws-add-find") as HTMLButtonElement).onclick = async () => {
+      const t = val("#ws-find-t"); if (!t) return toast(L(UI.writeSomething));
+      const refs = [...checked("#ws-find-packs"), ...checked("#ws-find-pains")];
+      if (!refs.length) return toast(L(UI.wsNeedEvidence));
+      await api.workspaceAdd("finding", { statement: t, refs }); render();
+    };
+    (p.querySelector("#ws-add-rec") as HTMLButtonElement).onclick = async () => {
+      const t = val("#ws-rec-t"); if (!t) return toast(L(UI.writeSomething));
+      const refs = checked("#ws-rec-finds");
+      if (!refs.length) return toast(L(UI.wsNeedFinding));
+      await api.workspaceAdd("recommendation", { statement: t, refs }); render();
+    };
+    (p.querySelector("#ws-skills") as HTMLElement).onclick = () => competenciesPanel();
+    p.querySelectorAll<HTMLElement>(".ws-ro-save").forEach((b) => {
+      b.onclick = async () => {
+        const id = b.dataset.id!;
+        const t = (p.querySelector(`#ws-ro-${id}`) as HTMLTextAreaElement).value.trim();
+        if (!t) return toast(L(UI.writeSomething));
+        try {
+          const r: any = await api.workspaceSummary(id, t);
+          toast(fmt(UI.wsReadoutScore, { n: r.score }));
+          render();
+        } catch (e: any) { toast(e.message); }
+      };
+    });
+    (p.querySelector("#pclose") as HTMLButtonElement).onclick = () => closePanel();
+  };
+  render();
 }
 
 function esc(s: string) {

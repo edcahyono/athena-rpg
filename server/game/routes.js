@@ -15,6 +15,8 @@ import { TASKS, TRACKS, trackForPersona, trackById } from "../../shared/gameCont
 import { buildGatekeeperPrompt } from "../../shared/gatekeeperPrompt.js";
 import { REVIEW_CRITERIA, GATEKEEPER_REVIEW } from "../../shared/reviewCriteria.js";
 import { BENCHMARKS } from "../../shared/benchmarks.js";
+import { ASIS_MIN_INTERVIEWS } from "../../shared/phases.js";
+import { grantPack, workspaceDigest, DATA_PACK_MAP, packForSource } from "../../shared/workspace.js";
 import { retrieve } from "../rag/retriever.js";
 import { callAnthropic, CHAT_MODEL, LIGHT_MODEL, parseModelJson } from "../anthropic.js";
 import { gradeQuizAnswers } from "./grading.js";
@@ -192,6 +194,18 @@ async function classifyQuestion(text, personaTitle) {
 }
 
 const interviewedCount = (s) => Object.values(s.personas).filter((p) => p.used > 0).length;
+
+/** Hand the stakeholder's data pack to the binder (once) + log it. */
+function grantWorkspacePack(s, personaId, lang) {
+  if (!s.workspace) return;
+  const granted = grantPack(s.workspace, personaId);
+  if (granted) {
+    const pack = DATA_PACK_MAP[granted];
+    addQuestEntry(s, "datapack",
+      TT(lang, `📁 Data pack received: ${LB(pack.title, "en")}`, `📁 收到数据包：${LB(pack.title, "zh")}`),
+      TT(lang, "Filed in your engagement binder — cite it when you log findings.", "已归入你的项目工作簿——记录发现时请引用它。"));
+  }
+}
 
 /** Executive access requires passing that domain's gatekeeper check. */
 function requireTrackPassed(s, personaId, lang) {
@@ -388,7 +402,11 @@ router.post("/gatekeeper/quiz", async (req, res) => {
     if (!track) return res.status(400).json({ error: "Unknown track" });
     const g = s.gatekeepers[trackId];
 
-    const convo = g.transcript.length
+    // No conversation → no "notes from our conversation". The quiz still runs
+    // (generated from domain background), but the summary/notebook entry only
+    // exists when there was an actual exchange to summarize.
+    const hasConvo = g.transcript.length > 0;
+    const convo = hasConvo
       ? g.transcript.map((m) => `${m.role === "learner" ? "Learner" : "Manager"}: ${m.text}`).join("\n")
       : "(The learner left without asking anything.)";
 
@@ -397,17 +415,20 @@ router.post("/gatekeeper/quiz", async (req, res) => {
       const out = await callAnthropic({
         model: LIGHT_MODEL,
         max_tokens: 1200,
-        system:
-          `A junior consultant just finished (or skipped) a conversation with a Deloitte domain manager about Nike Greater China. Based on the conversation below:\n` +
-          `1) Write a "summary" — 3-5 concise bullet points capturing the KEY FACTS the manager actually shared (numbers, causes, competitor moves). Each bullet on its own line starting with "• ". If the conversation is empty/thin, base the bullets on this domain background: ${track.knowledge.slice(0, 600)}.\n` +
-          `2) Write exactly 2 short quiz "questions" that test whether the learner absorbed those specific points (answerable in 1-3 sentences).\n` +
-          `Write BOTH English and Chinese versions of the summary and each question (same meaning). ` +
-          `Reply with ONLY JSON: {"summary":{"en":"• ...\\n• ...","zh":"• ...\\n• ..."},"questions":[{"en":"...","zh":"..."},{"en":"...","zh":"..."}]}`,
+        system: hasConvo
+          ? `A junior consultant just finished a conversation with a Deloitte domain manager about Nike Greater China. Based on the conversation below:\n` +
+            `1) Write a "summary" — 3-5 concise bullet points capturing the KEY FACTS the manager actually shared (numbers, causes, competitor moves). Each bullet on its own line starting with "• ".\n` +
+            `2) Write exactly 2 short quiz "questions" that test whether the learner absorbed those specific points (answerable in 1-3 sentences).\n` +
+            `Write BOTH English and Chinese versions of the summary and each question (same meaning). ` +
+            `Reply with ONLY JSON: {"summary":{"en":"• ...\\n• ...","zh":"• ...\\n• ..."},"questions":[{"en":"...","zh":"..."},{"en":"...","zh":"..."}]}`
+          : `A junior consultant is attempting a Deloitte domain manager's check WITHOUT having talked to them first. Write exactly 2 short quiz "questions" testing genuine understanding of this domain background (answerable in 1-3 sentences):\n${track.knowledge.slice(0, 600)}\n` +
+            `Write BOTH English and Chinese versions of each question (same meaning). ` +
+            `Reply with ONLY JSON: {"questions":[{"en":"...","zh":"..."},{"en":"...","zh":"..."}]}`,
         messages: [{ role: "user", content: convo.slice(0, 3000) }],
       });
       const parsed = parseModelJson(out);
       questions = Array.isArray(parsed.questions) && parsed.questions.length === 2 ? parsed.questions : null;
-      summary = parsed.summary && (parsed.summary.en || parsed.summary.zh) ? parsed.summary : null;
+      summary = hasConvo && parsed.summary && (parsed.summary.en || parsed.summary.zh) ? parsed.summary : null;
     } catch { /* fall through to fallback */ }
 
     if (!questions) {
@@ -506,6 +527,7 @@ router.post("/interaction/start", (req, res) => {
   st.active = { startedAt: now(), expiresAt: now() + GAME_CONFIG.csuite.timePerInteractionSeconds * 1000 };
   addQuestEntry(s, "meeting",
     TT(lang, `Meeting ${st.used}/${GAME_CONFIG.csuite.maxInteractions} started: `, `会面开始（${st.used}/${GAME_CONFIG.csuite.maxInteractions}）：`) + LB(persona.title, lang), "");
+  grantWorkspacePack(s, personaId, lang); // stakeholder hands over their data pack
   touch(s);
   res.json({ ...publicState(s), expiresAt: st.active.expiresAt });
 });
@@ -525,6 +547,7 @@ router.post("/chat", async (req, res) => {
     // clock, no mood cutoff. Access still requires the parent line's check.
     if (persona.tier === "mid") {
       requireTrackPassed(s, persona.parent, lang);
+      grantWorkspacePack(s, persona.parent, lang); // the deputy hands over their line's pack
       st.transcript.push({ role: "learner", text: text.trim() });
       if (st.transcript.length > 60) st.transcript.splice(0, st.transcript.length - 60);
       const reply = await personaReply(s, personaId, lang, FOCUSED_ANSWER_RULE);
@@ -679,7 +702,7 @@ router.post("/board/chat", async (req, res) => {
   }
 });
 
-router.post("/board/end", (req, res) => {
+router.post("/board/end", async (req, res) => {
   const s = getSession(req.body?.sessionId, false);
   const lang = langOf(req);
   if (s.board.active) {
@@ -688,7 +711,43 @@ router.post("/board/end", (req, res) => {
     addQuestEntry(s, "meeting", TT(lang, "Board meeting concluded", "董事会会议结束"), TT(lang, "You wrapped the pitch.", "你完成了汇报。"));
     touch(s);
   }
-  res.json(publicState(s));
+
+  // Live-pitch deliverable: score 0-100 + per-executive fulfilled checklist,
+  // graded once from the actual board transcript against each exec's
+  // evaluation mindset (the reserved grading metadata — never used in chat).
+  const pitched = s.board.transcript.some((m) => m.role === "learner");
+  if (s.board.done && pitched && !s.board.result) {
+    try {
+      const rubric = PERSONAS.map((p) => `${p.id} (${p.shortTitle.en}): ${p.evaluationMindset.en}`).join("\n");
+      const convo = s.board.transcript
+        .map((m) => (m.role === "learner" ? `Learner: ${m.text}` : `${m.personaId}: ${m.text}`)).join("\n").slice(-12000);
+      const out = await callAnthropic({
+        model: LIGHT_MODEL,
+        max_tokens: 400,
+        system:
+          `You grade a trainee consultant's FINAL BOARD PITCH of a 5-year Nike Greater China strategy (transcript below; may be English or Chinese). ` +
+          `Each executive's bar:\n${rubric}\n` +
+          `For each executive, decide fulfilled=true only if the pitch genuinely addressed their bar. Then give one overall deliverable score 0-100 ` +
+          `(90+: board-ready with clear thesis, trade-offs, numbers; 70s: solid but gaps; 50s: partial; below 40: unprepared). ` +
+          `Reply with ONLY JSON: {"score":<0-100>,"checklist":[{"id":"ceo","fulfilled":true|false},...one entry per executive id above...]}`,
+        messages: [{ role: "user", content: convo || "(empty)" }],
+      });
+      const parsed = parseModelJson(out);
+      const byId = Object.fromEntries((Array.isArray(parsed.checklist) ? parsed.checklist : []).map((c) => [c.id, !!c.fulfilled]));
+      const checklist = PERSONAS.map((p) => ({
+        personaId: p.id, short: LB(p.shortTitle, lang), name: LB(p.title, lang), fulfilled: byId[p.id] ?? false,
+      }));
+      const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+      s.board.result = { score, checklist, mode: "live", t: Date.now() };
+      addQuestEntry(s, "board", TT(lang, `Board verdict — deliverable score ${score}/100`, `董事会评定 — 交付物得分 ${score}/100`),
+        checklist.map((c) => `${c.fulfilled ? "✓" : "✗"} ${c.short}`).join("  ·  "));
+      touch(s);
+    } catch (e) {
+      console.error("[board score]", e.message);
+    }
+  }
+  const r = s.board.result;
+  res.json({ ...publicState(s), score: r?.score ?? null, checklist: r?.checklist ?? null });
 });
 
 /**
@@ -722,26 +781,346 @@ router.post("/board/review-deck", async (req, res) => {
           system:
             `You are ${LB(p.title, "en")} of Nike Greater China, sitting on the board hearing a junior consultant's final 5-year strategy pitch (deck text below). ` +
             `Evaluate it ONLY from your functional lens.\nYOUR CRITERIA:\n${crit}\n${bench}\n` +
-            `Stay fully in character. Reply with ONLY JSON: {"verdict":"strong"|"acceptable"|"weak","comments":"<2-3 concise sentences from your perspective — what satisfies you, what worries you — written in ${lang === "zh" ? "Simplified Chinese" : "English"}>"}`,
+            `Stay fully in character. Reply with ONLY JSON: {"verdict":"strong"|"acceptable"|"weak","fulfilled":true|false,"comments":"<2-3 concise sentences from your perspective — what satisfies you, what worries you — written in ${lang === "zh" ? "Simplified Chinese" : "English"}>"} — "fulfilled" means: does this deck genuinely address YOUR function's core asks per your criteria (not merely mention them)?`,
           messages: [{ role: "user", content: text.slice(0, 40000) }],
         });
         const parsed = parseModelJson(out);
         const verdict = ["strong", "acceptable", "weak"].includes(parsed.verdict) ? parsed.verdict : "acceptable";
         const comments = (typeof parsed.comments === "string" && parsed.comments.trim())
           ? parsed.comments.slice(0, 800) : TT(lang, "Noted.", "了解。");
-        return { personaId: p.id, name: LB(p.title, lang), short: LB(p.shortTitle, lang), verdict, comments };
+        const fulfilled = typeof parsed.fulfilled === "boolean" ? parsed.fulfilled : verdict !== "weak";
+        return { personaId: p.id, name: LB(p.title, lang), short: LB(p.shortTitle, lang), verdict, fulfilled, comments };
       } catch (e) {
-        return { personaId: p.id, name: LB(p.title, lang), short: LB(p.shortTitle, lang), verdict: "error", comments: TT(lang, "(couldn't reach this executive — try again)", "（暂时联系不到这位高管——请重试）") };
+        return { personaId: p.id, name: LB(p.title, lang), short: LB(p.shortTitle, lang), verdict: "error", fulfilled: false, comments: TT(lang, "(couldn't reach this executive — try again)", "（暂时联系不到这位高管——请重试）") };
       }
     }));
 
+    // Deliverable score 0-100: average of the seven verdicts (errors excluded).
+    const VERDICT_PTS = { strong: 100, acceptable: 70, weak: 40 };
+    const scored = evals.filter((e) => e.verdict in VERDICT_PTS);
+    const score = scored.length ? Math.round(scored.reduce((a, e) => a + VERDICT_PTS[e.verdict], 0) / scored.length) : 0;
+    const checklist = evals.map((e) => ({ personaId: e.personaId, short: e.short, name: e.name, fulfilled: !!e.fulfilled }));
+
     s.board.deckReviewed = true;
-    addQuestEntry(s, "board", TT(lang, "Board reviewed your strategy deck", "董事会审阅了你的战略汇报"),
-      evals.map((e) => `${e.short}: ${e.verdict} — ${e.comments}`).join("\n"));
+    s.board.deckText = text.slice(0, 40000); // kept so the defense stage can challenge it
+    s.board.result = { score, checklist, mode: "deck", deckScore: score, t: Date.now() };
+    addQuestEntry(s, "board", TT(lang, `Board verdict — deliverable score ${score}/100`, `董事会评定 — 交付物得分 ${score}/100`),
+      evals.map((e) => `${e.fulfilled ? "✓" : "✗"} ${e.short}: ${e.verdict} — ${e.comments}`).join("\n"));
     touch(s);
-    res.json({ ...publicState(s), evals });
+    res.json({ ...publicState(s), evals, score, checklist });
   } catch (err) {
     console.error("[board review-deck]", err.message, err.detail || "");
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+/* --------------------- settings + defense (Wave 3) ---------------------- */
+
+/** Who the final pitch is presented to — the sim board, or a classroom instructor. */
+function recipientFraming(s, lang) {
+  const prof = s.settings?.recipient === "professorGuo";
+  return prof
+    ? { who: TT(lang, "Professor Guo and a teaching panel", "郭教授与教学评审组"),
+        context: TT(lang, "a classroom defense — rubric-scored, with room for an instructor override", "课堂答辩——按评分标准打分，并保留教师复核空间") }
+    : { who: TT(lang, "the Nike Greater China board", "耐克大中华区董事会"),
+        context: TT(lang, "a live board defense", "现场董事会答辩") };
+}
+
+router.post("/settings", (req, res) => {
+  const s = getSession(req.body?.sessionId, false);
+  const { recipient } = req.body || {};
+  if (recipient === "board" || recipient === "professorGuo") s.settings.recipient = recipient;
+  touch(s);
+  res.json(publicState(s));
+});
+
+/**
+ * C2 — "summarize information". The player writes their own readout of an
+ * interview; it is graded against the ACTUAL transcript for accuracy, signal
+ * and concision (not recall of trivia). Stored in the binder; small credibility.
+ */
+router.post("/workspace/summary", async (req, res) => {
+  try {
+    const s = getSession(req.body?.sessionId, false);
+    const lang = langOf(req);
+    const { personaId, summary } = req.body || {};
+    const persona = PERSONA_MAP[personaId];
+    if (!persona) return res.status(400).json({ error: "Unknown persona" });
+    if (typeof summary !== "string" || !summary.trim() || summary.length > 2000)
+      return res.status(400).json({ error: TT(lang, "Write 1–2000 characters.", "请填写1–2000字符。") });
+    const st = s.personas[personaId];
+    const transcript = (st?.transcript || []).map((m) => `${m.role === "learner" ? "You" : LB(persona.shortTitle, "en")}: ${m.text}`).join("\n");
+    if (!transcript) return res.status(403).json({ error: TT(lang, "Interview this person before writing your readout.", "先访谈这位高管再写纪要。") });
+    const out = await callAnthropic({
+      model: LIGHT_MODEL, max_tokens: 500,
+      system:
+        `A trainee consultant wrote a READOUT summarizing their interview with the ${LB(persona.title, "en")} of Nike Greater China. ` +
+        `Grade the summary against the ACTUAL transcript for (a) accuracy — reflects what was said, no invented facts; (b) signal — captures what MATTERED, not trivia; (c) concision. Score 0-100. ` +
+        `Reply with ONLY JSON: {"score":<0-100>,"feedback":"<2 sentences as their engagement manager, in ${lang === "zh" ? "Simplified Chinese" : "English"}>"}\nTRANSCRIPT:\n${transcript.slice(0, 6000)}`,
+      messages: [{ role: "user", content: summary.slice(0, 2000) }],
+    });
+    const parsed = parseModelJson(out);
+    const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    const feedback = typeof parsed.feedback === "string" ? parsed.feedback.slice(0, 400) : TT(lang, "Noted.", "了解。");
+    const rec = { personaId, playerSummary: summary.trim(), score, feedback };
+    const i = s.workspace.interviews.findIndex((x) => x.personaId === personaId);
+    if (i >= 0) s.workspace.interviews[i] = rec; else s.workspace.interviews.push(rec);
+    if (score >= 70) addCredibility(s, 5, TT(lang, `Interview readout: ${LB(persona.shortTitle, lang)}`, `访谈纪要：${LB(persona.shortTitle, lang)}`));
+    addQuestEntry(s, "review", TT(lang, `Readout graded (${score}/100) — ${LB(persona.shortTitle, lang)}`, `纪要评分（${score}/100）— ${LB(persona.shortTitle, lang)}`), feedback);
+    touch(s);
+    res.json({ ...publicState(s), score, feedback });
+  } catch (err) {
+    console.error("[ws summary]", err.message);
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+/**
+ * DEFENSE STAGE (Part F). After the deck is scored, the recipient challenges
+ * the pitch: 5 pointed questions aimed at its weakest parts. The player answers
+ * (a defense thread), and the final score = 60% deck + 40% defense.
+ */
+router.post("/board/defense/questions", async (req, res) => {
+  try {
+    const s = getSession(req.body?.sessionId, false);
+    const lang = langOf(req);
+    if (!s.board.result) return res.status(403).json({ error: TT(lang, "Present your strategy to the board first, then defend it.", "请先向董事会汇报你的战略，再进行答辩。") });
+    if (s.board.defense?.questions?.length)
+      return res.json({ ...publicState(s), questions: s.board.defense.questions.map((q) => ({ execId: q.execId, text: LB(q, lang) })), recipient: s.settings.recipient });
+    const source = s.board.deckText || s.board.transcript.filter((m) => m.role === "learner").map((m) => m.text).join("\n") || "(the pitch)";
+    const fr = recipientFraming(s, lang);
+    const rubric = PERSONAS.map((p) => `${p.id} (${p.shortTitle.en}): ${p.evaluationMindset.en}`).join("\n");
+    const out = await callAnthropic({
+      model: LIGHT_MODEL, max_tokens: 2600,
+      system:
+        `You run the DEFENSE stage of a 5-year strategy pitch for Nike Greater China, in front of ${fr.who}. The consultant just presented (material below). ` +
+        `Produce exactly 5 pointed CHALLENGE questions, each from a different executive's lens, targeting the WEAKEST or riskiest parts of the pitch (trade-offs dodged, numbers unsupported, competitor reality ignored, methodology overreach). Each executive's bar:\n${rubric}\n` +
+        `Keep each question to ONE sharp sentence (max ~30 words) — a pointed challenge, not a paragraph. ` +
+        `Reply with ONLY JSON: {"questions":[{"execId":"cfo","en":"...","zh":"..."}, ...exactly 5, distinct execIds...]}. ` +
+        `Do NOT use double-quote characters inside the "en"/"zh" text — if you must quote a phrase, use single quotes, so the JSON stays valid.`,
+      messages: [{ role: "user", content: String(source).slice(0, 8000) }],
+    });
+    const parsed = parseModelJson(out);
+    let qs = Array.isArray(parsed.questions) ? parsed.questions.filter((q) => q && (q.en || q.zh)).slice(0, 5) : [];
+    if (!qs.length) qs = [{ execId: "ceo", en: "What is the single biggest risk to your plan, and how do you de-risk it?", zh: "你计划里最大的风险是什么，你如何降低它？" }];
+    s.board.defense = { questions: qs, graded: false };
+    touch(s);
+    res.json({ ...publicState(s), questions: qs.map((q) => ({ execId: q.execId, text: LB(q, lang) })), recipient: s.settings.recipient });
+  } catch (err) {
+    console.error("[defense q]", err.message);
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.post("/board/defense/grade", async (req, res) => {
+  try {
+    const s = getSession(req.body?.sessionId, false);
+    const lang = langOf(req);
+    const { answers } = req.body || {};
+    if (!s.board.defense?.questions?.length) return res.status(409).json({ error: TT(lang, "Start the defense first.", "请先开始答辩。") });
+    if (s.board.defense.graded)
+      return res.json({ ...publicState(s), ...s.board.result, checklist: s.board.result.checklist || [], already: true });
+    if (!Array.isArray(answers) || !answers.length || answers.some((a) => typeof a !== "string"))
+      return res.status(400).json({ error: TT(lang, "Answer each challenge.", "请回答每一个质询。") });
+    const qs = s.board.defense.questions;
+    const qa = qs.map((q, i) => `Q${i + 1} [${q.execId}]: ${LB(q, "en")}\nA${i + 1}: ${(answers[i] || "").slice(0, 1500)}`).join("\n\n");
+    const fr = recipientFraming(s, lang);
+    const out = await callAnthropic({
+      model: LIGHT_MODEL, max_tokens: 400,
+      system:
+        `You grade the DEFENSE answers a trainee consultant gave when ${fr.who} challenged their Nike Greater China strategy. ` +
+        `A strong defense directly answers the challenge, concedes real trade-offs, and cites evidence rather than deflecting. Give one defense score 0-100 (90+: holds up under fire; 70s: mostly solid, some hand-waving; 50s: partial; <40: crumbles). ` +
+        `Reply with ONLY JSON: {"score":<0-100>,"feedback":"<2-3 sentences as ${fr.who}, in ${lang === "zh" ? "Simplified Chinese" : "English"}>"}`,
+      messages: [{ role: "user", content: qa.slice(0, 8000) }],
+    });
+    const parsed = parseModelJson(out);
+    const defenseScore = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    const feedback = typeof parsed.feedback === "string" ? parsed.feedback.slice(0, 500) : TT(lang, "Noted.", "了解。");
+    const deckScore = s.board.result?.deckScore ?? s.board.result?.score ?? 0;
+    const finalScore = Math.round(deckScore * 0.6 + defenseScore * 0.4);
+    s.board.defense.graded = true;
+    s.board.result = { ...s.board.result, defenseScore, finalScore, score: finalScore, defended: true };
+    s.board.done = true;
+    addQuestEntry(s, "board", TT(lang, `Defense complete — final score ${finalScore}/100`, `答辩完成——最终得分 ${finalScore}/100`),
+      TT(lang, `Deck ${deckScore} · Defense ${defenseScore}`, `方案 ${deckScore} · 答辩 ${defenseScore}`) + `\n${feedback}`);
+    touch(s);
+    res.json({ ...publicState(s), deckScore, defenseScore, finalScore, feedback, checklist: s.board.result.checklist || [] });
+  } catch (err) {
+    console.error("[defense grade]", err.message);
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+/* --------------------- consultant workspace (binder) -------------------- */
+/**
+ * The engagement binder (Part C). The player authors pain points, then
+ * synthesizes findings (each MUST cite evidence: a data pack or a pain point),
+ * then derives recommendations (each MUST cite a finding). The server owns
+ * id-minting and reference validation so orphan/unsupported items can't be
+ * faked; workspaceView (client) computes the unsupported/unreconciled flags.
+ */
+const WS_LIMITS = { painPoint: 24, finding: 24, recommendation: 24 };
+let wsSeq = 0;
+const mkId = (prefix) => `${prefix}-${Date.now().toString(36)}${(wsSeq++).toString(36)}`;
+
+router.post("/workspace/add", (req, res) => {
+  const s = getSession(req.body?.sessionId, false);
+  const lang = langOf(req);
+  const { kind, statement, refs, targetExecs, domain, severity } = req.body || {};
+  const ws = s.workspace;
+  if (!["painPoint", "finding", "recommendation"].includes(kind))
+    return res.status(400).json({ error: "Unknown workspace item kind" });
+  if (typeof statement !== "string" || !statement.trim() || statement.length > 600)
+    return res.status(400).json({ error: TT(lang, "Write 1–600 characters.", "请填写1–600字符。") });
+
+  if (kind === "painPoint") {
+    if (ws.painPoints.length >= WS_LIMITS.painPoint) return res.status(409).json({ error: TT(lang, "Pain-point list is full.", "痛点清单已满。") });
+    const packIds = new Set(ws.dataPacks.map((d) => d.id));
+    const evidenceRefs = (Array.isArray(refs) ? refs : []).filter((r) => packIds.has(r)).slice(0, 12);
+    ws.painPoints.push({ id: mkId("pp"), domain: String(domain || "").slice(0, 40), severity: String(severity || "").slice(0, 20), statement: statement.trim(), evidenceRefs });
+  } else if (kind === "finding") {
+    if (ws.findings.length >= WS_LIMITS.finding) return res.status(409).json({ error: TT(lang, "Findings list is full.", "发现清单已满。") });
+    const packIds = new Set(ws.dataPacks.map((d) => d.id));
+    const ppIds = new Set(ws.painPoints.map((p) => p.id));
+    const evidenceRefs = (Array.isArray(refs) ? refs : []).filter((r) => packIds.has(r) || ppIds.has(r)).slice(0, 12);
+    ws.findings.push({ id: mkId("f"), statement: statement.trim(), evidenceRefs });
+  } else {
+    if (ws.recommendations.length >= WS_LIMITS.recommendation) return res.status(409).json({ error: TT(lang, "Recommendations list is full.", "建议清单已满。") });
+    const fIds = new Set(ws.findings.map((f) => f.id));
+    const findingRefs = (Array.isArray(refs) ? refs : []).filter((r) => fIds.has(r)).slice(0, 12);
+    const execs = (Array.isArray(targetExecs) ? targetExecs : []).filter((id) => PERSONA_MAP[id]).slice(0, 7);
+    ws.recommendations.push({ id: mkId("r"), statement: statement.trim(), findingRefs, targetExecs: execs });
+  }
+  touch(s);
+  res.json(publicState(s));
+});
+
+router.post("/workspace/remove", (req, res) => {
+  const s = getSession(req.body?.sessionId, false);
+  const { kind, id } = req.body || {};
+  const ws = s.workspace;
+  const list = kind === "painPoint" ? ws.painPoints : kind === "finding" ? ws.findings : kind === "recommendation" ? ws.recommendations : null;
+  if (!list) return res.status(400).json({ error: "Unknown workspace item kind" });
+  const i = list.findIndex((x) => x.id === id);
+  if (i >= 0) {
+    const [removed] = list.splice(i, 1);
+    // Cascade: drop references to the removed item so nothing dangles.
+    if (kind === "painPoint") for (const f of ws.findings) f.evidenceRefs = (f.evidenceRefs || []).filter((r) => r !== removed.id);
+    if (kind === "finding") for (const r of ws.recommendations) r.findingRefs = (r.findingRefs || []).filter((x) => x !== removed.id);
+    touch(s);
+  }
+  res.json(publicState(s));
+});
+
+/* --------------------- alignment meetings (phase gates) ----------------- */
+/**
+ * The two hard gates of the engagement spine (docs Part E). Manager Lin
+ * convenes a client-alignment session; the player submits the phase deliverable
+ * as free text and a client panel (LLM, in the client's voice) either AGREES
+ * (signs off — the gate opens and the phase advances) or CHALLENGES (the player
+ * revises and resubmits). This is the "don't build a tower from flat ground"
+ * mechanism: you cannot benchmark until the as-is is agreed, cannot design the
+ * to-be until the benchmark direction is agreed.
+ *
+ * Reuses the /interim grading shape (single LIGHT_MODEL call, revise-loop).
+ */
+async function gradeAlignment({ kind, answer, evidence, lang }) {
+  const framing = kind === "asis"
+    ? `You are the Nike Greater China client panel (the CEO plus the two most relevant executives) sitting in an AS-IS ALIGNMENT MEETING. A junior Deloitte consultant presents their diagnosis of your current state — the key pain points and the evidence behind them — before they are allowed to benchmark or design anything.\n` +
+      `AGREE only if the diagnosis (a) is grounded in what your executives actually said (see excerpts), (b) names real, specific pain points rather than platitudes, and (c) shows some prioritization (not an undifferentiated list). Otherwise CHALLENGE: name what is wrong, missing, or misprioritized, in the client's own voice.`
+    : `You are the Nike Greater China client panel (the CEO plus the CFO) sitting in a BENCHMARK ALIGNMENT MEETING. A junior Deloitte consultant presents where Nike stands versus named competitors (Anta, Li-Ning, Adidas, Xtep, 361°) and the growth direction they recommend, before they are allowed to design the strategy.\n` +
+      `AGREE only if the benchmark (a) compares like-for-like on metrics that are actually disclosed and relevant (respecting that only EBIT margin and revenue growth are validly benchmarkable for Nike China — undisclosed Nike-China ROE/ROA/ROIC/net profit do NOT exist), (b) names concrete relative strengths and weaknesses versus specific peers, and (c) lands a prioritized direction. Otherwise CHALLENGE: dispute irrelevant comparisons or methodology errors in the client's own voice.`;
+  const out = await callAnthropic({
+    model: LIGHT_MODEL,
+    max_tokens: 400,
+    system:
+      `${framing}\n\nWHAT YOUR EXECUTIVES ACTUALLY TOLD THIS CONSULTANT (interview excerpts):\n${(evidence || "(none captured)").slice(0, 2800)}\n\n` +
+      `Be a realistic senior client: brisk, not effusive. Reply with ONLY JSON: {"agreed":true|false,"feedback":"<2-3 specific sentences in the client's voice, written in ${lang === "zh" ? "Simplified Chinese" : "English"} — if agreeing, confirm the shared starting point; if challenging, say exactly what to fix>"}`,
+    messages: [{ role: "user", content: answer.slice(0, 4000) }],
+  });
+  let agreed = false, feedback = TT(lang, "Let's tighten this before we proceed.", "在推进之前，我们先把这部分收紧。");
+  const parsed = parseModelJson(out);
+  if (typeof parsed.agreed === "boolean") agreed = parsed.agreed;
+  if (typeof parsed.feedback === "string" && parsed.feedback.trim()) feedback = parsed.feedback.slice(0, 600);
+  return { agreed, feedback };
+}
+
+function alignmentEvidence(s, lang) {
+  const quotes = s.questLog.filter((e) => e.type === "quote").slice(-14)
+    .map((e) => `${e.title}: ${e.body.slice(0, 160)}`).join("\n");
+  const binder = s.workspace ? workspaceDigest(s.workspace, lang) : "";
+  return binder ? `${quotes}\n\nFROM THE CONSULTANT'S BINDER:\n${binder}` : quotes;
+}
+
+router.post("/alignment/asis", async (req, res) => {
+  try {
+    const s = getSession(req.body?.sessionId, false);
+    const { answer } = req.body || {};
+    const lang = langOf(req);
+    const a = s.engagement.alignments.asis;
+    if (a.agreed)
+      return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "The client already signed off on your as-is diagnosis.", "客户已经认可了你的现状诊断。") });
+    if (!s.flags.metSupervisor)
+      return res.status(403).json({ error: TT(lang, "Get your mandate from Manager Lin first.", "请先向林经理领取任务。") });
+    const n = interviewedCount(s);
+    if (n < ASIS_MIN_INTERVIEWS) {
+      return res.status(403).json({ error: TT(lang,
+        `Diagnose before you align — interview at least ${ASIS_MIN_INTERVIEWS} executives first (you're at ${n}).`,
+        `先诊断再对齐——至少访谈${ASIS_MIN_INTERVIEWS}位高管（你目前${n}位）。`) });
+    }
+    if (typeof answer !== "string" || !answer.trim() || answer.length > 4000)
+      return res.status(400).json({ error: "Answer must be 1–4000 characters" });
+
+    const { agreed, feedback } = await gradeAlignment({ kind: "asis", answer, evidence: alignmentEvidence(s, lang), lang });
+    a.attempts += 1;
+    a.lastFeedback = feedback;
+    const delta = agreed ? 25 : 0;
+    if (agreed) {
+      a.agreed = true;
+      addCredibility(s, delta, TT(lang, "As-Is alignment agreed", "现状对齐达成"));
+    }
+    addQuestEntry(s, "task",
+      TT(lang, agreed ? "As-Is Alignment agreed" : "As-Is Alignment — revise", agreed ? "现状对齐达成" : "现状对齐 — 需修改"),
+      TT(lang, "Your diagnosis: ", "你的诊断：") + answer.slice(0, 280) + "\n" + TT(lang, "Client: ", "客户：") + feedback);
+    touch(s);
+    res.json({ ...publicState(s), result: agreed ? "agreed" : "revise", feedback, delta });
+  } catch (err) {
+    console.error("[alignment asis]", err.message, err.detail || "");
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+router.post("/alignment/benchmark", async (req, res) => {
+  try {
+    const s = getSession(req.body?.sessionId, false);
+    const { answer } = req.body || {};
+    const lang = langOf(req);
+    const b = s.engagement.alignments.benchmark;
+    if (b.agreed)
+      return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "The client already agreed the benchmark priorities.", "客户已经认可了对标优先事项。") });
+    if (!s.engagement.alignments.asis.agreed) {
+      return res.status(403).json({ error: TT(lang,
+        "Benchmark after the as-is is agreed — settle the As-Is Alignment Meeting first.",
+        "对标要在现状对齐之后——请先完成现状对齐会。") });
+    }
+    if (typeof answer !== "string" || !answer.trim() || answer.length > 4000)
+      return res.status(400).json({ error: "Answer must be 1–4000 characters" });
+
+    const { agreed, feedback } = await gradeAlignment({ kind: "benchmark", answer, evidence: alignmentEvidence(s, lang), lang });
+    b.attempts += 1;
+    b.lastFeedback = feedback;
+    const delta = agreed ? 25 : 0;
+    if (agreed) {
+      b.agreed = true;
+      addCredibility(s, delta, TT(lang, "Benchmark alignment agreed", "对标对齐达成"));
+    }
+    addQuestEntry(s, "task",
+      TT(lang, agreed ? "Benchmark Alignment agreed" : "Benchmark Alignment — revise", agreed ? "对标对齐达成" : "对标对齐 — 需修改"),
+      TT(lang, "Your benchmark: ", "你的对标：") + answer.slice(0, 280) + "\n" + TT(lang, "Client: ", "客户：") + feedback);
+    touch(s);
+    res.json({ ...publicState(s), result: agreed ? "agreed" : "revise", feedback, delta });
+  } catch (err) {
+    console.error("[alignment benchmark]", err.message, err.detail || "");
     res.status(err.status || 500).json({ error: err.message });
   }
 });
@@ -760,6 +1139,11 @@ router.post("/interim", async (req, res) => {
     const lang = langOf(req);
     if (s.flags.interimDone)
       return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "You've already given your interim readout.", "你已经做过中期汇报了。") });
+    if (!s.engagement.alignments.benchmark.agreed) {
+      return res.status(403).json({ error: TT(lang,
+        "The interim readout comes after benchmarking is aligned — settle the Benchmark Alignment Meeting with Lin first.",
+        "中期汇报要在对标对齐之后——请先和林经理完成对标对齐会。") });
+    }
     const n = interviewedCount(s);
     if (n < 3) {
       return res.status(403).json({ error: TT(lang,

@@ -1,617 +1,3398 @@
 {
-  "_readme": "Master RAG source. Each chunk = one approved Q&A pair (or tight fact cluster). `personas` lists which persona stores receive the chunk (a chunk may live in several stores; stores remain isolated at retrieval time). answer_zh is verbatim from the approved documents. Edit this file and re-run `npm run ingest` — no code changes needed.",
-  "chunks": [
-    {
-      "id": "diag-01-revenue-decline",
-      "personas": [
-        "ceo",
-        "cfo"
-      ],
-      "keywords": [
-        "revenue decline structural",
-        "Greater China falling sales",
-        "收入下滑 结构性"
-      ],
-      "question_zh": "为什么耐克大中华区收入近年持续下滑，且下滑趋势并非单一季度的偶然波动？",
-      "question_en": "Why has Nike Greater China revenue kept declining in recent years, and why is this structural rather than a one-quarter blip?",
-      "answer_zh": "耐克大中华区收入从FY2023约72.5亿降至FY2025约65.9亿美元，降幅13%，近三季较五年前累计下滑28%。根源：①本土品牌安踏、李宁等占据约28%份额，安踏2025上半年营收385.4亿元，李宁148.2亿元，特步在马拉松\"破3\"穿着率超耐克。②DTC\"削藩\"缩减经销商，库存积压倒逼5-7折促销，溢价失效，下沉渠道断崖。③消费降级下国潮崛起，Z世代重舒适与本土认同，耐克\"竞技叙事\"脱节，海外细分品牌分流客群。"
-    },
-    {
-      "id": "diag-02-bci-lasting",
-      "personas": [
-        "cmo",
-        "ceo"
-      ],
-      "keywords": [
-        "BCI Xinjiang cotton brand damage boycott",
-        "新疆棉 品牌受损 抵制 好感度"
-      ],
-      "question_zh": "为什么2021年的新疆棉/BCI事件对耐克品牌形象的负面影响会延续至今？",
-      "question_en": "Why has the negative impact of the 2021 Xinjiang cotton / BCI incident on Nike's brand image persisted to this day?",
-      "answer_zh": "新疆棉事件影响延续至今：①耐克2020年要求供应商禁用新疆棉，引爆全网抵制，代言人解约，天猫销量跌59%，好感度从75%骤降至42%，形成不可逆情感裂痕。②耐克未正式致歉或明确采购新疆棉，仅下架声明，被指傲慢双标，中国区无自主补偿权。③安踏、李宁借机绑定新疆棉与国家荣誉，承接大量流失用户，00后成长于事件后，原生倾向国货，耐克失去新客培育窗口。④后续营销品控争议不断，反复唤醒负面记忆，口碑修复无期。"
-    },
-    {
-      "id": "diag-03-quality-complaints",
-      "personas": [
-        "coo",
-        "cpo"
-      ],
-      "keywords": [
-        "product quality complaints Vietnam Indonesia defects",
-        "质量投诉 做工 越南 印尼 瑕疵"
-      ],
-      "question_zh": "为什么近年市场上关于耐克产品质量与做工问题的投诉和讨论明显增多？",
-      "question_en": "Why have complaints and discussion about Nike product quality and workmanship visibly increased in recent years?",
-      "answer_zh": "质量投诉增多原因：①产能超70%迁至越南、印尼，配套不熟、工人熟练度低，鞋标错位、溢胶等瑕疵频发，热门复刻款集中爆发。②国内高仿产业链成熟，假货混淆正品，消费者误将假货瑕疵归咎品牌，甚至鉴定平台称正品做工不及高仿。③社交媒体（小红书、抖音）放大单例瑕疵，形成\"质量问题变多\"感知。④产品创新乏力，高价低配，对比国货性价比，消费者容忍度下降。⑤售后质保短、退换繁琐，维权失败经历进一步扩散负面。"
-    },
-    {
-      "id": "diag-04-quarterly-drops",
-      "personas": [
-        "cfo",
-        "ceo"
-      ],
-      "keywords": [
-        "Q4 FY2025 21% decline quarterly tariffs",
-        "季度下滑 21% 17% 关税 库存"
-      ],
-      "question_zh": "为什么2025财年第四季度及2026年最新季度大中华区收入分别出现约21%和17%的大幅下滑？",
-      "question_en": "Why did Greater China revenue fall roughly 21% in Q4 FY2025 and about 17% in the latest FY2026 quarter?",
-      "answer_zh": "2025财年Q4下滑21%（鞋类-20%，服装-19%）：高库存迫使折扣清仓，批发-24%、DTC-15%、电商-31%；关税新增约10亿美元成本；客流双位数下滑，动销不足。2026财年Q2下滑17%，利润近腰斩：国货市占挤压（安踏21.8% vs 耐克14.6%），DTC直营-18%、数字-36%；消费理性化，品牌口碑因新疆棉等受损。共同根源：供需错配、外部关税、国货替代、需求长期走弱，管理层定性为结构性长期问题。"
-    },
-    {
-      "id": "diag-05-guochao",
-      "personas": [
-        "cmo",
-        "cpo",
-        "cto"
-      ],
-      "keywords": [
-        "guochao national trend Gen Z local brands appeal",
-        "国潮 Z世代 文化自信 年轻消费者"
-      ],
-      "question_zh": "为什么\"国潮\"消费浪潮会持续削弱耐克这类国际品牌在年轻消费者中的吸引力？",
-      "question_en": "Why does the 'guochao' (national trend) consumption wave keep eroding international brands' appeal — Nike's included — among young consumers?",
-      "answer_zh": "①Z世代文化自信，消费从\"品牌崇拜\"转向\"价值认同\"，本土品牌文化叙事自然（非遗、生肖、奥运），耐克国风浅层堆砌元素，违和感强。②新疆棉事件后耐克好感度75%跌至42%，未诚恳道歉，国货绑定本土情感。③国货产品力持平且定价更低，性价比优势。④耐克数字运营依赖海外APP，脱离抖音、小红书等主流场景，全球决策滞后，无法快速响应国潮热点，年轻客流持续被分流。"
-    },
-    {
-      "id": "diag-06-running-innovation",
-      "personas": [
-        "cpo"
-      ],
-      "keywords": [
-        "running innovation behind Hoka On Vaporfly",
-        "跑步 创新 落后 Hoka 昂跑 跑鞋"
-      ],
-      "question_zh": "为什么耐克在跑步这一核心品类的产品创新速度会落后于Hoka、On等新兴品牌？",
-      "question_en": "Why has Nike's product innovation pace in running — a core category — fallen behind emerging brands like Hoka and On?",
-      "answer_zh": "跑步创新落后Hoka/On原因：①资源倾斜潮流复刻（AF1、Dunk），挤压跑鞋研发，Vaporfly多年小改，无突破性技术。②CEO承认远程办公2.5年削弱研发协同，实物试错效率下降。③组织架构将跑步团队并入大众品类，丢失垂直深耕能力；Hoka、On全公司聚焦跑步，创始团队懂跑者痛点。④竞品精准切分越野、长距离、都市慢跑，厚底、镂空等差异化明显；耐克走\"万金油\"均衡路线，缺乏记忆点。⑤产能迁东南亚拖慢新品落地。"
-    },
-    {
-      "id": "diag-07-macro",
-      "personas": [
-        "cfo",
-        "ceo"
-      ],
-      "keywords": [
-        "macro slowdown consumption downgrade price sensitivity",
-        "宏观 消费降级 性价比 下沉"
-      ],
-      "question_zh": "为什么中国宏观经济放缓和消费降级会进一步加剧耐克在华业绩的下滑幅度？",
-      "question_en": "Why do China's macro slowdown and consumption downgrade amplify Nike's performance decline in China?",
-      "answer_zh": "宏观放缓和消费降级加剧下滑：①可选消费整体收缩，耐克溢价群体削减开支。②性价比劣势放大，安踏、李宁同性能定价仅一半，耐克中端价格带空白被国货填补。③缺乏本土爆款，新品缺乏吸引力，只能打折，正价销售停滞。④长期折扣固化\"不打折不买\"，毛利率大幅下滑，营收利润双杀。⑤DTC后遗症致下沉门店空白，而安踏、李宁覆盖县域，丢失增量市场。⑥叠加口碑、品控、创新等多重问题，修复周期远长于本土对手。"
-    },
-    {
-      "id": "diag-08-discount-spiral",
-      "personas": [
-        "cfo",
-        "cmo"
-      ],
-      "keywords": [
-        "discounting hurts premium margin spiral",
-        "折扣 促销 品牌溢价 毛利率 恶性循环"
-      ],
-      "question_zh": "为什么耐克为消化库存积压而采取的大幅折扣促销，反而会进一步损害其品牌溢价和长期盈利能力？",
-      "question_en": "Why does Nike's deep discounting to clear inventory further damage its brand premium and long-term profitability?",
-      "answer_zh": "折扣促销损害品牌溢价和长期盈利：①短期毛利率大幅下滑，2025Q4毛利率降440基点至40.3%，净利润暴跌86%，库存减值损失持续。②长期稀缺形象崩塌，AJ、Dunk不再有溢价，消费者形成\"不打折绝不买\"预期，正价销售周期缩短。③直营与批发价差内卷，经销商利润压缩，减少陈列，货架被竞品替代，渠道信任修复需让利。④盈利收缩压缩研发营销预算，新品创新受限，形成恶性循环。⑤低价认知固化，消费者转向控价稳定的国货，市场份额永久性流失。"
-    },
-    {
-      "id": "diag-09-anta-lining-erosion",
-      "personas": [
-        "ceo",
-        "cmo",
-        "cpo"
-      ],
-      "keywords": [
-        "Anta Li-Ning erosion market leadership local brands",
-        "安踏 李宁 侵蚀 领先地位 多品牌"
-      ],
-      "question_zh": "为什么本土品牌安踏、李宁能够快速侵蚀耐克在中国运动鞋服市场的领先地位？",
-      "question_en": "Why have local brands Anta and Li-Ning been able to erode Nike's leadership of China's sportswear market so quickly?",
-      "answer_zh": "安踏、李宁侵蚀耐克地位原因：①多品牌分层（FILA、始祖鸟等）覆盖全价格带，耐克单品牌难兼顾。②持续研发，氮科技、䨻科技对标ZoomX，碳板跑鞋售价仅耐克一半，迭代更快。③国潮文化叙事绑定奥运、非遗，天然引发共鸣，新疆棉后承接流失客流。④本土供应链快反，深度适配抖音、小红书等，下沉渠道全覆盖。⑤耐克本土化自主权弱，长期依赖折扣，缺乏多品牌布局，份额持续被蚕食。"
-    },
-    {
-      "id": "diag-10-dtc-failure",
-      "personas": [
-        "coo",
-        "cfo",
-        "cto"
-      ],
-      "keywords": [
-        "DTC strategy acceleration failure wholesale cuts dealers",
-        "DTC 直营 削藩 批发 经销商 滔搏"
-      ],
-      "question_zh": "为什么耐克此前力推的DTC（消费者直营）战略\"加速\"反而导致其市场份额和渠道优势双双流失？",
-      "question_en": "Why did Nike's aggressive DTC (direct-to-consumer) acceleration end up costing it both market share and channel advantage?",
-      "answer_zh": "DTC战略失误原因：①战略重心偏渠道数字化，压缩产品研发，新品依赖复刻，竞争力弱化。②激进削减批发配额，滔搏等经销商减少陈列，下沉市场覆盖不足36%，库存失去\"蓄水池\"，滞销全积压自营。③直营长期低价与批发价冲突，经销商利润挤压，推广意愿丧失。④数字渠道增速转负，2025Q4数字营收跌26%，且脱离抖音、天猫等本土生态。⑤管理层公开承认过度倾斜直营，已回调渠道策略，但修复需3-5年。"
-    },
-    {
-      "id": "comp-01-anta-overall",
-      "personas": [
-        "cfo",
-        "ceo"
-      ],
-      "keywords": [
-        "Anta 2025 revenue growth gap versus Nike China",
-        "安踏 2025 营收 802亿 增速 差距"
-      ],
-      "question_zh": "安踏集团2025年整体营收和增速是多少？与Nike中国的差距有多大？",
-      "question_en": "What were Anta Group's 2025 revenue and growth, and how large is the gap versus Nike China?",
-      "answer_zh": "安踏集团2025年营收802亿元，同比增长13.3%，市场份额21.8%，连续四年位居中国运动鞋服行业第一。Nike大中华区2025年营收约478亿人民币，同比下滑13%。安踏体量已远超Nike中国，且增速方向完全相反——安踏在扩大领先优势，Nike在加速失血。"
-    },
-    {
-      "id": "comp-02-anta-brands",
-      "personas": [
-        "cmo",
-        "cpo",
-        "ceo"
-      ],
-      "keywords": [
-        "Anta brand tiers FILA Descente Kolon performance",
-        "安踏主品牌 FILA 迪桑特 可隆 表现"
-      ],
-      "question_zh": "安踏主品牌、FILA、迪桑特和可隆的各自表现如何？哪个增长最快？",
-      "question_en": "How are Anta's main brand, FILA, Descente, and Kolon each performing, and which is growing fastest?",
-      "answer_zh": "安踏主品牌347.5亿元（+3.7%），FILA 284.7亿元（+6.9%），迪桑特流水破100亿（+35%），可隆流水破60亿（+70%）。三大梯队覆盖大众、高端时尚、专业户外三个价格带，没有互相打架，各有增长。可隆徒步鞋、越野跑鞋同比增长超140%；安踏研发投入约22亿元，构建全品类研发能力。"
-    },
-    {
-      "id": "comp-03-anta-threat-tier",
-      "personas": [
-        "ceo",
-        "cpo"
-      ],
-      "keywords": [
-        "which Anta tier threatens Nike most premium outdoor",
-        "安踏 梯队 威胁 高端户外 迪桑特 可隆"
-      ],
-      "question_zh": "安踏多品牌矩阵中，哪个梯队对Nike的威胁最大？",
-      "question_en": "Within Anta's multi-brand matrix, which tier poses the biggest threat to Nike?",
-      "answer_zh": "迪桑特和可隆所在的高端户外梯队对Nike威胁最直接——增速分别达35%和70%，直接切割Nike在专业运动场景中的份额。FILA和安踏主品牌主打大众和时尚，与Nike正面竞争强度已在降低，因为价格带和客群出现分化。Nike用单一品牌同时应对三层品牌，防守压力极大。"
-    },
-    {
-      "id": "comp-04-amer-margin",
-      "personas": [
-        "cfo"
-      ],
-      "keywords": [
-        "Amer Sports 58% gross margin why higher than Nike",
-        "Amer 毛利率 58% 始祖鸟 萨洛蒙 定价"
-      ],
-      "question_zh": "Amer Sports毛利率高达58%，远高于Nike的42.7%，原因是什么？",
-      "question_en": "Amer Sports' gross margin is 58%, far above Nike's 42.7% — why?",
-      "answer_zh": "Amer核心品牌始祖鸟、萨洛蒙定位高端专业户外，定价能力极强；DTC占比高，渠道利润自留比例大；产品结构聚焦高单价品类。Nike渠道折扣频繁，正价销售能力被持续削弱。"
-    },
-    {
-      "id": "comp-05-adidas-gap",
-      "personas": [
-        "ceo",
-        "cfo",
-        "cmo"
-      ],
-      "keywords": [
-        "Adidas Nike China gap narrowing recovery 11 quarters",
-        "阿迪达斯 差距 收窄 连续11个季度 复苏"
-      ],
-      "question_zh": "Adidas和Nike在中国市场的差距是如何变化的？",
-      "question_en": "How has the gap between Adidas and Nike in the China market been changing?",
-      "answer_zh": "2024年两者大中华区营收差距约200亿人民币（Nike约478亿 vs Adidas约290亿），2025年差距收窄至约188亿。Nike下滑11%的同时，Adidas增长13%，一来一回差距缩小了12亿元。Adidas大中华区2025年营收36.2亿欧元，连续11个季度增长，毛利率提升至52.6%，经营利润率22.1%。Adidas证明：产品创新+减少折扣+本土化运营，可以把失去的份额重新抢回来。"
-    },
-    {
-      "id": "comp-06-anta-structural",
-      "personas": [
-        "ceo",
-        "cpo"
-      ],
-      "keywords": [
-        "Anta multi-brand structural threat price bands single brand",
-        "安踏 多品牌 结构性威胁 价格带 单品牌"
-      ],
-      "question_zh": "安踏的多品牌战略对Nike构成了怎样的结构性威胁？",
-      "question_en": "What structural threat does Anta's multi-brand strategy pose to Nike?",
-      "answer_zh": "安踏用三层品牌覆盖三个价格带和消费场景——主品牌守大众（300-600元），FILA守高端时尚（800-1500元），迪桑特/可隆抢专业户外（1500-3000元+）。三层品牌共用供应链和渠道基础设施，成本端有规模效应，收入端覆盖了从日常运动到专业户外的全场景。Nike以单一品牌同时防守三条线，每条线都在被动应战，而中国消费者对\"专业化\"和\"场景化\"的需求正在加速分化。"
-    },
-    {
-      "id": "comp-07-amer-sustainable",
-      "personas": [
-        "ceo",
-        "cpo"
-      ],
-      "keywords": [
-        "Amer Sports growth sustainable Arc'teryx Salomon trend",
-        "Amer 增长 可持续 始祖鸟 萨洛蒙 户外"
-      ],
-      "question_zh": "Amer Sports的高速增长是否可持续？对Nike意味着什么？",
-      "question_en": "Is Amer Sports' rapid growth sustainable, and what does it mean for Nike?",
-      "answer_zh": "Amer 2025年增速27%，但母公司在2024年经历了大规模重组和盈利基数极低（归母净利润仅7200万美元）。2026年面临高基数压力，增速大概率回落。但更值得Nike警惕的是趋势而非增速数字——始祖鸟代表的\"专业户外高端化\"和萨洛蒙代表的\"越野跑/徒步场景化\"，切中的是Nike长期布局薄弱但消费者需求高速增长的赛道。Amer大中华区2025年营收18.6亿美元，同比+43.4%，全年净新增近100家门店，年底达286家。"
-    },
-    {
-      "id": "comp-08-four-front",
-      "personas": [
-        "ceo",
-        "cmo"
-      ],
-      "keywords": [
-        "competitive landscape besieged four fronts segmentation",
-        "竞争格局 四面夹击 细分 场景"
-      ],
-      "question_zh": "Nike目前在中国市场的整体竞争格局是怎样的？主要对手各自占据什么位置？",
-      "question_en": "What does Nike's overall competitive landscape in China look like, and where does each main rival sit?",
-      "answer_zh": "Nike中国业务正被四面夹击：高端户外场景被始祖鸟、萨洛蒙切割，专业跑步场景被昂跑、Hoka切割，大众市场被安踏主品牌和李宁切割，时尚休闲场景被FILA和Adidas Originals切割。安踏：大众+高端时尚+专业户外全价格带覆盖；Amer Sports：高端专业户外；Adidas：时尚运动+专业跑步，直追Nike；李宁：专业篮球+专业跑步，国货专业代表。每个细分赛道都有一个专注的品牌在跟Nike打，而Nike用单一品牌同时防守所有阵地——资源分散，每条线都在被动应战。对手的增速说明市场需求没有萎缩，萎缩的是Nike在中国消费者心智中的位置。"
-    },
-    {
-      "id": "strat-01-core-cause",
-      "personas": [
-        "ceo"
-      ],
-      "keywords": [
-        "eight quarters decline core reasons channel product brand",
-        "连续八个季度 下滑 核心原因"
-      ],
-      "question_zh": "Nike大中华区连续八个季度下滑，最核心的原因是什么？",
-      "question_en": "Nike Greater China has declined for eight straight quarters — what is the core reason?",
-      "answer_zh": "三个原因叠加：①渠道上过度DTC挤压了批发商，把滔搏、宝胜推向竞品；②产品上过度依赖AJ1、Dunk、Air Force 1换配色，缺乏真正的创新爆款；③品牌定位上在\"专业运动\"和\"潮流时尚\"之间摇摆，结果两头都没守住。Adidas做对了这三件事的反面。"
-    },
-    {
-      "id": "strat-02-opportunity",
-      "personas": [
-        "ceo",
-        "cpo",
-        "cmo"
-      ],
-      "keywords": [
-        "biggest opportunity running women's sport outdoor growth",
-        "最大机会 跑步 女性运动 户外增长"
-      ],
-      "question_zh": "Nike在中国市场最大的机会在哪？",
-      "question_en": "Where is Nike's biggest opportunity in the China market?",
-      "answer_zh": "跑步赛道和女性运动。2025年中国户外用品销售额同比增长22%，跑步鞋服是其中最大的子品类。Nike跑步业务2025年仅有中个位数增长，远远跑输行业大盘。李宁跑步流水占比已从16%升至31%。这个赛道的空间远未被Nike充分挖掘。"
-    },
-    {
-      "id": "strat-03-dtc-vs-wholesale",
-      "personas": [
-        "coo",
-        "ceo",
-        "cfo",
-        "cto"
-      ],
-      "keywords": [
-        "DTC or wholesale channel strategy dual engine",
-        "DTC 批发 渠道战略 双轮驱动"
-      ],
-      "question_zh": "Nike应该继续坚持DTC战略，还是重新拥抱批发渠道？",
-      "question_en": "Should Nike keep pushing DTC, or re-embrace the wholesale channel?",
-      "answer_zh": "2026财年Q4数据已经说明问题——批发渠道营收66亿美元（+4%），直营41亿美元（-7%）。市场已经帮Nike做了选择。建议方向：直营和批发双轮驱动，直营做品牌体验和会员运营，批发做规模覆盖和市场份额。但核心挑战在于如何在恢复批发合作的同时不重复过去的渠道冲突——这需要Nike用数据工具和AI Agent去精准管理渠道定价和库存分配。"
-    },
-    {
-      "id": "strat-04-category-priority",
-      "personas": [
-        "cpo"
-      ],
-      "keywords": [
-        "which category to prioritize product innovation running basketball",
-        "优先品类 创新 跑步 篮球"
-      ],
-      "question_zh": "Nike产品创新应该优先发力哪个品类？为什么？",
-      "question_en": "Which category should Nike's product innovation prioritize, and why?",
-      "answer_zh": "跑步品类。理由：①市场空间最大——中国运动鞋服行业年增速7%+，跑步是最大子品类；②竞品已领先但差距并未拉开——昂跑、Hoka体量尚小，Nike有品牌势能基础；③李宁已验证跑步是翻盘利器——跑步流水占比从16%升至31%，直接拉动整体增长。篮球品类Nike仍领先但市场空间已经饱和，时尚潮流品类竞争过于拥挤且利润薄，跑步是唯一既有规模增长空间又能发挥Nike专业运动基因的赛道。"
-    },
-    {
-      "id": "strat-05-repositioning",
-      "personas": [
-        "cmo",
-        "ceo"
-      ],
-      "keywords": [
-        "brand positioning adjust professional sport authority",
-        "品牌定位 调整 专业运动 折扣潮流"
-      ],
-      "question_zh": "Nike在中国的品牌定位应该调整吗？怎么调？",
-      "question_en": "Should Nike adjust its brand positioning in China, and how?",
-      "answer_zh": "应该调整。过去几年Nike在中国消费者心智中从\"专业运动品牌\"滑向\"打折潮流品牌\"，定位模糊是营收下滑的深层原因。调整方向：回归\"专业运动权威\"——参照Adidas复苏路径，通过减少折扣、强化跑步/篮球专业内容、签约本土运动IP三件事重建品牌壁垒。潮流属性不放弃，但应作为副产品而非战略主线。"
-    },
-    {
-      "id": "strat-06-single-brand",
-      "personas": [
-        "ceo",
-        "cpo"
-      ],
-      "keywords": [
-        "single brand model failed multi-brand scene layering",
-        "单品牌 失效 多品牌 场景分层"
-      ],
-      "question_zh": "安踏多品牌战略是否意味着Nike的单品牌模式在中国已经失效？",
-      "question_en": "Does Anta's multi-brand strategy mean Nike's single-brand model has failed in China?",
-      "answer_zh": "不意味着失效，但意味着Nike需要更精准的场景分层运营。安踏用三个独立品牌覆盖不同人群，避免了单一品牌形象稀释。Nike只有一个品牌，但可以通过产品系列差异化（如：跑步线主打专业、AJ线主打潮流、基础款主打性价比）实现类似效果，前提是各条产品线在渠道陈列、营销话术和目标人群上做到足够清晰的分层。核心挑战是如何在不同场景和价格带之间保持主品牌调性一致，避免\"既要高端又要走量\"的自我矛盾。"
-    },
-    {
-      "id": "strat-07-running-moves",
-      "personas": [
-        "cpo",
-        "cmo"
-      ],
-      "keywords": [
-        "three key moves running compete Anta Hoka On",
-        "跑步赛道 三个动作 本土跑鞋 马拉松 体验中心"
-      ],
-      "question_zh": "如果Nike要在跑步赛道和安踏/Hoka/昂跑竞争，最关键的3个动作是什么？",
-      "question_en": "If Nike is to compete with Anta/Hoka/On in running, what are the three most critical moves?",
-      "answer_zh": "①产品端：在中国市场投放1-2款本土专属跑鞋（类似Adidas的\"中国限定\"策略），而非简单把全球款拿来卖；②营销端：签约中国本土马拉松顶尖选手和跑圈KOL，建立专业可信度，而非依赖全球体育巨星代言；③渠道端：在一线城市开设跑步体验中心（可借鉴昂跑的社群运营模式），把\"卖鞋\"升级为\"卖跑步服务\"——脚型测试、跑姿分析、训练课程，建立竞争壁垒。"
-    },
-    {
-      "id": "strat-08-amer-response",
-      "personas": [
-        "ceo",
-        "cpo"
-      ],
-      "keywords": [
-        "respond Amer premium outdoor ACG acquisition",
-        "应对 Amer 高端户外 ACG 收购"
-      ],
-      "question_zh": "Nike如何应对Amer Sports在高端户外场景的切割？",
-      "question_en": "How should Nike respond to Amer Sports carving up the premium outdoor scene?",
-      "answer_zh": "两个选择：①自主研发高端户外产品线，但时间成本高、品牌认知从零建立难度大；②收购一个高端户外品牌（类似安踏收购始祖鸟），直接获取品牌资产和产品技术。考虑到Nike历史上收购整合能力较弱（参考Umbro、Converse的整合效果），更现实的路径是：聚焦\"运动户外\"而非\"纯户外\"——用Nike ACG系列打轻户外/城市户外场景，避开始祖鸟擅长的硬核登山、攀岩等专业性极强且需要深厚技术积累的细分领域。这个策略不追求在专业户外领域战胜Amer，而是在城市户外这个市场规模更大的场景中巩固Nike的护城河。"
-    },
-    {
-      "id": "strat-09-tariff",
-      "personas": [
-        "cfo",
-        "coo"
-      ],
-      "keywords": [
-        "tariffs 1 billion cost raise prices or relocate production",
-        "关税 10亿美元 提价 转移生产"
-      ],
-      "question_zh": "关税每年给Nike带来约10亿美元成本压力，Nike应该提价还是转移生产？",
-      "question_en": "Tariffs add roughly $1B in annual cost pressure — should Nike raise prices or relocate production?",
-      "answer_zh": "提价会进一步压低销量——Nike需求价格弹性本就偏高（频繁打折已损害定价权），在竞争激烈的中国市场提价风险极大。转移生产至东南亚以外的地区（如印度、墨西哥）需要3-5年时间和大量资本投入，短期内无法缓解。更可行的方案是：①优化产品组合，提高高毛利品类（如跑步碳板鞋、功能性服饰）占比，通过结构升级对冲关税成本；②在不降低售价的前提下，将跑鞋等走量品类保留在现有供应链，高端品类逐步向低关税地区转移，分品类差异化应对而非一刀切。"
-    },
-    {
-      "id": "exec-01-channel-structure",
-      "personas": [
-        "coo"
-      ],
-      "keywords": [
-        "channel structure both channels shrinking dealer repair",
-        "渠道结构 双降 修复经销商"
-      ],
-      "question_zh": "目前渠道结构有什么倾向？",
-      "question_en": "What is the current tendency in Nike China's channel structure?",
-      "answer_zh": "中国区FY25批发和DTC双降超过12%（批发42.62亿→36.99亿美元，-13.2%；DTC 32.83亿→28.87亿美元，-12.1%），DTC并未替代批发，两条渠道同步萎缩。这说明修复经销商关系是中国区的紧急任务——从\"修复与滔搏、宝胜等关键经销商的关系\"可见经销商的重要性被重新认识；从\"大中华区决策权将向美国总部收缩\"，暗示货品等核心资源分配可能由总部主导。"
-    },
-    {
-      "id": "exec-02-autonomy",
-      "personas": [
-        "ceo",
-        "chro"
-      ],
-      "keywords": [
-        "regional autonomy shrinking HQ centralization repair relationships first",
-        "自主权 收缩 总部集权 先修复关系"
-      ],
-      "question_zh": "大中华区在执行层面有多大的自主权来修复受损的商务关系？期望先修复关系，还是优先打造销量与产品？",
-      "question_en": "How much executive autonomy does Greater China actually have to repair damaged business relationships — and is the path 'repair relationships first' or 'sales and product first'?",
-      "answer_zh": "自主权正在收缩：目前最清晰的信号是，大中华区的自主权正在被大幅压缩。新任大中华区负责人被视为\"总部派\"，其任命标志着\"未来大中华区的决策权将进一步向美国总部收缩，曾经引以为傲的'本地化自主权'将成为历史\"。总部试图用强硬的\"全球标准\"来改造中国市场。虽然组织架构上区域负责人可直接向CEO汇报，但这更多是为了确保总部战略落地，而非授予更多自主决策权。路径选择：先修复关系。新任CEO回归后，核心举措之一就是\"重新规划了优质产品的资源分配，提升了合作伙伴的盈利空间\"，并明确要修复与传统零售商的关系。这被视为\"Win Now\"计划从\"止血\"转向\"进攻\"的关键一步。全球范围内，批发渠道已出现回暖，2026财年Q1同比增长7%至68亿美元。这表明，耐克认为稳定的渠道关系是重塑销量与产品的基础。"
-    },
-    {
-      "id": "exec-03-product-customization",
-      "personas": [
-        "cpo",
-        "ceo"
-      ],
-      "keywords": [
-        "product customization approval process HQ collaboration projects",
-        "产品定制 快速补单 流程 联名企划"
-      ],
-      "question_zh": "大中华区团队向总部申请产品定制或快速补单的流程难度如何？是否能够利用联名企划、局部材料更换来快速审核？",
-      "question_en": "How hard is it for the Greater China team to get HQ approval for product customization or fast replenishment — and can collaboration projects or partial material swaps be fast-tracked?",
-      "answer_zh": "流程可能趋严，灵活性存疑：在总部集权、\"本地化自主权成为历史\"的大背景下，大中华区团队在产品层面的自主权预计也会受到限制。推行\"全球标准\"意味着产品决策可能更多由总部掌控。虽然有Nike By You这样的消费者定制服务，但这属于面向终端消费者的标准化服务，与内部团队为应对市场变化而发起的快速产品定制或补单是两回事。区域团队曾有成功案例：中国团队曾主动促成本土艺人成为NIKE和JORDAN的全球合作伙伴，说明大中华区团队在特定项目（如联名企划）上仍有主动提案并成功推动的能力。但在当前总部集权趋势下，这类需要快速审核的本地化动作能否保持同样的灵活性，存在较大不确定性。"
-    },
-    {
-      "id": "exec-04-discount-priority",
-      "personas": [
-        "cfo",
-        "coo"
-      ],
-      "keywords": [
-        "discount trend brand health versus GMV inventory sell-in",
-        "库存折扣 权重 品牌健康 成交总额 正价"
-      ],
-      "question_zh": "库存折扣的权重与趋势是怎样的？执行团队优先考核成交总额还是品牌健康？",
-      "question_en": "What are the weight and trend of inventory discounting, and does the execution team prioritize gross transaction value or brand health?",
-      "answer_zh": "趋向于保证价格。过去为了清理库存，耐克陷入了\"饮鸩止渴\"式的打折策略，但现在策略正在发生根本性转变。耐克正在采取\"更积极的库存sell-in管理策略\"来改善市场生态系统，即便这\"将持续对Nike大中华区收入表现构成明显负面影响\"。折扣力度正在缩减：CFO明确表示，在过去两个季度\"更激进地减少促销\"后，数字渠道全价实现率正在恢复。大中华区库存金额和件数均实现双位数下降，库存单位数同比骤降超20%。考核优先级：品牌健康优先于成交总额。CFO坦言：\"我们的品牌在消费者心中逐渐沦为折扣品牌……这一循环对大中华区的盈利能力造成了重大影响\"。因此耐克正在主动收缩供给、清理老旧库存，不惜以短期收入下滑为代价，也要夺回价格体系控制权。耐克毛利率FY24仅44.6%，比安踏低17.6个百分点，比阿迪达斯低5.0个百分点——毛利率是折扣力度的终极反映。"
-    },
-    {
-      "id": "exec-05-rapid-response",
-      "personas": [
-        "ceo",
-        "chro"
-      ],
-      "keywords": [
-        "rapid response plan versus strict HQ execution Win Now",
-        "快速响应 预案 严格执行 总部策略"
-      ],
-      "question_zh": "大中华区执行层在效果未达预期时，有没有一套快速响应预案？还是必须严格执行总部既定策略？",
-      "question_en": "When results fall short, does the Greater China execution layer have a rapid-response playbook — or must it strictly execute HQ's set strategy?",
-      "answer_zh": "现状是\"强执行\"而非\"快响应\"：大中华区FY25营收同比下降12.3%，是近四年的最低点（FY22 482.90亿→FY23 499.13亿→FY24 539.15亿→FY25 473.09亿人民币口径）。在业绩持续下滑的情况下，总部仍\"用全球标准改造中国市场\"，大中华区执行层的角色更偏向于\"严格执行总部既定策略\"。新任CEO在北美市场推行的\"Win Now\"战略（核心是\"回归运动\"）取得成功后，总部将这套\"成功公式\"复制到中国，包括强行切换组织架构，各品类负责人直接由总部空降。这种模式留给本地团队根据消费者反馈进行快速调整的空间有限。"
-    },
-    {
-      "id": "exec-06-execution-pain",
-      "personas": [
-        "chro",
-        "ceo",
-        "coo"
-      ],
-      "keywords": [
-        "execution pain points authority mismatch leadership churn positioning",
-        "落地执行 痛点 权责不匹配 人事变动 定位模糊"
-      ],
-      "question_zh": "耐克中国在落地执行方面的核心痛点有哪些？",
-      "question_en": "What are Nike China's core pain points at the execution level?",
-      "answer_zh": "①渠道策略反复摇摆，执行层面自相矛盾：DTC战略放弃了经销商网络在边缘城市的渗透能力，品牌方被迫自行消化库存；先打压后拉拢导致经销商关系受损，中国区批发FY25同比下降13.2%、DTC下降12.1%，两条渠道同步萎缩。②权责不匹配：大中华区负责人没有产品研发权和供应链自主权，无法针对中国消费者需求快速响应；总部统一政策使新品落地国内比国货晚。日本市场在同样的总部产品体系下实现增长（鞋类FY22→FY25增长25.5%，服装增长11.0%，而大中华区同期鞋类-0.4%、服装-6.4%），说明问题不是\"总部产品不行\"，而是\"中国市场未被差异化对待\"。③定位模糊，品牌溢价能力下降：过度依赖线上折扣影响高端定位，大中华区毛利率44.6%低于阿迪达斯49.6%和安踏62.2%。④高层人事频繁变动，战略执行缺乏持续性。⑤产品创新力不足，本土缺乏研发：国产品牌科技持续迭代时，耐克常年老款换配色复刻，产品版型遭消费者诟病，缺乏本土化开发。核心矛盾：战略方向已明确（回归运动、修复渠道、控折扣、提创新），但执行落地面临多重阻力。"
-    },
-    {
-      "id": "fin-01-five-year-table",
-      "personas": [
-        "cfo"
-      ],
-      "keywords": [
-        "five year Greater China revenue EBIT margin table FY2020 FY2025",
-        "五年 大中华区 收入 EBIT 毛利率"
-      ],
-      "question_zh": "耐克大中华区近五年（FY2020-FY2025）的收入、EBIT和毛利率是怎样的？",
-      "question_en": "What do Nike Greater China's revenue, EBIT, and gross margin look like over the last five years (FY2020–FY2025)?",
-      "answer_zh": "大中华区五年财务快照（收入/同比[货币中性]/EBIT/EBIT率/毛利率）：FY2025：65.86亿美元 / -12% / 16.02亿 / 24.3% / 46.0%；FY2024：75.45亿 / +8% / 23.09亿 / 30.6% / 50.2%；FY2023：72.48亿 / +4% / 22.83亿 / 31.5% / 51.0%；FY2022：75.47亿 / -13% / 23.65亿 / 31.3% / 约49.6%（推算）；FY2021：82.90亿 / +19% / 32.43亿 / 39.1% / 约53.5%（推算）；FY2020：66.79亿 / +11% / 24.90亿 / 37.3% / 55.5%。收入在FY2021见顶，FY2023-24修复，FY2025再度下滑。注意：耐克不单独披露大中华区净利润与库存，以EBIT为分部盈利指标；公司整体库存FY2025为75亿美元，仅作背景。",
-      "answer_en": "Greater China five-year snapshot (Revenue / currency-neutral growth / EBIT / EBIT-margin proxy / gross margin): FY2025: $6,586M / -12% / $1,602M / 24.3% / 46.0%. FY2024: $7,545M / +8% / $2,309M / 30.6% / 50.2%. FY2023: $7,248M / +4% / $2,283M / 31.5% / 51.0%. FY2022: $7,547M / -13% / $2,365M / 31.3% / ~49.6% (derived). FY2021: $8,290M / +19% / $3,243M / 39.1% / ~53.5% (derived). FY2020: $6,679M / +11% / $2,490M / 37.3% / 55.5%. Revenue peaked in FY2021, recovered in FY2023–24, then fell again in FY2025. Nike does not disclose Greater China net profit or inventory as standalone segment metrics — EBIT is the profitability measure; company-level inventory ($7.5B in FY2025) is context only."
-    },
-    {
-      "id": "fin-02-channel-product-revenue",
-      "personas": [
-        "cfo",
-        "coo",
-        "cpo"
-      ],
-      "keywords": [
-        "channel split wholesale NIKE Direct footwear apparel revenue by year",
-        "渠道 批发 自营 鞋类 服装 收入"
-      ],
-      "question_zh": "耐克大中华区分渠道（批发/自营）和分产品（鞋类/服装/装备）的收入是怎样的？",
-      "question_en": "How does Nike Greater China revenue break down by channel (wholesale / NIKE Direct) and by product (footwear / apparel / equipment)?",
-      "answer_zh": "分渠道（批发/自营，百万美元）：FY2025：3,699/2,887；FY2024：4,262/3,283；FY2023：3,866/3,382；FY2022：4,081/3,466；FY2021：4,513/3,777；FY2020：3,803/2,876。分产品（鞋类/服装/装备）：FY2025：4,805/1,616/165；FY2024：5,552/1,828/165；FY2023：5,435/1,666/147；FY2022：5,416/1,938/193；FY2021：5,748/2,347/195；FY2020：4,635/1,896/148。FY2025批发-13%、自营-12%、数字-22%、门店-6%、可比门店-7%；毛利率收缩420个基点，主因汇率不利与库存跌价准备增加。",
-      "answer_en": "By channel (Wholesale / NIKE Direct, $M): FY2025: 3,699 / 2,887; FY2024: 4,262 / 3,283; FY2023: 3,866 / 3,382; FY2022: 4,081 / 3,466; FY2021: 4,513 / 3,777; FY2020: 3,803 / 2,876. By product (Footwear / Apparel / Equipment, $M): FY2025: 4,805 / 1,616 / 165; FY2024: 5,552 / 1,828 / 165; FY2023: 5,435 / 1,666 / 147; FY2022: 5,416 / 1,938 / 193; FY2021: 5,748 / 2,347 / 195; FY2020: 4,635 / 1,896 / 148. In FY2025: wholesale -13%, NIKE Direct -12%, digital -22%, stores -6%, comparable stores -7%; gross margin contracted 420bps, primarily unfavorable FX and higher inventory obsolescence reserves."
-    },
-    {
-      "id": "fin-03-year-notes",
-      "personas": [
-        "cfo",
-        "coo",
-        "cto"
-      ],
-      "keywords": [
-        "year by year what happened COVID recovery turnaround digital",
-        "逐年 疫情 复苏 数字化 变化"
-      ],
-      "question_zh": "过去六个财年耐克大中华区每年分别发生了什么？",
-      "question_en": "What happened in Nike Greater China in each of the past six fiscal years?",
-      "answer_zh": "FY2025：中国再度走弱——批发-13%、自营-12%、数字-22%、门店-6%、可比门店-7%、毛利率-420bps，属于整固转型之年。FY2024：改善但数字仍弱——收入货币中性+8%、批发+15%、自营+1%、可比门店+1%、数字-8%、毛利率-80bps。FY2023：开始复苏但未完全恢复——收入+4%、自营+5%、可比门店+9%、数字-4%、毛利率+140bps。FY2022：因疫情限制、供应链约束与市场压力下滑——收入-13%、批发-14%、自营-12%、数字-15%、可比门店-14%、毛利率-390bps。FY2021：强劲增长但毛利率仍降——收入+19%、自营+26%、数字+26%、可比门店+22%、毛利率-200bps。FY2020：疫情初期仍增长——收入+11%、自营+20%、数字商务+49%、毛利率-170bps。数字化曾是强项，后来反而成为弱点。",
-      "answer_en": "FY2025: China weakened again — wholesale -13%, NIKE Direct -12%, digital -22%, stores -6%, comparable stores -7%, gross margin -420bps; treat it as a turnaround year. FY2024: improved but digital still weak — revenue +8% CN, wholesale +15%, NIKE Direct +1%, comparable stores +1%, digital -8%, gross margin -80bps. FY2023: recovery began but incomplete — revenue +4% CN, NIKE Direct +5%, comparable stores +9%, digital -4%, gross margin +140bps. FY2022: dropped on COVID restrictions, supply constraints, and market pressure — revenue -13% CN, wholesale -14%, NIKE Direct -12%, digital -15%, comparable stores -14%, gross margin -390bps. FY2021: strong growth, margin still down — revenue +19% CN, NIKE Direct +26%, digital +26%, comparable stores +22%, gross margin -200bps. FY2020: still grew through early COVID — revenue +11% CN, NIKE Direct +20%, digital commerce +49%, gross margin -170bps. Digital was a strength then; it later became a weakness."
-    },
-    {
-      "id": "fin-04-ceo-quotes",
-      "personas": [
-        "ceo",
-        "cmo"
-      ],
-      "keywords": [
-        "CEO earnings call quotes China recovery long-term connect locally",
-        "CEO 电话会 复苏 长期机会 本土连接"
-      ],
-      "question_zh": "全球CEO在业绩电话会上对中国市场是怎么表态的？",
-      "question_en": "What has the global CEO said about the China market on earnings calls?",
-      "answer_zh": "全球CEO（贺雁峰/Elliott Hill）FY2025 Q4电话会核心表态：①\"由于市场的独特性，中国需要更长时间……全面复苏需要时间\"——复苏是分阶段的，不是一蹴而就。②\"我们相信中国的长期机会。存在一些结构性顺风，会继续释放更多机会。\"③\"从品牌角度看，我们最大的机会是激励并邀请13亿消费者进入运动、生活方式运动和健身的世界。\"④\"制胜的关键……是我们需要本土化连接（connect locally）。\"⑤\"重回收入和利润增长要靠提升效率生产力……这些改变需要时间。\"配套动作：市场生态清理（marketplace cleanup）、以消费者为导向的产品概念、零售生产力提升。",
-      "answer_en": "Key FY2025 Q4 earnings-call comments from the global CEO (Elliott Hill / He Yanfeng): 1) 'China will take longer due to the unique characteristics of the marketplace... a full recovery will take time' — recovery is staged, not instant. 2) 'We do believe in the long-term opportunity in China. There are some structural tailwinds which will continue to unlock further opportunity.' 3) 'Our biggest opportunity is, from a brand perspective, to inspire and invite the 1.3 billion consumers into the world of sport, lifestyle sport and to fitness.' 4) 'The key to winning... is that we need to connect locally.' 5) 'That's how you return to drive revenue and profits there. It's through driving productivity... the changes are going to take time.' Supporting moves: marketplace cleanup, consumer-led product concepts, retail productivity."
-    },
-    {
-      "id": "fin-05-manufacturing",
-      "personas": [
-        "coo"
-      ],
-      "keywords": [
-        "manufacturing footprint China 17% footwear Shanghai HQ",
-        "制造 产地 中国 17% 上海总部"
-      ],
-      "question_zh": "耐克目前的制造布局和大中华区总部情况如何？",
-      "question_en": "What do Nike's manufacturing footprint and Greater China headquarters look like today?",
-      "answer_zh": "FY2025年报（10-K）披露：耐克品牌鞋类仅约17%、服装约15%在中国制造，产能大头已转向越南、印尼等东南亚国家（超70%）。大中华区总部位于上海，支持批发、NIKE Direct和商品企划战略。大中华区是NIKE品牌的报告分部之一。",
-      "answer_en": "Per the FY2025 10-K: only ~17% of NIKE Brand footwear and ~15% of apparel were manufactured in China in FY2025 — the bulk of capacity (over 70%) has shifted to Southeast Asia (Vietnam, Indonesia). Nike's Greater China headquarters is in Shanghai and supports wholesale, NIKE Direct, and merchandising strategies. Greater China is one of the NIKE Brand reportable operating segments."
-    },
-    {
-      "id": "macro-01-market-size",
-      "personas": [
-        "cfo",
-        "ceo",
-        "cmo"
-      ],
-      "keywords": [
-        "market size FY2024 annual report comparisons Adidas Anta Amer",
-        "市场规模 年报口径 对比 2024"
-      ],
-      "question_zh": "按各品牌FY2024年报口径，中国运动鞋服市场主要玩家的规模和增速是怎样的？",
-      "question_en": "Per the brands' own FY2024 annual reports, what are the main players' China scale and growth rates?",
-      "answer_zh": "品牌财报口径（FY2024）：耐克大中华区收入75.45亿美元（剔除汇率+8%），主要受男子、女子、Jordan品牌及童装销售增长带动。阿迪达斯大中华区净销售额34.59亿欧元（剔除汇率+10%），毛利率提升0.9个百分点至49.6%，经营利润率提升3.3个百分点至20.6%。安踏体育集团总收入首次突破人民币700亿元（708.26亿元，+13.6%），中国运动鞋服市场份额升至23.0%，稳居行业第一。Amer Sports大中华区收入12.98亿美元（+50%以上），占集团总收入25%，是三大区域中增速最快的市场。宏观背景：2024年中国GDP +5.0%，社零总额48.8万亿元（+3.5%）；2025年中央经济工作会议将\"提振消费\"列为经济工作首要任务。"
-    },
-    {
-      "id": "macro-02-outdoor-segment",
-      "personas": [
-        "cpo",
-        "ceo"
-      ],
-      "keywords": [
-        "outdoor segment growth Arc'teryx Salomon Descente Kolon FY2024",
-        "户外 细分赛道 增长 始祖鸟 萨洛蒙"
-      ],
-      "question_zh": "户外运动细分赛道的规模与增速如何（品牌财报口径）？",
-      "question_en": "What are the scale and growth of the outdoor segment per the brands' annual reports?",
-      "answer_zh": "户外细分（FY2024财报口径）：Amer Sports以始祖鸟为核心的Technical Apparel分部收入21.94亿美元（2020-2024 CAGR 34%，当年+36%）；以萨洛蒙为核心的Outdoor Performance分部18.36亿美元（CAGR 14%）——两分部合计占集团收入约78%。始祖鸟全年收入首次突破20亿美元，是集团规模最大、增长最快、盈利最强的品牌。萨洛蒙鞋类业务首次突破10亿美元，增长主要由大中华区及亚太驱动，当年在大中华区新开约100家门店。安踏\"其他品牌\"（迪桑特+可隆）收入首次破百亿（106.8亿元，+53.7%），经营溢利率28.6%，是安踏集团增速最快的板块，可隆是当年集团增长最快的单一品牌。"
-    },
-    {
-      "id": "macro-03-digital-trends",
-      "personas": [
-        "cto",
-        "cmo"
-      ],
-      "keywords": [
-        "digital ecommerce online retail DTC share consumer trends",
-        "线上 电商 数字化 消费趋势 DTC占比"
-      ],
-      "question_zh": "中国线上零售和数字化渠道的关键趋势数据有哪些（品牌财报口径）？",
-      "question_en": "What are the key data points on China's online retail and digital-channel trends per the annual reports?",
-      "answer_zh": "消费者趋势（FY2024财报口径）：2024年中国实物商品网上零售额达13.1万亿元人民币（+6.5%），占社零总额26.8%，线上对整体消费的拉动持续增强。安踏电商业务收入同比+21.8%，占集团收入比重由32.8%升至35.1%，AI辅助设计商品订货金额超过20亿元人民币。Amer Sports DTC渠道收入占比由2023年36%提升至2024年44%，管理层持续推动\"批发转直营\"以提升经营利润率。阿迪达斯指出行业持续受益于运动参与率上升、健康与健身意识提升等结构性趋势，并预计2025年大中华区货币中性销售额实现高单位数增长。对比之下：耐克大中华区FY2025数字渠道下滑22%，且其数字体系以全球App为核心，游离于抖音、小红书、微信小程序、天猫等中国主流生态之外。"
-    },
-    {
-      "id": "hr-01-talent-competition",
-      "personas": [
-        "chro"
-      ],
-      "keywords": [
-        "talent competition hiring local brands attractive employers",
-        "人才竞争 招聘 雇主吸引力 安踏 李宁"
-      ],
-      "question_zh": "耐克中国与安踏、李宁之间的人才竞争情况如何？",
-      "question_en": "How is the talent competition between Nike China and Anta / Li-Ning going?",
-      "answer_zh": "安踏和李宁正在成为更有吸引力的雇主，与耐克争夺同样的设计、数字化、市场营销和技术人才。本土品牌的吸引力来自：业务处于上升通道（安踏营收连年双位数增长、市场份额行业第一）、本土决策链条短、给核心人才的成长空间与话语权更大。与此同时，耐克中国面临总部集权（品类负责人由总部空降）、高层人事频繁变动、区域自主权收缩的局面，这既影响内部士气与保留，也削弱对本土顶尖人才的吸引力。任何新战略的落地都需要诚实评估：这些能力我们现在有没有？能不能招得到、留得住？"
-    },
-    {
-      "id": "hr-02-org-change",
-      "personas": [
-        "chro",
-        "ceo"
-      ],
-      "keywords": [
-        "organizing teams new projects change management staffing",
-        "组织 团队 变革管理 配置 新项目"
-      ],
-      "question_zh": "在耐克中国内部组织团队推进新项目、管理变革需要考虑什么？",
-      "question_en": "What does it take to organize teams for new projects and manage change inside Nike China?",
-      "answer_zh": "三个现实约束：①变革负荷已经很高——组织架构刚经历总部主导的切换（各品类负责人由总部空降），战略执行频繁变动，团队需要时间稳定节奏；在此之上叠加新项目要评估变革疲劳。②权责结构——大中华区负责人没有产品研发权和供应链自主权，跨职能新项目往往需要总部审批链路，时间和沟通成本必须计入计划。③能力缺口——本土研发、数字化运营（抖音/小红书生态）、跑步等垂直品类的专业人才是当前缺口，而这些恰恰是本土品牌抢人的重点方向。可行的做法：新项目用小型跨职能专班起步，明确总部对接人，把'人从哪来、谁腾出来、空缺谁补'写进计划——这是学习者最常忽略的部分。"
-    }
-  ]
+ "_readme": "Master RAG source. Each chunk = one approved Q&A pair (or tight fact cluster). `personas` lists which persona stores receive the chunk (a chunk may live in several stores; stores remain isolated at retrieval time). answer_zh is verbatim from the approved documents. Edit this file and re-run `npm run ingest` — no code changes needed.",
+ "chunks": [
+  {
+   "id": "diag-01-revenue-decline",
+   "personas": [
+    "ceo",
+    "cfo"
+   ],
+   "keywords": [
+    "revenue decline structural",
+    "Greater China falling sales",
+    "收入下滑 结构性"
+   ],
+   "question_zh": "为什么耐克大中华区收入近年持续下滑，且下滑趋势并非单一季度的偶然波动？",
+   "question_en": "Why has Nike Greater China revenue kept declining in recent years, and why is this structural rather than a one-quarter blip?",
+   "answer_zh": "耐克大中华区收入从FY2023约72.5亿降至FY2025约65.9亿美元，降幅13%，近三季较五年前累计下滑28%。根源：①本土品牌安踏、李宁等占据约28%份额，安踏2025上半年营收385.4亿元，李宁148.2亿元，特步在马拉松\"破3\"穿着率超耐克。②DTC\"削藩\"缩减经销商，库存积压倒逼5-7折促销，溢价失效，下沉渠道断崖。③消费降级下国潮崛起，Z世代重舒适与本土认同，耐克\"竞技叙事\"脱节，海外细分品牌分流客群。"
+  },
+  {
+   "id": "diag-02-bci-lasting",
+   "personas": [
+    "cmo",
+    "ceo"
+   ],
+   "keywords": [
+    "BCI Xinjiang cotton brand damage boycott",
+    "新疆棉 品牌受损 抵制 好感度"
+   ],
+   "question_zh": "为什么2021年的新疆棉/BCI事件对耐克品牌形象的负面影响会延续至今？",
+   "question_en": "Why has the negative impact of the 2021 Xinjiang cotton / BCI incident on Nike's brand image persisted to this day?",
+   "answer_zh": "新疆棉事件影响延续至今：①耐克2020年要求供应商禁用新疆棉，引爆全网抵制，代言人解约，天猫销量跌59%，好感度从75%骤降至42%，形成不可逆情感裂痕。②耐克未正式致歉或明确采购新疆棉，仅下架声明，被指傲慢双标，中国区无自主补偿权。③安踏、李宁借机绑定新疆棉与国家荣誉，承接大量流失用户，00后成长于事件后，原生倾向国货，耐克失去新客培育窗口。④后续营销品控争议不断，反复唤醒负面记忆，口碑修复无期。"
+  },
+  {
+   "id": "diag-03-quality-complaints",
+   "personas": [
+    "coo",
+    "cpo"
+   ],
+   "keywords": [
+    "product quality complaints Vietnam Indonesia defects",
+    "质量投诉 做工 越南 印尼 瑕疵"
+   ],
+   "question_zh": "为什么近年市场上关于耐克产品质量与做工问题的投诉和讨论明显增多？",
+   "question_en": "Why have complaints and discussion about Nike product quality and workmanship visibly increased in recent years?",
+   "answer_zh": "质量投诉增多原因：①产能超70%迁至越南、印尼，配套不熟、工人熟练度低，鞋标错位、溢胶等瑕疵频发，热门复刻款集中爆发。②国内高仿产业链成熟，假货混淆正品，消费者误将假货瑕疵归咎品牌，甚至鉴定平台称正品做工不及高仿。③社交媒体（小红书、抖音）放大单例瑕疵，形成\"质量问题变多\"感知。④产品创新乏力，高价低配，对比国货性价比，消费者容忍度下降。⑤售后质保短、退换繁琐，维权失败经历进一步扩散负面。"
+  },
+  {
+   "id": "diag-04-quarterly-drops",
+   "personas": [
+    "cfo",
+    "ceo"
+   ],
+   "keywords": [
+    "Q4 FY2025 21% decline quarterly tariffs",
+    "季度下滑 21% 17% 关税 库存"
+   ],
+   "question_zh": "为什么2025财年第四季度及2026年最新季度大中华区收入分别出现约21%和17%的大幅下滑？",
+   "question_en": "Why did Greater China revenue fall roughly 21% in Q4 FY2025 and about 17% in the latest FY2026 quarter?",
+   "answer_zh": "2025财年Q4下滑21%（鞋类-20%，服装-19%）：高库存迫使折扣清仓，批发-24%、DTC-15%、电商-31%；关税新增约10亿美元成本；客流双位数下滑，动销不足。2026财年Q2下滑17%，利润近腰斩：国货市占挤压（安踏21.8% vs 耐克14.6%），DTC直营-18%、数字-36%；消费理性化，品牌口碑因新疆棉等受损。共同根源：供需错配、外部关税、国货替代、需求长期走弱，管理层定性为结构性长期问题。"
+  },
+  {
+   "id": "diag-05-guochao",
+   "personas": [
+    "cmo",
+    "cpo",
+    "cto"
+   ],
+   "keywords": [
+    "guochao national trend Gen Z local brands appeal",
+    "国潮 Z世代 文化自信 年轻消费者"
+   ],
+   "question_zh": "为什么\"国潮\"消费浪潮会持续削弱耐克这类国际品牌在年轻消费者中的吸引力？",
+   "question_en": "Why does the 'guochao' (national trend) consumption wave keep eroding international brands' appeal — Nike's included — among young consumers?",
+   "answer_zh": "①Z世代文化自信，消费从\"品牌崇拜\"转向\"价值认同\"，本土品牌文化叙事自然（非遗、生肖、奥运），耐克国风浅层堆砌元素，违和感强。②新疆棉事件后耐克好感度75%跌至42%，未诚恳道歉，国货绑定本土情感。③国货产品力持平且定价更低，性价比优势。④耐克数字运营依赖海外APP，脱离抖音、小红书等主流场景，全球决策滞后，无法快速响应国潮热点，年轻客流持续被分流。"
+  },
+  {
+   "id": "diag-06-running-innovation",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [
+    "running innovation behind Hoka On Vaporfly",
+    "跑步 创新 落后 Hoka 昂跑 跑鞋"
+   ],
+   "question_zh": "为什么耐克在跑步这一核心品类的产品创新速度会落后于Hoka、On等新兴品牌？",
+   "question_en": "Why has Nike's product innovation pace in running — a core category — fallen behind emerging brands like Hoka and On?",
+   "answer_zh": "跑步创新落后Hoka/On原因：①资源倾斜潮流复刻（AF1、Dunk），挤压跑鞋研发，Vaporfly多年小改，无突破性技术。②CEO承认远程办公2.5年削弱研发协同，实物试错效率下降。③组织架构将跑步团队并入大众品类，丢失垂直深耕能力；Hoka、On全公司聚焦跑步，创始团队懂跑者痛点。④竞品精准切分越野、长距离、都市慢跑，厚底、镂空等差异化明显；耐克走\"万金油\"均衡路线，缺乏记忆点。⑤产能迁东南亚拖慢新品落地。"
+  },
+  {
+   "id": "diag-07-macro",
+   "personas": [
+    "cfo",
+    "ceo"
+   ],
+   "keywords": [
+    "macro slowdown consumption downgrade price sensitivity",
+    "宏观 消费降级 性价比 下沉"
+   ],
+   "question_zh": "为什么中国宏观经济放缓和消费降级会进一步加剧耐克在华业绩的下滑幅度？",
+   "question_en": "Why do China's macro slowdown and consumption downgrade amplify Nike's performance decline in China?",
+   "answer_zh": "宏观放缓和消费降级加剧下滑：①可选消费整体收缩，耐克溢价群体削减开支。②性价比劣势放大，安踏、李宁同性能定价仅一半，耐克中端价格带空白被国货填补。③缺乏本土爆款，新品缺乏吸引力，只能打折，正价销售停滞。④长期折扣固化\"不打折不买\"，毛利率大幅下滑，营收利润双杀。⑤DTC后遗症致下沉门店空白，而安踏、李宁覆盖县域，丢失增量市场。⑥叠加口碑、品控、创新等多重问题，修复周期远长于本土对手。"
+  },
+  {
+   "id": "diag-08-discount-spiral",
+   "personas": [
+    "cfo",
+    "cmo"
+   ],
+   "keywords": [
+    "discounting hurts premium margin spiral",
+    "折扣 促销 品牌溢价 毛利率 恶性循环"
+   ],
+   "question_zh": "为什么耐克为消化库存积压而采取的大幅折扣促销，反而会进一步损害其品牌溢价和长期盈利能力？",
+   "question_en": "Why does Nike's deep discounting to clear inventory further damage its brand premium and long-term profitability?",
+   "answer_zh": "折扣促销损害品牌溢价和长期盈利：①短期毛利率大幅下滑，2025Q4毛利率降440基点至40.3%，净利润暴跌86%，库存减值损失持续。②长期稀缺形象崩塌，AJ、Dunk不再有溢价，消费者形成\"不打折绝不买\"预期，正价销售周期缩短。③直营与批发价差内卷，经销商利润压缩，减少陈列，货架被竞品替代，渠道信任修复需让利。④盈利收缩压缩研发营销预算，新品创新受限，形成恶性循环。⑤低价认知固化，消费者转向控价稳定的国货，市场份额永久性流失。"
+  },
+  {
+   "id": "diag-09-anta-lining-erosion",
+   "personas": [
+    "ceo",
+    "cmo",
+    "cpo"
+   ],
+   "keywords": [
+    "Anta Li-Ning erosion market leadership local brands",
+    "安踏 李宁 侵蚀 领先地位 多品牌"
+   ],
+   "question_zh": "为什么本土品牌安踏、李宁能够快速侵蚀耐克在中国运动鞋服市场的领先地位？",
+   "question_en": "Why have local brands Anta and Li-Ning been able to erode Nike's leadership of China's sportswear market so quickly?",
+   "answer_zh": "安踏、李宁侵蚀耐克地位原因：①多品牌分层（FILA、始祖鸟等）覆盖全价格带，耐克单品牌难兼顾。②持续研发，氮科技、䨻科技对标ZoomX，碳板跑鞋售价仅耐克一半，迭代更快。③国潮文化叙事绑定奥运、非遗，天然引发共鸣，新疆棉后承接流失客流。④本土供应链快反，深度适配抖音、小红书等，下沉渠道全覆盖。⑤耐克本土化自主权弱，长期依赖折扣，缺乏多品牌布局，份额持续被蚕食。"
+  },
+  {
+   "id": "diag-10-dtc-failure",
+   "personas": [
+    "coo",
+    "cfo",
+    "cto"
+   ],
+   "keywords": [
+    "DTC strategy acceleration failure wholesale cuts dealers",
+    "DTC 直营 削藩 批发 经销商 滔搏"
+   ],
+   "question_zh": "为什么耐克此前力推的DTC（消费者直营）战略\"加速\"反而导致其市场份额和渠道优势双双流失？",
+   "question_en": "Why did Nike's aggressive DTC (direct-to-consumer) acceleration end up costing it both market share and channel advantage?",
+   "answer_zh": "DTC战略失误原因：①战略重心偏渠道数字化，压缩产品研发，新品依赖复刻，竞争力弱化。②激进削减批发配额，滔搏等经销商减少陈列，下沉市场覆盖不足36%，库存失去\"蓄水池\"，滞销全积压自营。③直营长期低价与批发价冲突，经销商利润挤压，推广意愿丧失。④数字渠道增速转负，2025Q4数字营收跌26%，且脱离抖音、天猫等本土生态。⑤管理层公开承认过度倾斜直营，已回调渠道策略，但修复需3-5年。"
+  },
+  {
+   "id": "comp-01-anta-overall",
+   "personas": [
+    "cfo",
+    "ceo"
+   ],
+   "keywords": [
+    "Anta 2025 revenue growth gap versus Nike China",
+    "安踏 2025 营收 802亿 增速 差距"
+   ],
+   "question_zh": "安踏集团2025年整体营收和增速是多少？与Nike中国的差距有多大？",
+   "question_en": "What were Anta Group's 2025 revenue and growth, and how large is the gap versus Nike China?",
+   "answer_zh": "安踏集团2025年营收802亿元，同比增长13.3%，市场份额21.8%，连续四年位居中国运动鞋服行业第一。Nike大中华区2025年营收约478亿人民币，同比下滑13%。安踏体量已远超Nike中国，且增速方向完全相反——安踏在扩大领先优势，Nike在加速失血。"
+  },
+  {
+   "id": "comp-02-anta-brands",
+   "personas": [
+    "cmo",
+    "cpo",
+    "ceo"
+   ],
+   "keywords": [
+    "Anta brand tiers FILA Descente Kolon performance",
+    "安踏主品牌 FILA 迪桑特 可隆 表现"
+   ],
+   "question_zh": "安踏主品牌、FILA、迪桑特和可隆的各自表现如何？哪个增长最快？",
+   "question_en": "How are Anta's main brand, FILA, Descente, and Kolon each performing, and which is growing fastest?",
+   "answer_zh": "安踏主品牌347.5亿元（+3.7%），FILA 284.7亿元（+6.9%），迪桑特流水破100亿（+35%），可隆流水破60亿（+70%）。三大梯队覆盖大众、高端时尚、专业户外三个价格带，没有互相打架，各有增长。可隆徒步鞋、越野跑鞋同比增长超140%；安踏研发投入约22亿元，构建全品类研发能力。"
+  },
+  {
+   "id": "comp-03-anta-threat-tier",
+   "personas": [
+    "ceo",
+    "cpo"
+   ],
+   "keywords": [
+    "which Anta tier threatens Nike most premium outdoor",
+    "安踏 梯队 威胁 高端户外 迪桑特 可隆"
+   ],
+   "question_zh": "安踏多品牌矩阵中，哪个梯队对Nike的威胁最大？",
+   "question_en": "Within Anta's multi-brand matrix, which tier poses the biggest threat to Nike?",
+   "answer_zh": "迪桑特和可隆所在的高端户外梯队对Nike威胁最直接——增速分别达35%和70%，直接切割Nike在专业运动场景中的份额。FILA和安踏主品牌主打大众和时尚，与Nike正面竞争强度已在降低，因为价格带和客群出现分化。Nike用单一品牌同时应对三层品牌，防守压力极大。"
+  },
+  {
+   "id": "comp-04-amer-margin",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [
+    "Amer Sports 58% gross margin why higher than Nike",
+    "Amer 毛利率 58% 始祖鸟 萨洛蒙 定价"
+   ],
+   "question_zh": "Amer Sports毛利率高达58%，远高于Nike的42.7%，原因是什么？",
+   "question_en": "Amer Sports' gross margin is 58%, far above Nike's 42.7% — why?",
+   "answer_zh": "Amer核心品牌始祖鸟、萨洛蒙定位高端专业户外，定价能力极强；DTC占比高，渠道利润自留比例大；产品结构聚焦高单价品类。Nike渠道折扣频繁，正价销售能力被持续削弱。"
+  },
+  {
+   "id": "comp-05-adidas-gap",
+   "personas": [
+    "ceo",
+    "cfo",
+    "cmo"
+   ],
+   "keywords": [
+    "Adidas Nike China gap narrowing recovery 11 quarters",
+    "阿迪达斯 差距 收窄 连续11个季度 复苏"
+   ],
+   "question_zh": "Adidas和Nike在中国市场的差距是如何变化的？",
+   "question_en": "How has the gap between Adidas and Nike in the China market been changing?",
+   "answer_zh": "2024年两者大中华区营收差距约200亿人民币（Nike约478亿 vs Adidas约290亿），2025年差距收窄至约188亿。Nike下滑11%的同时，Adidas增长13%，一来一回差距缩小了12亿元。Adidas大中华区2025年营收36.2亿欧元，连续11个季度增长，毛利率提升至52.6%，经营利润率22.1%。Adidas证明：产品创新+减少折扣+本土化运营，可以把失去的份额重新抢回来。"
+  },
+  {
+   "id": "comp-06-anta-structural",
+   "personas": [
+    "ceo",
+    "cpo"
+   ],
+   "keywords": [
+    "Anta multi-brand structural threat price bands single brand",
+    "安踏 多品牌 结构性威胁 价格带 单品牌"
+   ],
+   "question_zh": "安踏的多品牌战略对Nike构成了怎样的结构性威胁？",
+   "question_en": "What structural threat does Anta's multi-brand strategy pose to Nike?",
+   "answer_zh": "安踏用三层品牌覆盖三个价格带和消费场景——主品牌守大众（300-600元），FILA守高端时尚（800-1500元），迪桑特/可隆抢专业户外（1500-3000元+）。三层品牌共用供应链和渠道基础设施，成本端有规模效应，收入端覆盖了从日常运动到专业户外的全场景。Nike以单一品牌同时防守三条线，每条线都在被动应战，而中国消费者对\"专业化\"和\"场景化\"的需求正在加速分化。"
+  },
+  {
+   "id": "comp-07-amer-sustainable",
+   "personas": [
+    "ceo",
+    "cpo"
+   ],
+   "keywords": [
+    "Amer Sports growth sustainable Arc'teryx Salomon trend",
+    "Amer 增长 可持续 始祖鸟 萨洛蒙 户外"
+   ],
+   "question_zh": "Amer Sports的高速增长是否可持续？对Nike意味着什么？",
+   "question_en": "Is Amer Sports' rapid growth sustainable, and what does it mean for Nike?",
+   "answer_zh": "Amer 2025年增速27%，但母公司在2024年经历了大规模重组和盈利基数极低（归母净利润仅7200万美元）。2026年面临高基数压力，增速大概率回落。但更值得Nike警惕的是趋势而非增速数字——始祖鸟代表的\"专业户外高端化\"和萨洛蒙代表的\"越野跑/徒步场景化\"，切中的是Nike长期布局薄弱但消费者需求高速增长的赛道。Amer大中华区2025年营收18.6亿美元，同比+43.4%，全年净新增近100家门店，年底达286家。"
+  },
+  {
+   "id": "comp-08-four-front",
+   "personas": [
+    "ceo",
+    "cmo"
+   ],
+   "keywords": [
+    "competitive landscape besieged four fronts segmentation",
+    "竞争格局 四面夹击 细分 场景"
+   ],
+   "question_zh": "Nike目前在中国市场的整体竞争格局是怎样的？主要对手各自占据什么位置？",
+   "question_en": "What does Nike's overall competitive landscape in China look like, and where does each main rival sit?",
+   "answer_zh": "Nike中国业务正被四面夹击：高端户外场景被始祖鸟、萨洛蒙切割，专业跑步场景被昂跑、Hoka切割，大众市场被安踏主品牌和李宁切割，时尚休闲场景被FILA和Adidas Originals切割。安踏：大众+高端时尚+专业户外全价格带覆盖；Amer Sports：高端专业户外；Adidas：时尚运动+专业跑步，直追Nike；李宁：专业篮球+专业跑步，国货专业代表。每个细分赛道都有一个专注的品牌在跟Nike打，而Nike用单一品牌同时防守所有阵地——资源分散，每条线都在被动应战。对手的增速说明市场需求没有萎缩，萎缩的是Nike在中国消费者心智中的位置。"
+  },
+  {
+   "id": "strat-01-core-cause",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [
+    "eight quarters decline core reasons channel product brand",
+    "连续八个季度 下滑 核心原因"
+   ],
+   "question_zh": "Nike大中华区连续八个季度下滑，最核心的原因是什么？",
+   "question_en": "Nike Greater China has declined for eight straight quarters — what is the core reason?",
+   "answer_zh": "三个原因叠加：①渠道上过度DTC挤压了批发商，把滔搏、宝胜推向竞品；②产品上过度依赖AJ1、Dunk、Air Force 1换配色，缺乏真正的创新爆款；③品牌定位上在\"专业运动\"和\"潮流时尚\"之间摇摆，结果两头都没守住。Adidas做对了这三件事的反面。"
+  },
+  {
+   "id": "strat-02-opportunity",
+   "personas": [
+    "ceo",
+    "cpo",
+    "cmo"
+   ],
+   "keywords": [
+    "biggest opportunity running women's sport outdoor growth",
+    "最大机会 跑步 女性运动 户外增长"
+   ],
+   "question_zh": "Nike在中国市场最大的机会在哪？",
+   "question_en": "Where is Nike's biggest opportunity in the China market?",
+   "answer_zh": "跑步赛道和女性运动。2025年中国户外用品销售额同比增长22%，跑步鞋服是其中最大的子品类。Nike跑步业务2025年仅有中个位数增长，远远跑输行业大盘。李宁跑步流水占比已从16%升至31%。这个赛道的空间远未被Nike充分挖掘。"
+  },
+  {
+   "id": "strat-03-dtc-vs-wholesale",
+   "personas": [
+    "coo",
+    "ceo",
+    "cfo",
+    "cto"
+   ],
+   "keywords": [
+    "DTC or wholesale channel strategy dual engine",
+    "DTC 批发 渠道战略 双轮驱动"
+   ],
+   "question_zh": "Nike应该继续坚持DTC战略，还是重新拥抱批发渠道？",
+   "question_en": "Should Nike keep pushing DTC, or re-embrace the wholesale channel?",
+   "answer_zh": "2026财年Q4数据已经说明问题——批发渠道营收66亿美元（+4%），直营41亿美元（-7%）。市场已经帮Nike做了选择。建议方向：直营和批发双轮驱动，直营做品牌体验和会员运营，批发做规模覆盖和市场份额。但核心挑战在于如何在恢复批发合作的同时不重复过去的渠道冲突——这需要Nike用数据工具和AI Agent去精准管理渠道定价和库存分配。"
+  },
+  {
+   "id": "strat-04-category-priority",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [
+    "which category to prioritize product innovation running basketball",
+    "优先品类 创新 跑步 篮球"
+   ],
+   "question_zh": "Nike产品创新应该优先发力哪个品类？为什么？",
+   "question_en": "Which category should Nike's product innovation prioritize, and why?",
+   "answer_zh": "跑步品类。理由：①市场空间最大——中国运动鞋服行业年增速7%+，跑步是最大子品类；②竞品已领先但差距并未拉开——昂跑、Hoka体量尚小，Nike有品牌势能基础；③李宁已验证跑步是翻盘利器——跑步流水占比从16%升至31%，直接拉动整体增长。篮球品类Nike仍领先但市场空间已经饱和，时尚潮流品类竞争过于拥挤且利润薄，跑步是唯一既有规模增长空间又能发挥Nike专业运动基因的赛道。"
+  },
+  {
+   "id": "strat-05-repositioning",
+   "personas": [
+    "cmo",
+    "ceo"
+   ],
+   "keywords": [
+    "brand positioning adjust professional sport authority",
+    "品牌定位 调整 专业运动 折扣潮流"
+   ],
+   "question_zh": "Nike在中国的品牌定位应该调整吗？怎么调？",
+   "question_en": "Should Nike adjust its brand positioning in China, and how?",
+   "answer_zh": "应该调整。过去几年Nike在中国消费者心智中从\"专业运动品牌\"滑向\"打折潮流品牌\"，定位模糊是营收下滑的深层原因。调整方向：回归\"专业运动权威\"——参照Adidas复苏路径，通过减少折扣、强化跑步/篮球专业内容、签约本土运动IP三件事重建品牌壁垒。潮流属性不放弃，但应作为副产品而非战略主线。"
+  },
+  {
+   "id": "strat-06-single-brand",
+   "personas": [
+    "ceo",
+    "cpo"
+   ],
+   "keywords": [
+    "single brand model failed multi-brand scene layering",
+    "单品牌 失效 多品牌 场景分层"
+   ],
+   "question_zh": "安踏多品牌战略是否意味着Nike的单品牌模式在中国已经失效？",
+   "question_en": "Does Anta's multi-brand strategy mean Nike's single-brand model has failed in China?",
+   "answer_zh": "不意味着失效，但意味着Nike需要更精准的场景分层运营。安踏用三个独立品牌覆盖不同人群，避免了单一品牌形象稀释。Nike只有一个品牌，但可以通过产品系列差异化（如：跑步线主打专业、AJ线主打潮流、基础款主打性价比）实现类似效果，前提是各条产品线在渠道陈列、营销话术和目标人群上做到足够清晰的分层。核心挑战是如何在不同场景和价格带之间保持主品牌调性一致，避免\"既要高端又要走量\"的自我矛盾。"
+  },
+  {
+   "id": "strat-07-running-moves",
+   "personas": [
+    "cpo",
+    "cmo"
+   ],
+   "keywords": [
+    "three key moves running compete Anta Hoka On",
+    "跑步赛道 三个动作 本土跑鞋 马拉松 体验中心"
+   ],
+   "question_zh": "如果Nike要在跑步赛道和安踏/Hoka/昂跑竞争，最关键的3个动作是什么？",
+   "question_en": "If Nike is to compete with Anta/Hoka/On in running, what are the three most critical moves?",
+   "answer_zh": "①产品端：在中国市场投放1-2款本土专属跑鞋（类似Adidas的\"中国限定\"策略），而非简单把全球款拿来卖；②营销端：签约中国本土马拉松顶尖选手和跑圈KOL，建立专业可信度，而非依赖全球体育巨星代言；③渠道端：在一线城市开设跑步体验中心（可借鉴昂跑的社群运营模式），把\"卖鞋\"升级为\"卖跑步服务\"——脚型测试、跑姿分析、训练课程，建立竞争壁垒。"
+  },
+  {
+   "id": "strat-08-amer-response",
+   "personas": [
+    "ceo",
+    "cpo"
+   ],
+   "keywords": [
+    "respond Amer premium outdoor ACG acquisition",
+    "应对 Amer 高端户外 ACG 收购"
+   ],
+   "question_zh": "Nike如何应对Amer Sports在高端户外场景的切割？",
+   "question_en": "How should Nike respond to Amer Sports carving up the premium outdoor scene?",
+   "answer_zh": "两个选择：①自主研发高端户外产品线，但时间成本高、品牌认知从零建立难度大；②收购一个高端户外品牌（类似安踏收购始祖鸟），直接获取品牌资产和产品技术。考虑到Nike历史上收购整合能力较弱（参考Umbro、Converse的整合效果），更现实的路径是：聚焦\"运动户外\"而非\"纯户外\"——用Nike ACG系列打轻户外/城市户外场景，避开始祖鸟擅长的硬核登山、攀岩等专业性极强且需要深厚技术积累的细分领域。这个策略不追求在专业户外领域战胜Amer，而是在城市户外这个市场规模更大的场景中巩固Nike的护城河。"
+  },
+  {
+   "id": "strat-09-tariff",
+   "personas": [
+    "cfo",
+    "coo"
+   ],
+   "keywords": [
+    "tariffs 1 billion cost raise prices or relocate production",
+    "关税 10亿美元 提价 转移生产"
+   ],
+   "question_zh": "关税每年给Nike带来约10亿美元成本压力，Nike应该提价还是转移生产？",
+   "question_en": "Tariffs add roughly $1B in annual cost pressure — should Nike raise prices or relocate production?",
+   "answer_zh": "提价会进一步压低销量——Nike需求价格弹性本就偏高（频繁打折已损害定价权），在竞争激烈的中国市场提价风险极大。转移生产至东南亚以外的地区（如印度、墨西哥）需要3-5年时间和大量资本投入，短期内无法缓解。更可行的方案是：①优化产品组合，提高高毛利品类（如跑步碳板鞋、功能性服饰）占比，通过结构升级对冲关税成本；②在不降低售价的前提下，将跑鞋等走量品类保留在现有供应链，高端品类逐步向低关税地区转移，分品类差异化应对而非一刀切。"
+  },
+  {
+   "id": "exec-01-channel-structure",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [
+    "channel structure both channels shrinking dealer repair",
+    "渠道结构 双降 修复经销商"
+   ],
+   "question_zh": "目前渠道结构有什么倾向？",
+   "question_en": "What is the current tendency in Nike China's channel structure?",
+   "answer_zh": "中国区FY25批发和DTC双降超过12%（批发42.62亿→36.99亿美元，-13.2%；DTC 32.83亿→28.87亿美元，-12.1%），DTC并未替代批发，两条渠道同步萎缩。这说明修复经销商关系是中国区的紧急任务——从\"修复与滔搏、宝胜等关键经销商的关系\"可见经销商的重要性被重新认识；从\"大中华区决策权将向美国总部收缩\"，暗示货品等核心资源分配可能由总部主导。"
+  },
+  {
+   "id": "exec-02-autonomy",
+   "personas": [
+    "ceo",
+    "chro"
+   ],
+   "keywords": [
+    "regional autonomy shrinking HQ centralization repair relationships first",
+    "自主权 收缩 总部集权 先修复关系"
+   ],
+   "question_zh": "大中华区在执行层面有多大的自主权来修复受损的商务关系？期望先修复关系，还是优先打造销量与产品？",
+   "question_en": "How much executive autonomy does Greater China actually have to repair damaged business relationships — and is the path 'repair relationships first' or 'sales and product first'?",
+   "answer_zh": "自主权正在收缩：目前最清晰的信号是，大中华区的自主权正在被大幅压缩。新任大中华区负责人被视为\"总部派\"，其任命标志着\"未来大中华区的决策权将进一步向美国总部收缩，曾经引以为傲的'本地化自主权'将成为历史\"。总部试图用强硬的\"全球标准\"来改造中国市场。虽然组织架构上区域负责人可直接向CEO汇报，但这更多是为了确保总部战略落地，而非授予更多自主决策权。路径选择：先修复关系。新任CEO回归后，核心举措之一就是\"重新规划了优质产品的资源分配，提升了合作伙伴的盈利空间\"，并明确要修复与传统零售商的关系。这被视为\"Win Now\"计划从\"止血\"转向\"进攻\"的关键一步。全球范围内，批发渠道已出现回暖，2026财年Q1同比增长7%至68亿美元。这表明，耐克认为稳定的渠道关系是重塑销量与产品的基础。"
+  },
+  {
+   "id": "exec-03-product-customization",
+   "personas": [
+    "cpo",
+    "ceo"
+   ],
+   "keywords": [
+    "product customization approval process HQ collaboration projects",
+    "产品定制 快速补单 流程 联名企划"
+   ],
+   "question_zh": "大中华区团队向总部申请产品定制或快速补单的流程难度如何？是否能够利用联名企划、局部材料更换来快速审核？",
+   "question_en": "How hard is it for the Greater China team to get HQ approval for product customization or fast replenishment — and can collaboration projects or partial material swaps be fast-tracked?",
+   "answer_zh": "流程可能趋严，灵活性存疑：在总部集权、\"本地化自主权成为历史\"的大背景下，大中华区团队在产品层面的自主权预计也会受到限制。推行\"全球标准\"意味着产品决策可能更多由总部掌控。虽然有Nike By You这样的消费者定制服务，但这属于面向终端消费者的标准化服务，与内部团队为应对市场变化而发起的快速产品定制或补单是两回事。区域团队曾有成功案例：中国团队曾主动促成本土艺人成为NIKE和JORDAN的全球合作伙伴，说明大中华区团队在特定项目（如联名企划）上仍有主动提案并成功推动的能力。但在当前总部集权趋势下，这类需要快速审核的本地化动作能否保持同样的灵活性，存在较大不确定性。"
+  },
+  {
+   "id": "exec-04-discount-priority",
+   "personas": [
+    "cfo",
+    "coo"
+   ],
+   "keywords": [
+    "discount trend brand health versus GMV inventory sell-in",
+    "库存折扣 权重 品牌健康 成交总额 正价"
+   ],
+   "question_zh": "库存折扣的权重与趋势是怎样的？执行团队优先考核成交总额还是品牌健康？",
+   "question_en": "What are the weight and trend of inventory discounting, and does the execution team prioritize gross transaction value or brand health?",
+   "answer_zh": "趋向于保证价格。过去为了清理库存，耐克陷入了\"饮鸩止渴\"式的打折策略，但现在策略正在发生根本性转变。耐克正在采取\"更积极的库存sell-in管理策略\"来改善市场生态系统，即便这\"将持续对Nike大中华区收入表现构成明显负面影响\"。折扣力度正在缩减：CFO明确表示，在过去两个季度\"更激进地减少促销\"后，数字渠道全价实现率正在恢复。大中华区库存金额和件数均实现双位数下降，库存单位数同比骤降超20%。考核优先级：品牌健康优先于成交总额。CFO坦言：\"我们的品牌在消费者心中逐渐沦为折扣品牌……这一循环对大中华区的盈利能力造成了重大影响\"。因此耐克正在主动收缩供给、清理老旧库存，不惜以短期收入下滑为代价，也要夺回价格体系控制权。耐克毛利率FY24仅44.6%，比安踏低17.6个百分点，比阿迪达斯低5.0个百分点——毛利率是折扣力度的终极反映。"
+  },
+  {
+   "id": "exec-05-rapid-response",
+   "personas": [
+    "ceo",
+    "chro"
+   ],
+   "keywords": [
+    "rapid response plan versus strict HQ execution Win Now",
+    "快速响应 预案 严格执行 总部策略"
+   ],
+   "question_zh": "大中华区执行层在效果未达预期时，有没有一套快速响应预案？还是必须严格执行总部既定策略？",
+   "question_en": "When results fall short, does the Greater China execution layer have a rapid-response playbook — or must it strictly execute HQ's set strategy?",
+   "answer_zh": "现状是\"强执行\"而非\"快响应\"：大中华区FY25营收同比下降12.3%，是近四年的最低点（FY22 482.90亿→FY23 499.13亿→FY24 539.15亿→FY25 473.09亿人民币口径）。在业绩持续下滑的情况下，总部仍\"用全球标准改造中国市场\"，大中华区执行层的角色更偏向于\"严格执行总部既定策略\"。新任CEO在北美市场推行的\"Win Now\"战略（核心是\"回归运动\"）取得成功后，总部将这套\"成功公式\"复制到中国，包括强行切换组织架构，各品类负责人直接由总部空降。这种模式留给本地团队根据消费者反馈进行快速调整的空间有限。"
+  },
+  {
+   "id": "exec-06-execution-pain",
+   "personas": [
+    "chro",
+    "ceo",
+    "coo"
+   ],
+   "keywords": [
+    "execution pain points authority mismatch leadership churn positioning",
+    "落地执行 痛点 权责不匹配 人事变动 定位模糊"
+   ],
+   "question_zh": "耐克中国在落地执行方面的核心痛点有哪些？",
+   "question_en": "What are Nike China's core pain points at the execution level?",
+   "answer_zh": "①渠道策略反复摇摆，执行层面自相矛盾：DTC战略放弃了经销商网络在边缘城市的渗透能力，品牌方被迫自行消化库存；先打压后拉拢导致经销商关系受损，中国区批发FY25同比下降13.2%、DTC下降12.1%，两条渠道同步萎缩。②权责不匹配：大中华区负责人没有产品研发权和供应链自主权，无法针对中国消费者需求快速响应；总部统一政策使新品落地国内比国货晚。日本市场在同样的总部产品体系下实现增长（鞋类FY22→FY25增长25.5%，服装增长11.0%，而大中华区同期鞋类-0.4%、服装-6.4%），说明问题不是\"总部产品不行\"，而是\"中国市场未被差异化对待\"。③定位模糊，品牌溢价能力下降：过度依赖线上折扣影响高端定位，大中华区毛利率44.6%低于阿迪达斯49.6%和安踏62.2%。④高层人事频繁变动，战略执行缺乏持续性。⑤产品创新力不足，本土缺乏研发：国产品牌科技持续迭代时，耐克常年老款换配色复刻，产品版型遭消费者诟病，缺乏本土化开发。核心矛盾：战略方向已明确（回归运动、修复渠道、控折扣、提创新），但执行落地面临多重阻力。"
+  },
+  {
+   "id": "fin-01-five-year-table",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [
+    "five year Greater China revenue EBIT margin table FY2020 FY2025",
+    "五年 大中华区 收入 EBIT 毛利率"
+   ],
+   "question_zh": "耐克大中华区近五年（FY2020-FY2025）的收入、EBIT和毛利率是怎样的？",
+   "question_en": "What do Nike Greater China's revenue, EBIT, and gross margin look like over the last five years (FY2020–FY2025)?",
+   "answer_zh": "大中华区五年财务快照（收入/同比[货币中性]/EBIT/EBIT率/毛利率）：FY2025：65.86亿美元 / -12% / 16.02亿 / 24.3% / 46.0%；FY2024：75.45亿 / +8% / 23.09亿 / 30.6% / 50.2%；FY2023：72.48亿 / +4% / 22.83亿 / 31.5% / 51.0%；FY2022：75.47亿 / -13% / 23.65亿 / 31.3% / 约49.6%（推算）；FY2021：82.90亿 / +19% / 32.43亿 / 39.1% / 约53.5%（推算）；FY2020：66.79亿 / +11% / 24.90亿 / 37.3% / 55.5%。收入在FY2021见顶，FY2023-24修复，FY2025再度下滑。注意：耐克不单独披露大中华区净利润与库存，以EBIT为分部盈利指标；公司整体库存FY2025为75亿美元，仅作背景。",
+   "answer_en": "Greater China five-year snapshot (Revenue / currency-neutral growth / EBIT / EBIT-margin proxy / gross margin): FY2025: $6,586M / -12% / $1,602M / 24.3% / 46.0%. FY2024: $7,545M / +8% / $2,309M / 30.6% / 50.2%. FY2023: $7,248M / +4% / $2,283M / 31.5% / 51.0%. FY2022: $7,547M / -13% / $2,365M / 31.3% / ~49.6% (derived). FY2021: $8,290M / +19% / $3,243M / 39.1% / ~53.5% (derived). FY2020: $6,679M / +11% / $2,490M / 37.3% / 55.5%. Revenue peaked in FY2021, recovered in FY2023–24, then fell again in FY2025. Nike does not disclose Greater China net profit or inventory as standalone segment metrics — EBIT is the profitability measure; company-level inventory ($7.5B in FY2025) is context only."
+  },
+  {
+   "id": "fin-02-channel-product-revenue",
+   "personas": [
+    "cfo",
+    "coo",
+    "cpo"
+   ],
+   "keywords": [
+    "channel split wholesale NIKE Direct footwear apparel revenue by year",
+    "渠道 批发 自营 鞋类 服装 收入"
+   ],
+   "question_zh": "耐克大中华区分渠道（批发/自营）和分产品（鞋类/服装/装备）的收入是怎样的？",
+   "question_en": "How does Nike Greater China revenue break down by channel (wholesale / NIKE Direct) and by product (footwear / apparel / equipment)?",
+   "answer_zh": "分渠道（批发/自营，百万美元）：FY2025：3,699/2,887；FY2024：4,262/3,283；FY2023：3,866/3,382；FY2022：4,081/3,466；FY2021：4,513/3,777；FY2020：3,803/2,876。分产品（鞋类/服装/装备）：FY2025：4,805/1,616/165；FY2024：5,552/1,828/165；FY2023：5,435/1,666/147；FY2022：5,416/1,938/193；FY2021：5,748/2,347/195；FY2020：4,635/1,896/148。FY2025批发-13%、自营-12%、数字-22%、门店-6%、可比门店-7%；毛利率收缩420个基点，主因汇率不利与库存跌价准备增加。",
+   "answer_en": "By channel (Wholesale / NIKE Direct, $M): FY2025: 3,699 / 2,887; FY2024: 4,262 / 3,283; FY2023: 3,866 / 3,382; FY2022: 4,081 / 3,466; FY2021: 4,513 / 3,777; FY2020: 3,803 / 2,876. By product (Footwear / Apparel / Equipment, $M): FY2025: 4,805 / 1,616 / 165; FY2024: 5,552 / 1,828 / 165; FY2023: 5,435 / 1,666 / 147; FY2022: 5,416 / 1,938 / 193; FY2021: 5,748 / 2,347 / 195; FY2020: 4,635 / 1,896 / 148. In FY2025: wholesale -13%, NIKE Direct -12%, digital -22%, stores -6%, comparable stores -7%; gross margin contracted 420bps, primarily unfavorable FX and higher inventory obsolescence reserves."
+  },
+  {
+   "id": "fin-03-year-notes",
+   "personas": [
+    "cfo",
+    "coo",
+    "cto"
+   ],
+   "keywords": [
+    "year by year what happened COVID recovery turnaround digital",
+    "逐年 疫情 复苏 数字化 变化"
+   ],
+   "question_zh": "过去六个财年耐克大中华区每年分别发生了什么？",
+   "question_en": "What happened in Nike Greater China in each of the past six fiscal years?",
+   "answer_zh": "FY2025：中国再度走弱——批发-13%、自营-12%、数字-22%、门店-6%、可比门店-7%、毛利率-420bps，属于整固转型之年。FY2024：改善但数字仍弱——收入货币中性+8%、批发+15%、自营+1%、可比门店+1%、数字-8%、毛利率-80bps。FY2023：开始复苏但未完全恢复——收入+4%、自营+5%、可比门店+9%、数字-4%、毛利率+140bps。FY2022：因疫情限制、供应链约束与市场压力下滑——收入-13%、批发-14%、自营-12%、数字-15%、可比门店-14%、毛利率-390bps。FY2021：强劲增长但毛利率仍降——收入+19%、自营+26%、数字+26%、可比门店+22%、毛利率-200bps。FY2020：疫情初期仍增长——收入+11%、自营+20%、数字商务+49%、毛利率-170bps。数字化曾是强项，后来反而成为弱点。",
+   "answer_en": "FY2025: China weakened again — wholesale -13%, NIKE Direct -12%, digital -22%, stores -6%, comparable stores -7%, gross margin -420bps; treat it as a turnaround year. FY2024: improved but digital still weak — revenue +8% CN, wholesale +15%, NIKE Direct +1%, comparable stores +1%, digital -8%, gross margin -80bps. FY2023: recovery began but incomplete — revenue +4% CN, NIKE Direct +5%, comparable stores +9%, digital -4%, gross margin +140bps. FY2022: dropped on COVID restrictions, supply constraints, and market pressure — revenue -13% CN, wholesale -14%, NIKE Direct -12%, digital -15%, comparable stores -14%, gross margin -390bps. FY2021: strong growth, margin still down — revenue +19% CN, NIKE Direct +26%, digital +26%, comparable stores +22%, gross margin -200bps. FY2020: still grew through early COVID — revenue +11% CN, NIKE Direct +20%, digital commerce +49%, gross margin -170bps. Digital was a strength then; it later became a weakness."
+  },
+  {
+   "id": "fin-04-ceo-quotes",
+   "personas": [
+    "ceo",
+    "cmo"
+   ],
+   "keywords": [
+    "CEO earnings call quotes China recovery long-term connect locally",
+    "CEO 电话会 复苏 长期机会 本土连接"
+   ],
+   "question_zh": "全球CEO在业绩电话会上对中国市场是怎么表态的？",
+   "question_en": "What has the global CEO said about the China market on earnings calls?",
+   "answer_zh": "全球CEO（贺雁峰/Elliott Hill）FY2025 Q4电话会核心表态：①\"由于市场的独特性，中国需要更长时间……全面复苏需要时间\"——复苏是分阶段的，不是一蹴而就。②\"我们相信中国的长期机会。存在一些结构性顺风，会继续释放更多机会。\"③\"从品牌角度看，我们最大的机会是激励并邀请13亿消费者进入运动、生活方式运动和健身的世界。\"④\"制胜的关键……是我们需要本土化连接（connect locally）。\"⑤\"重回收入和利润增长要靠提升效率生产力……这些改变需要时间。\"配套动作：市场生态清理（marketplace cleanup）、以消费者为导向的产品概念、零售生产力提升。",
+   "answer_en": "Key FY2025 Q4 earnings-call comments from the global CEO (Elliott Hill / He Yanfeng): 1) 'China will take longer due to the unique characteristics of the marketplace... a full recovery will take time' — recovery is staged, not instant. 2) 'We do believe in the long-term opportunity in China. There are some structural tailwinds which will continue to unlock further opportunity.' 3) 'Our biggest opportunity is, from a brand perspective, to inspire and invite the 1.3 billion consumers into the world of sport, lifestyle sport and to fitness.' 4) 'The key to winning... is that we need to connect locally.' 5) 'That's how you return to drive revenue and profits there. It's through driving productivity... the changes are going to take time.' Supporting moves: marketplace cleanup, consumer-led product concepts, retail productivity."
+  },
+  {
+   "id": "fin-05-manufacturing",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [
+    "manufacturing footprint China 17% footwear Shanghai HQ",
+    "制造 产地 中国 17% 上海总部"
+   ],
+   "question_zh": "耐克目前的制造布局和大中华区总部情况如何？",
+   "question_en": "What do Nike's manufacturing footprint and Greater China headquarters look like today?",
+   "answer_zh": "FY2025年报（10-K）披露：耐克品牌鞋类仅约17%、服装约15%在中国制造，产能大头已转向越南、印尼等东南亚国家（超70%）。大中华区总部位于上海，支持批发、NIKE Direct和商品企划战略。大中华区是NIKE品牌的报告分部之一。",
+   "answer_en": "Per the FY2025 10-K: only ~17% of NIKE Brand footwear and ~15% of apparel were manufactured in China in FY2025 — the bulk of capacity (over 70%) has shifted to Southeast Asia (Vietnam, Indonesia). Nike's Greater China headquarters is in Shanghai and supports wholesale, NIKE Direct, and merchandising strategies. Greater China is one of the NIKE Brand reportable operating segments."
+  },
+  {
+   "id": "macro-01-market-size",
+   "personas": [
+    "cfo",
+    "ceo",
+    "cmo"
+   ],
+   "keywords": [
+    "market size FY2024 annual report comparisons Adidas Anta Amer",
+    "市场规模 年报口径 对比 2024"
+   ],
+   "question_zh": "按各品牌FY2024年报口径，中国运动鞋服市场主要玩家的规模和增速是怎样的？",
+   "question_en": "Per the brands' own FY2024 annual reports, what are the main players' China scale and growth rates?",
+   "answer_zh": "品牌财报口径（FY2024）：耐克大中华区收入75.45亿美元（剔除汇率+8%），主要受男子、女子、Jordan品牌及童装销售增长带动。阿迪达斯大中华区净销售额34.59亿欧元（剔除汇率+10%），毛利率提升0.9个百分点至49.6%，经营利润率提升3.3个百分点至20.6%。安踏体育集团总收入首次突破人民币700亿元（708.26亿元，+13.6%），中国运动鞋服市场份额升至23.0%，稳居行业第一。Amer Sports大中华区收入12.98亿美元（+50%以上），占集团总收入25%，是三大区域中增速最快的市场。宏观背景：2024年中国GDP +5.0%，社零总额48.8万亿元（+3.5%）；2025年中央经济工作会议将\"提振消费\"列为经济工作首要任务。"
+  },
+  {
+   "id": "macro-02-outdoor-segment",
+   "personas": [
+    "cpo",
+    "ceo"
+   ],
+   "keywords": [
+    "outdoor segment growth Arc'teryx Salomon Descente Kolon FY2024",
+    "户外 细分赛道 增长 始祖鸟 萨洛蒙"
+   ],
+   "question_zh": "户外运动细分赛道的规模与增速如何（品牌财报口径）？",
+   "question_en": "What are the scale and growth of the outdoor segment per the brands' annual reports?",
+   "answer_zh": "户外细分（FY2024财报口径）：Amer Sports以始祖鸟为核心的Technical Apparel分部收入21.94亿美元（2020-2024 CAGR 34%，当年+36%）；以萨洛蒙为核心的Outdoor Performance分部18.36亿美元（CAGR 14%）——两分部合计占集团收入约78%。始祖鸟全年收入首次突破20亿美元，是集团规模最大、增长最快、盈利最强的品牌。萨洛蒙鞋类业务首次突破10亿美元，增长主要由大中华区及亚太驱动，当年在大中华区新开约100家门店。安踏\"其他品牌\"（迪桑特+可隆）收入首次破百亿（106.8亿元，+53.7%），经营溢利率28.6%，是安踏集团增速最快的板块，可隆是当年集团增长最快的单一品牌。"
+  },
+  {
+   "id": "macro-03-digital-trends",
+   "personas": [
+    "cto",
+    "cmo"
+   ],
+   "keywords": [
+    "digital ecommerce online retail DTC share consumer trends",
+    "线上 电商 数字化 消费趋势 DTC占比"
+   ],
+   "question_zh": "中国线上零售和数字化渠道的关键趋势数据有哪些（品牌财报口径）？",
+   "question_en": "What are the key data points on China's online retail and digital-channel trends per the annual reports?",
+   "answer_zh": "消费者趋势（FY2024财报口径）：2024年中国实物商品网上零售额达13.1万亿元人民币（+6.5%），占社零总额26.8%，线上对整体消费的拉动持续增强。安踏电商业务收入同比+21.8%，占集团收入比重由32.8%升至35.1%，AI辅助设计商品订货金额超过20亿元人民币。Amer Sports DTC渠道收入占比由2023年36%提升至2024年44%，管理层持续推动\"批发转直营\"以提升经营利润率。阿迪达斯指出行业持续受益于运动参与率上升、健康与健身意识提升等结构性趋势，并预计2025年大中华区货币中性销售额实现高单位数增长。对比之下：耐克大中华区FY2025数字渠道下滑22%，且其数字体系以全球App为核心，游离于抖音、小红书、微信小程序、天猫等中国主流生态之外。"
+  },
+  {
+   "id": "hr-01-talent-competition",
+   "personas": [
+    "chro"
+   ],
+   "keywords": [
+    "talent competition hiring local brands attractive employers",
+    "人才竞争 招聘 雇主吸引力 安踏 李宁"
+   ],
+   "question_zh": "耐克中国与安踏、李宁之间的人才竞争情况如何？",
+   "question_en": "How is the talent competition between Nike China and Anta / Li-Ning going?",
+   "answer_zh": "安踏和李宁正在成为更有吸引力的雇主，与耐克争夺同样的设计、数字化、市场营销和技术人才。本土品牌的吸引力来自：业务处于上升通道（安踏营收连年双位数增长、市场份额行业第一）、本土决策链条短、给核心人才的成长空间与话语权更大。与此同时，耐克中国面临总部集权（品类负责人由总部空降）、高层人事频繁变动、区域自主权收缩的局面，这既影响内部士气与保留，也削弱对本土顶尖人才的吸引力。任何新战略的落地都需要诚实评估：这些能力我们现在有没有？能不能招得到、留得住？"
+  },
+  {
+   "id": "hr-02-org-change",
+   "personas": [
+    "chro",
+    "ceo"
+   ],
+   "keywords": [
+    "organizing teams new projects change management staffing",
+    "组织 团队 变革管理 配置 新项目"
+   ],
+   "question_zh": "在耐克中国内部组织团队推进新项目、管理变革需要考虑什么？",
+   "question_en": "What does it take to organize teams for new projects and manage change inside Nike China?",
+   "answer_zh": "三个现实约束：①变革负荷已经很高——组织架构刚经历总部主导的切换（各品类负责人由总部空降），战略执行频繁变动，团队需要时间稳定节奏；在此之上叠加新项目要评估变革疲劳。②权责结构——大中华区负责人没有产品研发权和供应链自主权，跨职能新项目往往需要总部审批链路，时间和沟通成本必须计入计划。③能力缺口——本土研发、数字化运营（抖音/小红书生态）、跑步等垂直品类的专业人才是当前缺口，而这些恰恰是本土品牌抢人的重点方向。可行的做法：新项目用小型跨职能专班起步，明确总部对接人，把'人从哪来、谁腾出来、空缺谁补'写进计划——这是学习者最常忽略的部分。"
+  },
+  {
+   "id": "sync-cfo-01",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [],
+   "question_zh": "请陈述Nike大中华区FY2025的营收、增速（报告口径与货币中性口径）、EBIT及EBIT同比变化。如果咨询者问及大中华区净利润或库存，你应该如何回应？",
+   "answer_zh": "FY2025大中华区核心数据如下：\n\n 营收：65.86亿美元，报告口径同比下滑13%，货币中性口径下滑12%。两个口径仅差1个百分点，说明汇率影响相对有限——大部分下滑是真实的业务收缩，不能归因于汇率。\n\n EBIT：16.02亿美元，同比下滑约31%。\n\n 关键洞察（剪刀差）：收入跌13%，EBIT跌31%，跌幅接近翻倍。这说明利润端的压力远大于收入端，背后是两个驱动因素——①毛利率收缩420个基点（从50.2%降至46.0%），主因汇率不利和库存跌价准备增加；②收入杠杆丧失，费用摊薄效果大幅下降。\n\n EBIT率：24.3%，相比FY2024的30.6%掉了6个多百分点。如果拉长到FY2021的39.1%，这个跌幅更能说明问题的严重性。\n\n关于净利润和库存：Nike不单独披露大中华区的净利润，也不单独披露分部层面的库存数据。这是财报结构本身如此——Nike以EBIT作为各地区盈利口径指标，净利润在集团层面合并列报，无法拆分到大中华区。公司整体FY2025库存是75亿美元，但没有按区域拆解。如果有人追问具体数字，我会明确说“无法从公开财报确认，我不会猜测”。"
+  },
+  {
+   "id": "sync-cfo-02",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [],
+   "question_zh": "FY2025大中华区各渠道（Wholesale、NIKE Direct、Digital、Store）的具体表现如何？从CFO视角，哪个渠道的下滑最值得警惕？",
+   "answer_zh": "FY2025大中华区各渠道表现如下：\n\n| 渠道 | 同比变化 |\n\n|||\n\n| Wholesale（批发） | 13% |\n\n| NIKE Direct（直营） | 12% |\n\n| Digital（数字/电商） | 22% |\n\n| Store（实体门店） | 6% |\n\n| Comparable Store（同店） | 7% |\n\n从CFO视角，最值得警惕的是Digital（数字渠道）下滑22%，原因有三：\n\n1. 它是所有渠道中跌幅最大的，远超其他渠道。\n\n2. 数字渠道通常是品牌直接触达消费者、获取一手数据、维持定价话语权的高质量渠道。22%的下滑意味着不仅收入流失，还可能意味着消费者触达能力和品牌直营能力的同步弱化。\n\n3. 对比行业背景：2024年中国实物商品网上零售额增长6.5%（行业宏观数据表），Nike的数字渠道却在同一宏观背景下暴跌22%——这说明问题不在大盘，而在自身。\n\n 边界声明：材料中仅提供了各渠道的收入增速，未提供各渠道的利润率数据。因此我无法从“哪个渠道最不赚钱”这个角度回答，只能从“哪个渠道下滑最危险”的战略角度给出判断。如果被追问利润率，我会明确说明“公开材料未披露此数据”。"
+  },
+  {
+   "id": "sync-cfo-03",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [],
+   "question_zh": "FY2025大中华区毛利率变化了多少个基点？主要原因是什么？作为CFO，你会如何向CEO解释这一变化？",
+   "answer_zh": "FY2025大中华区毛利率收缩了420个基点——从FY2024的50.2%降至FY2025的46.0%。\n\n归因（来自10K原文）：主要原因是汇率不利和库存跌价准备增加。\n\n作为CFO，我会这样向CEO解释：\n\n “贺总，我们的毛利率一年之内掉了4.2个百分点，一半是‘天灾’——汇率波动我们无法控制；另一半是‘人祸’——库存跌价准备增加反映的是产品动销放缓和库存结构老化。这两件事看似独立，实则相关：汇率冲击压缩了利润空间，让我们在定价上捉襟见肘，而定价能力不足又加剧了库存积压，形成恶性循环。\n\n 更值得警惕的是，FY2021我们的毛利率还有约53.5%，现在只剩46%。这意味着我们的品牌溢价能力在结构性减弱。如果我们不能在产品层面重建定价权，即使汇率反转，毛利率也很难回到50%以上。”\n\n 补充说明：如果要进一步拆解“库存跌价准备增加”的量级，材料未给出具体数字，但间接说明了大中华区库存健康度有压力。FY2022和FY2021毛利率为推导值（财报提取§3.2备注），在陈述中应注明“约”或“推导”。"
+  },
+  {
+   "id": "sync-cfo-04",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [],
+   "question_zh": "咨询者可能会问“安踏是否真的在吃掉Nike的份额”。作为CFO，请用数据回答：安踏20242025年的营收规模、增速及市场份额变化，与Nike大中华区的差距在扩大还是缩小？",
+   "answer_zh": "安踏集团的核心财务数据：\n\n| 财年 | 营收 | 增速 | 市场份额（中国） |\n\n|||||\n\n| 2024 | 708.26亿元 | +13.6% | 23.0% |\n\n| 2025 | 802亿元 | +13.3% | 21.8% |\n\n与Nike的差距量化（统一换算为人民币，按约7.25汇率）：\n\n| 财年 | 安踏营收 | Nike大中华区营收 | 差距 |\n\n|||||\n\n| 2024 | 708亿元 | 75.45亿美元 ≈ 547亿元 | 约161亿元（安踏领先） |\n\n| 2025 | 802亿元 | 65.86亿美元 ≈ 478亿元 | 约324亿元（安踏领先） |\n\n结论：差距从约161亿元扩大到约324亿元——安踏从“略微领先”变成了“大幅领先”。\n\n但要注意两点：\n\n1. 安踏的市场份额从23.0%降至21.8%（行业宏观数据表显示2024年为23%，竞品分析显示2025年为21.8%），下降是因为市场份额统计口径发生了变化（可能是行业大盘增长快于安踏），而非安踏在丢份额。\n\n2. 更精确的比较维度应该是品类重叠度——安踏主品牌守大众市场，FILA守高端时尚，迪桑特/可隆抢专业户外。这三层中每一层都在与Nike某个价格带直接竞争，但单一品牌Nike同时防守所有阵地，资源必然分散。\n\n边界声明：以上汇率换算采用约7.25，来自两份材料的间接推导。如果咨询者追问精确汇率，应说明“此为估算值，用于趋势说明而非精确对比”。"
+  },
+  {
+   "id": "sync-cfo-05",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [],
+   "question_zh": "Adidas大中华区20242025年的财务表现如何？它的复苏逻辑中，哪些是Nike可以借鉴的、哪些是Nike无法复制的？请从财务角度分析。",
+   "answer_zh": "Adidas大中华区财务表现：\n\n| 财年 | 营收 | 增速 | 毛利率 | 经营利润率 |\n\n||||||\n\n| 2024 | 34.59亿欧元 | +10%（货币中性） | 49.6% | 20.6% |\n\n| 2025 | 36.2亿欧元（≈290亿元人民币） | +13%（连续11季度增长） | 52.6% | 22.1% |\n\n全球层面：FY2025营收248亿欧元（+13%），创上市以来最高；营业利润20.6亿欧元（+54%）。\n\n从CFO角度分析，Adidas的复苏逻辑可以拆解为三个杠杆：\n\n1. 产品创新：将产品力重新作为驱动收入的首要引擎，而非单纯依赖渠道扩张或折扣促销。财务上体现为毛利率提升2.9个百分点至52.6%——这说明定价权在回归。\n\n2. 减少折扣：提升正价销售占比。这是利润率修复最直接的路径——不需要额外投资，只需要改变销售纪律。\n\n3. 本土化运营：更贴近中国消费者的产品设计和市场策略，而非简单套用全球模板。\n\nNike可以借鉴的部分：\n\n 减少折扣 → 短期见效最快，且不消耗资本。CFO应推动渠道纪律的收紧。\n\n 产品创新驱动正价销售 → 需要时间但可持续，财务模型上应体现在毛利率的逐步修复。\n\nNike无法直接复制的部分：\n\n Adidas在FY2024之前的低基数（Yeezy风波、中国区动荡）给了它一个“触底反弹”的叙事红利。Nike没有这个低基数——FY2024大中华区还有75.45亿美元，是大盘高位。从高位往下修复，比从低位往上爬更难，因为对比基数的压力更大。\n\n 核心判断：Adidas证明了中国市场“产品创新+减少折扣+本土化”是有效的复苏公式。但Nike的起点是FY2025的65.86亿美元（仍在高位），要复苏到FY2024的75.45亿美元水平，需要23个季度的正增长叠加才能抹平心理落差。财务模型上应设定渐进式修复预期，而非V型反转。"
+  },
+  {
+   "id": "sync-cfo-06",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [],
+   "question_zh": "Amer Sports 2025年大中华区营收18.6亿美元，同比增长43.4%。从CFO视角，始祖鸟和萨洛蒙的增长对Nike的定价权、毛利率和市场份额意味着什么？",
+   "answer_zh": "Amer Sports核心财务数据（FY2025）：\n\n| 指标 | 数值 |\n\n|||\n\n| 集团总营收 | 65.7亿美元（+27%） |\n\n| 大中华区营收 | 18.6亿美元（+43.4%） |\n\n| 调整后毛利率 | 58% |\n\n| 营业利润 | 7亿美元（+49%） |\n\n| 归母净利润 | 4.27亿美元（+489%） |\n\n始祖鸟（Technical Apparel）FY2024已突破20亿美元（+36%），萨洛蒙（Outdoor Performance）FY2024为18.36亿美元。\n\n对Nike的三重财务启示：\n\n1. 对定价权的侵蚀：Amer毛利率高达58%，远高于Nike大中华区的46%——说明“专业户外”这个心智标签能支撑比“综合运动品牌”更高的溢价。消费者愿意为始祖鸟的专业性支付更高单价，而Nike在同样场景中拿不到这个溢价。\n\n2. 对毛利率结构的影响：当高端消费者从Nike的篮球/跑步品类（Nike毛利率较高）转向始祖鸟/萨洛蒙时，Nike被迫保留更多中低价格带产品，整体毛利率面临结构性下行压力。\n\n3. 对市场份额的意义：大中华区18.6亿美元已经相当于Nike大中华区营收（65.86亿美元）的28%。一个细分赛道的单一品牌集团就达到这个体量，说明“通吃型品牌”的护城河正在被“专业型品牌”击穿。\n\n CFO的判断：Amer的增长不是周期性的，是结构性的——它反映的是中国消费者从“买logo”向“买专业”迁移的趋势。这个趋势一旦形成，不会因为Nike做一两个营销活动而逆转。Nike要应对的不是Amer的某个品牌，而是整个“专业化细分”的品类趋势。财务上这意味着Nike需要在某些赛道（如跑步）进行有针对性的再投资，而不是在所有赛道平均用力。"
+  },
+  {
+   "id": "sync-cfo-07",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [],
+   "question_zh": "Elliott Hill在FY2025 Q4 earnings call中表示“China will take longer”“full recovery will take time”“driving productivity”和“changes are going to take time”。作为CFO，你如何将这些表述转化为财务预测的假设条件？这对FY2026的营收指引和成本结构意味着什么？",
+   "answer_zh": "将Elliott Hill的定性表述转化为财务假设：\n\n| 管理层表述 | 财务翻译 |\n\n|||\n\n| “China will take longer” | FY2026营收将面临高基数下的持续压力，快速反弹概率低。 |\n\n| “full recovery will take time” | 修复周期至少需要23个季度的正增长才能填补FY2025的缺口。 |\n\n| “driving productivity” | 减少折扣、控制渠道补贴、提高坪效——不需要追加CAPEX，但需要销售纪律。 |\n\n| “changes are going to take time” | 成本结构调整是渐进式的（如供应链调整、库存清理），FY2026仍会有一次性费用冲击利润。 |\n\n对FY2026的财务影响：\n\nFY2026大中华区已披露为58.5亿美元，同比11%（竞品分析§一），连续八个季度下滑。这意味着：\n\n 营收预期：FY2026至少上半年仍会承受高基数压力（对比FY2025上半年的收入水平），下半年可能企稳。\n\n 成本结构：Elliott强调“productivity”而非“growth”，说明SG&A费用不会随收入同比例增长——费用控制会相对严格，但这也意味着固定费用摊薄效应会减弱，对EBIT率形成二次压力。\n\n 库存相关成本：FY2026仍可能面临库存跌价准备的计提压力，这对毛利率构成持续拖累。\n\n CFO的核心判断：不能向董事会承诺“V型反转”。更现实的模型是“L型底部确认 + 渐进式修复” ——FY2026大概率是筑底之年，EBIT率可能在21%23%区间波动（低于FY2025的24.3%），真正的修复可能要到FY2027。"
+  },
+  {
+   "id": "sync-cfo-08",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [],
+   "question_zh": "请梳理Nike大中华区FY2021FY2025的营收和EBIT走势。什么时间点是峰值？从FY2025回看，Nike是在哪个财年开始出现系统性下滑的？请用数据说话。",
+   "answer_zh": "FY2021FY2025 Nike大中华区财务走势：\n\n| 财年 | 营收（亿美元） | 营收增速 | EBIT（亿美元） | EBIT率 |\n\n||||||\n\n| FY2021 | 82.90 | +19%(vs FY2020) | 32.43 | 39.1% |\n\n| FY2022 | 75.47 | 13% | 23.65 | 31.3% |\n\n| FY2023 | 72.48 | +4% | 22.83 | 31.5% |\n\n| FY2024 | 75.45 | +8% | 23.09 | 30.6% |\n\n| FY2025 | 65.86 | 12% | 16.02 | 24.3% |\n\n峰值：FY2021是峰值——营收82.9亿美元，EBIT 32.43亿美元（39.1%），两项均为五年最高。\n\n系统性下滑始于FY2022：FY2022营收13%，是第一个“双位数下滑”。虽然FY2023和FY2024有短暂回弹（+4%、+8%），但均未回到FY2021的峰值水平。\n\n从FY2025回看的判断：下滑不是线性的，而是W型——FY2022骤降，FY20232024短暂修复，FY2025二次探底且更深（13%营收，31%EBIT）。这种“二次探底”比一次性下滑更值得警惕，因为它说明FY20232024的修复是脆弱的、未形成结构性反转。\n\n CFO的关键洞察：FY2021的39.1% EBIT率是一个异常值（疫情后的补偿性消费 + 大规模折扣减少），不应该作为基准。真正值得比较的是FY2024的30.6%和FY2025的24.3%——一年之内掉了6.3个百分点，这个斜率比FY20222023的缓降要陡峭得多，说明问题在加速暴露。"
+  },
+  {
+   "id": "sync-cfo-09",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [],
+   "question_zh": "咨询者的方案中提到“优化库存管理”。作为CFO，你会如何提醒团队：大中华区库存数据的缺失意味着什么？公司整体库存$7.5B（FY2025）和$8.5B（FY2023）的变化趋势中，有什么需要警惕的信号？",
+   "answer_zh": "公司整体库存趋势：\n\n| 财年 | 整体库存（亿美元） | 同比变化 |\n\n||||\n\n| FY2022 | 84 | — |\n\n| FY2023 | 85 | +1亿 |\n\n| FY2024 | 75 | 10亿 |\n\n| FY2025 | 75 | 持平 |\n\n大中华区库存数据的缺失意味着什么？\n\nNike不单独披露大中华区库存，这意味着：\n\n 我们无法直接验证大中华区库存是否健康。\n\n 但间接信号是明确的——FY2025毛利率收缩420个基点，归因之一就是“higher inventory obsolescence reserves”（库存跌价准备增加）。这说明大中华区库存压力已经大到足以影响整体毛利率了，只是没有具体数字而已。\n\n需要警惕的三个信号：\n\n1. 库存下降≠库存健康：整体库存从85亿降至75亿（10亿），但同时毛利率因库存跌价准备增加而下降了——这说明库存减少可能是折扣清货或计提减值的结果，而非健康的库存周转改善。如果是正常动销带来的去库存，毛利率应该改善，而不是恶化。\n\n2. 供应链的地理结构：17%的鞋类和15%的服装在中国制造（财报提取§3.1 Item 1）。这意味着大中华区不仅是销售市场，也是重要的供应基地。供应链中断或成本上升会直接冲击毛利率——FY2026关税已带来约10亿美元额外成本压力（竞品分析§一），这需要提前在财务模型中做压力测试。\n\n3. 跌价准备=动销放缓的信号：库存跌价准备增加是“产品卖不动”的财务显性化。如果FY2026跌价准备继续高企，EBIT会继续承压——这个传导链条需要纳入FY2026的财务预测中。\n\n CFO对团队的提醒：任何“优化库存管理”的方案，必须同时回答三个问题——①清库存的折扣成本由谁承担？（影响毛利率）②清出来的库存货值如何确认？（影响资产负债表的存货科目）③如果清库存导致渠道价格混乱，对品牌定价权的影响怎么量化？（影响远期收入）这三个问题缺一不可，否则方案只是“愿望清单”。"
+  },
+  {
+   "id": "sync-cfo-10",
+   "personas": [
+    "cfo"
+   ],
+   "keywords": [],
+   "question_zh": "综合安踏、Adidas、Amer三家的财务表现，咨询者可能会问“Nike应该优先收复哪个战场？”作为CFO，你会依据什么财务指标来排列投资优先级（产品、品牌、渠道、价格）？请在材料数据范围内给出你的逻辑框架。",
+   "answer_zh": "竞争格局的核心事实（来自竞品分析§五）：\n\n “高端户外场景被始祖鸟、萨洛蒙切割，专业跑步场景被昂跑、Hoka切割，大众市场被安踏主品牌和李宁切割，时尚休闲场景被FILA和Adidas Originals切割。每个细分赛道都有一个专注的品牌在跟Nike打。”\n\n作为CFO，我不会用“收复某个战场”作为投资优先级的框架——那是战术语言。我会用三个财务指标来排序：\n\n| 优先级 | 投资方向 | 财务依据 |\n\n||||\n\n| 第一优先 | 渠道生产力（Productivity） | Elliott Hill明确强调“driving productivity”和“retail productivity”。财务上这是投入产出比最高的领域——减少折扣和渠道补贴能直接改善毛利率（目前46% → 目标重回50%），不需要大量追加投资，只需销售纪律。 |\n\n| 第二优先 | 产品概念的本土化（Consumer-led Product Concepts） | 毛利率持续下滑说明定价权在丢失。不追回定价权，所有其他投资都是“撒钱”。Elliott强调“connect locally”和“consumerled”——财务上这体现为减少对全球通用SKU的依赖，提高大中华区专属产品占比，从而恢复正价销售能力。 |\n\n| 第三优先 | 跑步等核心赛道的精准再投资 | 安踏（迪桑特/可隆+53.7%）和Amer（户外+36%/+14%）在户外/跑步赛道的高增速说明需求在，但Nike没接住。财务逻辑是在Nike有传统优势且能形成规模效应的赛道集中投入（如跑步），而不是在户外从头追赶始祖鸟。 |\n\n不做优先级排序的领域：\n\n 不会优先投资纯防守型折扣促销——短期提量但损害毛利率和品牌溢价，财务模型不可持续。\n\n 不会在所有细分赛道全面反击——资源有限，全面出击=全面平庸。\n\n CFO的核心判断：FY2025的65.86亿美元是个警钟。Nike的问题不是“市场份额被抢了多少”，而是在所有细分赛道的溢价能力都在下滑。优先级的排序应该是：先止血（渠道/折扣纪律）→ 再重建定价权（本土化产品）→ 最后在核心赛道精准投资（跑步） 。这个顺序基于一个简单的财务逻辑：没有毛利率的恢复，收入增长是带不来利润的——FY2025收入13%、EBIT31%已经证明了这个公式的反面。\n\n二、最后扩充30个问题\n\n好的，大人。我已收到全部资料，现在严格按照材料范围，为CFO角色扩充至30个训练问题并附标准答案。所有数据均来自您提供的文档，不引入任何外部信息。\n\n---\n\n耐克中国CFO训练问题集（30个完整版·含答案）\n\n一、问题分类说明\n\n三级难度：\n\n- 简单级：事实确认型问题，测试数字人对基础财务数据的掌握，答案可直接从材料中提取\n\n- 中等级：归因判断型问题，测试数字人对数据之间因果关系的理解，需要在材料数据基础上做合理推断\n\n- 困难级：战略决策型问题，测试数字人在多重约束下的权衡判断能力，答案需综合多份材料\n\n 二、问题列表与标准答案\n\n简单级（第1-10题）：事实确认与基础财务逻辑\n\n第1题：FY2025大中华区核心财务表现\n\n请陈述Nike大中华区FY2025的营收、增速（报告口径与货币中性口径）、EBIT及EBIT同比变化。如果咨询者问及大中华区净利润或库存，你应该如何回应？\n\n标准答案：\n\nFY2025大中华区核心数据如下：\n\n营收：65.86亿美元，报告口径同比下滑13%，货币中性口径下滑12%。两个口径仅差1个百分点，说明汇率影响相对有限——大部分下滑是真实的业务收缩，不能归因于汇率。\n\nEBIT：16.02亿美元，同比下滑约31%。\n\nEBIT率：24.3%，相比FY2024的30.6%掉了6个多百分点。如果拉长到FY2021的39.1%，这个跌幅更能说明问题的严重性。\n\n关键洞察（剪刀差）：收入跌13%，EBIT跌31%，跌幅接近翻倍。这说明利润端的压力远大于收入端，背后是两个驱动因素——①毛利率收缩420个基点（从50.2%降至46.0%），主因汇率不利和库存跌价准备增加；②收入杠杆丧失，费用摊薄效果大幅下降。\n\n关于净利润和库存：Nike不单独披露大中华区的净利润，也不单独披露分部层面的库存数据。这是财报结构本身如此——Nike以EBIT作为各地区盈利口径指标，净利润在集团层面合并列报，无法拆分到大中华区。公司整体FY2025库存是75亿美元，但没有按区域拆解。如果有人追问具体数字，我会明确说“无法从公开财报确认，我不会猜测”。（来源：财报提取§3.1、§3.2；CFO数字人训练Q&A问题1）\n\n第2题：渠道表现拆解\n\nFY2025大中华区各渠道（Wholesale、NIKE Direct、Digital、Store）的具体表现如何？从CFO视角，哪个渠道的下滑最值得警惕？\n\n标准答案：\n\nFY2025大中华区各渠道表现如下：\n\n- Wholesale（批发）：同比-13%\n\n- NIKE Direct（直营）：同比-12%\n\n- Digital（数字/电商）：同比-22%\n\n- Store（实体门店）：同比-6%\n\n- Comparable Store（可比门店销售）：同比-7%\n\n从CFO视角，最值得警惕的是Digital（数字渠道）下滑22%，原因有三：第一，它是所有渠道中跌幅最大的，远超其他渠道。第二，数字渠道通常是品牌直接触达消费者、获取一手数据、维持定价话语权的高质量渠道。22%的下滑意味着不仅收入流失，还可能意味着消费者触达能力和品牌直营能力的同步弱化。第三，对比行业背景：2024年中国实物商品网上零售额增长6.5%，Nike的数字渠道却在同一宏观背景下暴跌22%——这说明问题不在大盘，而在自身。\n\n边界声明：材料中仅提供"
+  },
+  {
+   "id": "sync-cpo-01",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [],
+   "question_zh": "FY2025大中华区鞋类和服装品类的具体表现如何？哪个品类下滑更严重？这对产品策略的优先级意味着什么？",
+   "answer_zh": "根据竞品分析材料，FY2025大中华区鞋类营收下滑13%，服饰营收下滑12%（见竞品分析§一“2025：转折点来临”）。鞋类跌幅略高于服饰，但两者均为双位数下滑，说明问题不是某个品类出了状况，而是全线产品都在失去消费者的选择优先级。\n\n鞋类下滑13%尤其值得关注——鞋类是Nike的核心品类，贡献了大中华区营收的最大份额，也是品牌技术壁垒和溢价能力最集中的品类。当核心品类的跌幅达到双位数，意味着产品层面的竞争力出现了系统性问题。\n\n从产品策略视角看，这一数据要求CPO回答的不是“先救鞋还是先救服”，而是“为什么全线产品都失去了消费者的选择优先级”。竞品分析指出，安踏将自研成果迅速覆盖至300-600元主流价格带，而Nike仍高度依赖经典款式的配色更新（竞品分析§五“竞争格局总结”）。这表明产品定义逻辑可能需要从“全球模板+本地配色”转向更贴近中国消费者真实需求的方向。\n\n边界声明：材料中未提供鞋服品类的具体营收金额或占比，仅提供了增速。以上分析基于增速数据及竞品对比。"
+  },
+  {
+   "id": "sync-cpo-02",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [],
+   "question_zh": "有评论认为Nike的产品创新陷入停滞，“靠换配色撑销量”。作为CPO，你如何从产品角度回应这一质疑？",
+   "answer_zh": "竞品分析材料中确实引述了类似批评：“耐克当下的尴尬在于，它曾引以为傲的数字化战略和‘老三样’（AJ1、Dunk、Air Force 1）在中国高频变幻的消费逻辑面前显得反应迟钝”（竞品分析§一“2025：转折点来临”）。材料进一步指出，当安踏将自研成果迅速覆盖至300-600元主流价格带时，Nike仍高度依赖经典款式的配色更新；安踏的专业系列及李宁的专业跑鞋、篮球鞋线，通过高频次的技术更新打破了Nike的科技垄断（竞品分析§五“竞争格局总结”）。\n\n从CPO视角看，这一批评有其合理性。消费者的感知是真实的——当市场将Nike的产品创新等同于“换配色”时，说明创新没有被有效转化为可感知的产品价值。但材料也指出，Nike并非没有技术积累，问题在于“在马拉松等专业场景中，国产品牌正在用实际表现改写‘Nike=专业’的认知”。\n\n这要求CPO思考：产品创新的品牌叙事不能只停留在“推出新技术”的功能层面，而需要回答“这个创新解决了中国消费者什么真实痛点”。Elliott Hill在FY2025 Q4 earnings call中强调“consumer-led product concepts”（财报提取§3.3），正是对这一问题的直接回应。\n\n边界声明：材料中未提供Nike具体研发投入金额或新产品数量，以上分析基于竞品对比和行业评论。"
+  },
+  {
+   "id": "sync-cpo-03",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [],
+   "question_zh": "安踏集团2025年营收802亿元（+13.3%），其多品牌产品矩阵覆盖大众专业运动、高端时尚、专业户外等赛道。从CPO视角，这对Nike的产品组合策略构成了什么挑战？",
+   "answer_zh": "根据竞品分析材料，安踏集团采用三层品牌梯队：安踏主品牌（347.5亿元，+3.7%）守大众市场，FILA（284.7亿元，+6.9%）守高端时尚，迪桑特（流水破100亿，+35%）和可隆（流水破60亿，+70%）抢专业户外（竞品分析§二“三大品牌梯队”）。这三个层级没有互相打架，反而形成互补。\n\n从CPO视角，这对Nike单一品牌产品组合的挑战在于：\n\n心智切割：安踏用四个品牌分别占领四个不同的消费者心智区间——大众、时尚、专业户外、高端户外。而Nike用一个品牌同时打所有区间。消费者在不同场景下会想到不同品牌，Nike在每个场景中都面临一个“更专注”的对手（竞品分析§五“竞争格局总结”）。\n\n价格带的全面覆盖：安踏的多品牌矩阵从大众价格带到高端价格带都有产品布局。Nike单一品牌的价格带跨度极大，既要守住大众市场，又要维持高端定位，这两者在折扣促销的现实中常常相互冲突。\n\n产品创新的“双向挤压”：安踏主品牌在专业性能上快速追赶，迪桑特/可隆在材质工艺和设计美学上抢占高端心智。Nike在专业性能和设计美学两个维度都面临被“分食”的局面。\n\n竞品分析明确指出：“Nike以单一品牌同时打这三个区间，既要又要，反而哪头都没守住”（竞品分析§二“对Nike意味着什么”）。这要求CPO在产品组合上做出取舍，集中资源在Nike最具优势的赛道。\n\n边界声明：材料中未提供各品牌具体产品SKU数量或研发投入对比，以上分析基于营收数据和市场定位描述。"
+  },
+  {
+   "id": "sync-cpo-04",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [],
+   "question_zh": "Adidas大中华区已连续11个季度增长，2025年营收36.2亿欧元（+13%），毛利率52.6%。从CPO视角，Adidas的产品策略中有哪些值得Nike借鉴？",
+   "answer_zh": "根据竞品分析材料，Adidas大中华区2025年营收36.2亿欧元（约290亿人民币），同比+13%，连续11个季度增长；毛利率提升至52.6%，经营利润率22.1%（竞品分析§四）。其复苏逻辑被总结为“产品创新+减少折扣+本土化运营”（竞品分析§四“对Nike意味着什么”）。\n\n从产品策略视角，值得借鉴的关键点在于：\n\n产品定义的本土化：材料指出Adidas“在中国市场，产品创新+减少折扣+本土化运营，是可以把失去的份额重新抢回来的”（竞品分析§四）。虽然没有提供具体本土化产品占比数据，但复苏本身说明产品层面的调整是有效的。\n\n产品聚焦：Adidas围绕中国节日、本土运动员、街头文化及年轻审美开展本土化表达，并在跑步、训练、户外、潮流等具体使用场景中重新锚定产品价值（CMO相关分析中提及，但CPO可借鉴其场景化产品思路）。\n\n对Nike的启示是：中国消费者能清晰分辨“真本土化”和“伪本土化”。真正的本土化产品不是把全球款换个配色，而是从中国消费者的运动习惯、审美偏好、使用场景出发定义产品。Elliott Hill强调“connect locally”和“consumer-led product concepts”（财报提取§3.3），正是对这一方向的确认。\n\n边界声明：材料中未提供Adidas本土产品占比数据，以上分析基于其整体复苏逻辑和对Nike的启示。"
+  },
+  {
+   "id": "sync-cpo-05",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [],
+   "question_zh": "Amer Sports 2025年大中华区营收18.6亿美元，同比增长43.4%，调整后毛利率58%。始祖鸟和萨洛蒙的增长对Nike的产品定位和定价权意味着什么？",
+   "answer_zh": "根据竞品分析材料，Amer Sports 2025年总营收65.7亿美元（+27%），大中华区18.6亿美元（+43.4%），调整后毛利率58%，营业利润7亿美元（+49%）（竞品分析§三）。始祖鸟（户外功能性服饰）2025年营收28.6亿美元（+30%），萨洛蒙（山地户外装备）2025年营收24亿美元（+31%）（竞品分析§三“三大板块”）。\n\n从CPO视角，这一定价和增长数据意味着：\n\n对定价权的侵蚀：Amer毛利率高达58%，远高于Nike大中华区的46%（财报提取§3.2），说明“专业户外”这个心智标签能支撑比“综合运动品牌”更高的产品溢价。消费者愿意为始祖鸟的专业性支付更高单价，而Nike在同样场景中拿不到这个溢价。\n\n产品定位的挤压：材料指出“亚玛芬的增长反映了一个真实趋势：中国消费者正在从‘买logo’转向‘买专业’”（竞品分析§三“对Nike意味着什么”）。这对Nike产品定位的启示是，单纯依靠品牌logo已经不足以支撑高端定价，产品本身必须具备“专业”的可感知价值。\n\n细分赛道的专业化：始祖鸟、萨洛蒙代表的专业户外品牌，吃掉的是Nike在高端运动场景中的份额——“那个曾经‘通吃所有运动场景’的Nike，正在被越来越细分的专业品牌逐一击破”（竞品分析§三）。\n\n这要求CPO思考：在哪些产品品类上Nike可以建立“专业”心智，在哪些品类上可能需要战略性收缩。\n\n边界声明：材料中未提供Nike与Amer在具体产品品类上的直接竞争数据，以上分析基于整体营收和毛利率对比。"
+  },
+  {
+   "id": "sync-cpo-06",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [],
+   "question_zh": "FY2025大中华区毛利率从50.2%降至46.0%，收缩420个基点，主因包括汇率不利和库存跌价准备增加。从CPO视角，产品成本结构在这一变化中扮演了什么角色？",
+   "answer_zh": "根据财报提取材料，FY2025大中华区毛利率收缩420个基点，主要归因于“unfavorable FX and higher inventory obsolescence reserves”（财报提取§3.1，Item 7 MD&A p.43）。EBIT同比下滑31%，收入仅下滑13%，这一“剪刀差”部分源于毛利率的大幅收缩（问题1答案中已有分析）。\n\n从CPO视角，库存跌价准备的增加是一个关键信号。库存跌价准备增加，本质上是产品动销放缓和库存结构老化的财务显性化。当产品卖不动时，过季库存需要计提减值，直接侵蚀毛利率。这要求CPO回答：为什么产品动销放缓了？是产品定义与消费者需求错位，还是产品上市节奏与市场脱节，还是产品品质问题导致消费者放弃购买？\n\n材料还提供了供应链背景：FY2025年17%的NIKE Brand鞋类和15%的服饰在中国制造（财报提取§3.1，Item 1 p.6）。这意味着大中华区不仅是销售市场，也是重要的供应基地。供应链成本波动（如汇率、关税）会直接传导至产品成本，进而影响定价和毛利率。\n\nCPO在产品定义阶段就需要将成本结构纳入考量——包括材料成本、制造成本、物流成本，以及汇率和关税的潜在影响。如果产品只能在高于目标成本的水平上实现，那要么调整产品定义，要么接受利润率受损的后果。\n\n边界声明：材料中未提供大中华区具体库存金额或跌价准备金额，以上分析基于整体毛利率变化和归因。"
+  },
+  {
+   "id": "sync-cpo-07",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [],
+   "question_zh": "Elliott Hill在FY2025 Q4 earnings call中表示“The key to winning is that we need to connect locally”和“consumer-led product concepts”（财报提取§3.3）。作为CPO，你如何将这些指示转化为产品策略？",
+   "answer_zh": "Elliott Hill的表述出现在财报提取材料的五个关键引述中（财报提取§3.3）。其中与产品直接相关的包括：\n\n“The key to winning... is that we need to connect locally.”（第4条）\n\n“That‘s how you return to drive revenue and profits there. It’s through driving productivity... the changes are going to take time.”（第5条）\n\n“Our biggest opportunity is, from a brand perspective, to inspire and invite the 1.3 billion consumers into the world of sport, lifestyle sport and to fitness.”（第3条）\n\n从CPO视角，“consumer-led product concepts”要求产品定义逻辑从“全球产品+本地适配”转向“本地消费者洞察驱动产品概念”。这意味着：\n\n产品洞察的本地化：不能简单地将全球产品库中的款式拿来配色上市，而需要基于中国消费者的运动场景（如晨跑、夜跑、篮球、健身、通勤）、审美偏好、功能需求来定义产品概念。\n\n产品决策权的下放：“connect locally”要求让听得见炮火的人做产品决策。如果大中华区产品团队只能做“选色和微调”，那么“local”就永远只是执行层面，而非战略层面。\n\n产品与消费者场景的紧密结合：Elliott Hill提到“invite consumers into the world of sport, lifestyle sport and fitness”，这意味着产品不应该只作为商品销售，而应该与具体的运动生活方式绑定。CPO需要与营销、渠道协同，让产品在具体的消费者场景中产生价值。\n\n材料没有提供具体的时间表或执行细节，但Elliott Hill强调“changes are going to take time”（财报提取§3.3第5条），说明这一转变需要持续的投入和耐心。\n\n边界声明：材料中未提供Nike大中华区本土产品团队的具体规模、决策权限或时间表，以上分析基于Elliott Hill的定性表述。"
+  },
+  {
+   "id": "sync-cpo-08",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [],
+   "question_zh": "竞品分析指出Nike正被四面夹击——高端户外被始祖鸟切割、专业跑步被昂跑/Hoka切割、大众市场被安踏/李宁切割、时尚休闲被FILA/Adidas切割。从CPO视角，产品组合应该如何调整优先级？",
+   "answer_zh": "竞品分析§五“竞争格局总结”明确指出：“Nike中国业务正被四面夹击”，“每个细分赛道都有一个专注的品牌在跟Nike打，而Nike用单一品牌同时防守所有阵地——资源分散，每条线都在被动应战”。\n\n从CPO视角，这一格局要求在产品组合上不能四面出击，必须做出取舍。基于材料提供的数据，可以形成以下优先级判断：\n\n优先级\t产品赛道\t依据\n\n第一优先\t专业跑步\tNike在跑步领域有深厚的产品资产（从Air Max到Zoom系列），且行业宏观数据显示户外细分赛道增速（迪桑特/可隆+53.7%，Amer户外两分部+36%/+14%）远高于Nike大中华区整体增速，跑步是其中重要组成部分。这是Nike“应该赢”的赛道。\n\n第二优先\t篮球/运动文化\tJordan品牌和篮球文化是Nike区别于所有竞品的独有产品资产（竞品分析§十“竞争格局总结”中未直接提及，但“老三样”中的AJ1说明其重要性）。没有其他品牌拥有乔丹，这是Nike“必须守住”的产品品类。\n\n第三优先\t时尚休闲/潮流\t市场规模大，但竞争最激烈（FILA、Adidas Originals等）。Nike需要“有选择地打”——聚焦核心鞋款（AF1、Dunk、Air Max）的文化叙事，而非全面铺开。\n\n战略性收缩\t高端户外硬壳\t始祖鸟已经在专业户外领域建立了难以撼动的专业心智（竞品分析§三），Nike在这个品类投入过多资源去追赶一个已经领先太多的对手，ROI可能较低。\n\n竞品分析进一步指出：“对手的增速说明市场需求没有萎缩，萎缩的是Nike在中国消费者心智中的位置”（竞品分析§五）。这要求CPO不是简单地“防守所有阵地”，而是选择最能重建消费者心智的产品赛道集中发力。\n\n边界声明：材料中未提供各产品品类的具体利润率或市场规模数据，以上优先级排序基于竞品分析中的定性描述和有限的营收数据。"
+  },
+  {
+   "id": "sync-cpo-09",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [],
+   "question_zh": "根据财报提取材料，FY2025年17%的NIKE Brand鞋类和15%的服饰在中国制造。这一供应链结构对CPO的产品成本管理和产品上市节奏意味着什么？",
+   "answer_zh": "财报提取§3.1（Item 1 p.6）明确指出：“In FY2025, 17% of NIKE Brand footwear and 15% of apparel were manufactured in China.”这意味着大中华区不仅是Nike的重要销售市场，也是核心供应基地。\n\n从CPO视角，这一结构具有双重影响：\n\n机遇：\n\n就近供应：中国制造的产品可以更快地进入大中华区市场，缩短上市周期，快速响应本地消费趋势变化。\n\n成本优势：相比从其他地区进口，本地制造可能降低物流成本和关税成本（尽管汇率波动仍然存在）。\n\n挑战：\n\n汇率风险：毛利率收缩420个基点中，汇率不利是主因之一（财报提取§3.1）。当人民币兑美元汇率波动时，以美元计价的成本和利润都会受到冲击。CPO在产品定价时需要将汇率风险纳入考量。\n\n供应链中断风险：任何影响中国制造的因素（如贸易政策、关税、物流中断）都会直接冲击产品成本。竞品分析提到FY2026关税带来约10亿美元额外成本压力（竞品分析§一），这已经是一个现实信号。\n\n品质管控：中国制造比例较高，意味着产品质量的源头管理至关重要。任何品控问题都会直接影响大中华区的产品销售和品牌声誉。\n\nCPO需要在产品成本管理和供应链韧性之间找到平衡——既利用本地制造的优势，又通过多元化采购策略对冲风险。Elliott Hill强调“driving productivity”（财报提取§3.3第5条），也隐含了对成本效率的要求。\n\n边界声明：材料中未提供中国制造的具体成本结构或对毛利率的具体影响金额，以上分析基于制造比例和宏观环境描述。"
+  },
+  {
+   "id": "sync-cpo-10",
+   "personas": [
+    "cpo"
+   ],
+   "keywords": [],
+   "question_zh": "案例材料中提到Nike在中国市场面临“product quality concerns”（产品品质担忧）。作为CPO，产品质量问题在产品战略中处于什么位置？你如何应对？",
+   "answer_zh": "在资料研读的案例介绍中明确列出了Nike面临的五大问题之一就是“product quality concerns”（财报提取§1，Case introduction）。虽然材料中没有提供具体的投诉数据或案例细节，但这一问题的存在本身就是一个重要信号。\n\n从CPO视角，产品质量问题不是“公关问题”，而是产品战略的底线问题。如果消费者买了一双Nike鞋在短期内出现质量问题（如开胶、磨损过快等），这种体验对品牌资产的伤害远大于任何竞品的营销攻势。更深远的影响是，质量问题会与“创新停滞”“品牌定位模糊”等问题叠加，共同导致消费者选择放弃Nike。\n\n结合材料中的数据：\n\nFY2025毛利率收缩420个基点中，“higher inventory obsolescence reserves”是原因之一（财报提取§3.1）。库存跌价准备的增加，部分原因可能是产品品质问题导致动销放缓——消费者不愿意为品质存疑的产品支付溢价。\n\n竞品分析指出，安踏、李宁等品牌在专业性能上快速追赶，打破了Nike的科技垄断（竞品分析§五）。如果Nike的产品在品质和性能上同时受到质疑，那品牌溢价的基础就会进一步削弱。\n\nCPO的应对策略应包括：\n\n源头治理：从供应链端加强品控标准，特别是对中国制造的鞋服品类（占比17%和15%），建立更严格的出厂检测流程。\n\n快速闭环：从消费者投诉到工厂端改进，建立更短的反馈链路，确保质量问题的及时发现和纠正。\n\n产品测试的本地化：中国消费者的使用场景（如城市通勤、高强度训练）可能与全球其他市场存在差异，CPO应考虑在大中华区建立更贴合本地使用习惯的产品测试标准。\n\n核心判断是：在产品创新和产品质量之间，质量是底线，创新是上限。底线守不住，上限再高也没有意义。\n\n边界声明：材料中未提供具体的产品投诉数据、退货率或品控流程细节，以上分析基于“product quality concerns”这一定性描述及其与财务数据的逻辑关联。\n\n使用说明：以上10个答案的所有数据均可回溯至三份核心材料（财报提取、竞品分析、行业宏观数据表）。CPO数字人在实际访谈中被问及材料未覆盖的数据（如具体研发投入、SKU数量、产品质量投诉率等），应统一采用“公开材料未披露此数据”的表述，绝不编造。\n\n最后扩充30问\n\n一、诊断类（8问）\n\n问题1（简单级）：耐克在跑步品类上的具体表现如何？为什么这是一个值得CPO关注的问题？\n\n答案：根据竞品分析材料，耐克跑步业务2025年仅有中个位数增长，远远跑输行业大盘，而2025年中国户外用品销售额同比增长22%，跑步鞋服是其中最大的子品类。李宁跑步流水占比已从16%升至31%，直接拉动了整体增长（策略类Q3）。从CPO视角看，当一个竞争对手通过某个品类的增长拉动了整体业绩、而耐克在该品类上几乎零增长时，意味着耐克正在错失一个结构性增长机会，这个品类的空间远未被耐克充分挖掘（策略类Q5）。\n\n问题2（简单级）：为什么耐克在跑步品类的产品创新速度会落后于Hoka、On等新兴品牌？\n\n答案：根据诊断类Q6，原因包括：资源倾斜潮流复刻（AF1、Dunk），挤压跑鞋研发，Vaporfly多年小改无突破性技术；CEO承认远程办公2.5年削弱研发协同，实物试错效率下降；组织架构将跑步团队并入大众品类，丢失垂直深耕能力，而Hoka和On全公司聚焦跑步、创始团队懂跑者痛点；竞品精准切分越野、长距离、都市慢跑，厚底、镂空等差异化明显，耐克走万金油均衡路线缺乏记忆点；产能迁东南亚拖慢新品落地。\n\n问题3（简单级）：耐克在篮球品类上的竞争地位如何？这是否仍是耐克的安全区？\n\n答案：根据策略类Q5，篮球品类耐克仍领先但市场空间已经饱和。乔丹品牌和篮球文化是耐克区别于所有竞品的独有产品资产，没有其他品牌拥有乔丹。但在中国市场的实际竞争中，李宁在专业篮球线上通过高频次技术更新打破了耐克的科技垄断（竞品分析§五）。这意味着篮球是耐克必须守住的品类，但不是增长引擎，守住的方式不是继续扩大投入，而是用Jordan品牌的文化资产做差异化防守。\n\n问题4（中等级）：耐克在时尚休闲品类上面临的竞争与其他品类有何不同？\n\n答案：根据竞品分析§五，时尚休闲场景被FILA和Adidas Originals切割。与其他品类相比，时尚休闲的竞争特点是竞品打法高度克制——Adidas通过Samba、Gazelle等复古鞋型的供给控制制造稀缺感，而非依靠技术参数竞争。这与跑步品类面临的技术追赶、户外品类面临的专业心智竞争性质不同。时尚休闲的竞争核心是产品生命周期的管理能力而非技术突破速度。CPO需要关注的是供给节奏的管控而非新技术的推出。\n\n问题5（中等级）：耐克的经典款依赖问题有多严重？这对产品组合有什么影响？\n\n答案：根据诊断类Q6和策略类Q1，资源倾斜潮流复刻（AF1、Dunk）挤压了跑鞋研发；产品上过度依赖AJ1、Dunk、Air Force 1换配色，缺乏真正的创新爆款（策略类Q1）。竞品分析进一步指出，当安踏将自研成果迅速覆盖至300-600元主流价格带时，耐克仍高度依赖经典款式的配色更新（竞品分析§五）。从产品组合角度看，这意味着耐克的产品矩阵中增长性品类的权重不足，而防守性品类占据了过多资源，整体组合处于老化状态。\n\n问题6（中等级）：产品品质问题的根源中，哪些是CPO可以直接影响的？\n\n答案：根据诊断类Q3，质量投诉增多的原因包括：产能超70%迁至越南印尼导致瑕疵频发；国内高仿产业链成熟导致假货混淆；社交媒体放大个案感知；产品创新乏力导致消费者容忍度下降；售后质保短退换繁琐。其中，CPO可以直接影响的是第四项——通过产品创新提升感知价值，从而恢复消费者的容忍阈值。产能转移和高仿问题是运营和品牌端的职责，CPO可以协同但无法独立解决。\n\n"
+  },
+  {
+   "id": "sync-ceo-01",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "为什么耐克大中华区收入这几年一直在下滑？我很难理解这么大的品牌怎么会连续下滑。",
+   "answer_zh": "三股力量叠加：安踏、李宁这些本土品牌在设计和品质上追得很快，价格却比我们低；我们供应链转移到东南亚后出现的品控问题，让消费者对“Nike品质”的信任打了折扣；再加上2021年新疆棉事件之后，我们在品牌好感度上一直没能完全恢复。这三件事互相强化，不是单一原因能解释的。"
+  },
+  {
+   "id": "sync-ceo-02",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "收入下滑是从什么时候开始加速的？",
+   "answer_zh": "FY2023到FY2025，大中华区收入从大约72.5亿美元降到65.9亿美元，降幅13%左右；最近几个季度更明显，单季度出现过20%左右的下滑。这不是一次性波动，是连续多个季度的趋势，总部也把它定性为结构性问题，不是短期周期性的。"
+  },
+  {
+   "id": "sync-ceo-03",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "三大问题里，你认为哪一个是根源，哪些是表象？",
+   "answer_zh": "我个人认为品牌受损是根，竞争和质量问题是表象放大器。新疆棉事件动摇了我们和消费者之间的情感连接，之后本土品牌趁虚而入，供应链转移的质量问题又被放大讨论。如果品牌信任还在，另外两个问题的杀伤力会小很多。"
+  },
+  {
+   "id": "sync-ceo-04",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "消费降级和国潮这些宏观趋势，对我们的影响有多大？",
+   "answer_zh": "影响很实在。中国消费者在可选消费上更谨慎了，性价比变得更重要，而安踏、李宁的定价通常只有我们的一半左右，性能却在快速追近。同时“国潮”让很多年轻人更愿意为国产品牌的文化认同买单，这是我们过去没有认真对待的趋势。"
+  },
+  {
+   "id": "sync-ceo-05",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们自己有没有做错什么，还是完全是外部环境的问题？",
+   "answer_zh": "老实说，两者都有。外部环境确实变难了，但我们自己在DTC渠道调整上操之过急，把太多经销商的生意收回来，结果库存全部压在自己手里，只能靠打折清货，这对品牌价格体系的伤害是我们自己造成的。"
+  },
+  {
+   "id": "sync-ceo-06",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "库存和折扣问题，是不是已经影响到品牌形象了？",
+   "answer_zh": "是的，而且是我最担心的问题之一。消费者已经形成“耐克总会打折，不用急着买”的心理，这比短期收入下滑更伤根基，因为它动摇了品牌溢价能力，恢复起来需要好几年。"
+  },
+  {
+   "id": "sync-ceo-07",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "新疆棉事件到今天已经过去几年了，为什么影响还没消退？",
+   "answer_zh": "因为我们从没有正式就采购问题道歉或者给出明确表态，只是悄悄下架了声明，这被很多消费者解读为傲慢。加上安踏、李宁那几年顺势把国货认同感和这件事绑定在一起，Z世代消费者是在那个氛围里长大的，对我们天然有距离感。"
+  },
+  {
+   "id": "sync-ceo-08",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "供应链转移到越南、印尼后，质量问题具体是什么样的？",
+   "answer_zh": "主要是新工厂的工人熟练度还没跟上，一些经典复刻款出现鞋标错位、溢胶这类瑕疵；再加上市面上高仿产业链很成熟，消费者有时候分不清是正品瑕疵还是假货，两种声音混在一起，讨论量被放大了。"
+  },
+  {
+   "id": "sync-ceo-09",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "这些问题里，哪个是我们最快能改善的？",
+   "answer_zh": "库存和折扣结构调整见效最快，我们已经在做更严格的sell-in管理；质量问题需要一两年供应链磨合；但品牌信任的重建，说实话是最慢的，可能需要三到五年，而且不能只靠营销，要看产品和渠道体验能不能真正说服消费者。"
+  },
+  {
+   "id": "sync-ceo-10",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "总部是怎么看待大中华区这一连串下滑的？",
+   "answer_zh": "总部把这里定义为“结构性问题”而不是短期波动，这意味着他们愿意投入资源，但也意味着他们会要求更强的管控，而不是简单给我们更多自主权，这一点我后面会细说。"
+  },
+  {
+   "id": "sync-ceo-11",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你觉得我们和阿迪达斯比，差距是在拉大还是缩小？",
+   "answer_zh": "差距在缩小，而且方向对我们不利。前年我们和阿迪的营收差距大概200亿人民币，去年缩小到188亿左右，因为他们在增长而我们在下滑。阿迪走的路子有一部分是我们应该学的，比如减少折扣依赖。"
+  },
+  {
+   "id": "sync-ceo-12",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "从整体业务结构看，我们现在最大的隐患是什么？",
+   "answer_zh": "中端价格带的空心化。我们的高端产品还有品牌力支撑，但中间这一段被安踏、李宁用更高性价比的产品填满了，而这一段恰恰是走量的主力价格带。"
+  },
+  {
+   "id": "sync-ceo-13",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "如果只能选一个词形容我们现在的处境，你会怎么说？",
+   "answer_zh": "“被追上”。不是被打垮，是被追上——竞争对手在质量、设计、渠道、数字化上全方位缩小了差距，我们过去靠品牌势能就能赢的打法，现在不够用了。"
+  },
+  {
+   "id": "sync-ceo-14",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "FY2025第四季度和2026年最新季度，下滑幅度好像更严重了，具体是什么情况？",
+   "answer_zh": "是的，FY2025 Q4大中华区下滑约21%，其中鞋类跌20%、服装跌19%；分渠道看，批发跌24%、直营跌15%、电商跌31%。进入2026财年Q2，跌幅仍有17%左右，利润更是接近腰斩。核心原因是供需错配、关税新增成本、加上国货持续替代，管理层已经把这定性为结构性长期问题，不是一两个季度能扭转的。"
+  },
+  {
+   "id": "sync-ceo-15",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们的毛利率和主要竞争对手比，差距有多大？",
+   "answer_zh": "差距不小。我们FY24毛利率大约44.6%，比安踏低17.6个百分点，比阿迪达斯低5个百分点。这组数字其实是折扣力度最直接的反映——毛利率越低，说明我们越依赖打折出货，这也印证了消费者“不打折不买”的心理已经很根深蒂固。"
+  },
+  {
+   "id": "sync-ceo-16",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "除了外部竞争，我们内部产品创新是不是也跟不上了？",
+   "answer_zh": "这一点我承认。跑步这个核心品类的创新速度确实落后于Hoka、On这些新兴品牌，一部分原因是我们把太多研发资源倾斜给了空军一号、Dunk这些复刻潮流款，跑鞋本身多年没有真正的技术突破。另外疫情期间远程办公也确实影响了研发团队的协同效率，这是我们内部要反思的。"
+  },
+  {
+   "id": "sync-ceo-17",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "组织架构上，跑步团队现在是怎么设置的？",
+   "answer_zh": "之前跑步团队被并入了大众品类里，等于丢失了垂直深耕的能力。相比之下，Hoka、On几乎是全公司围绕跑步这一件事在转，团队对跑者痛点的理解更深，这是组织设计上的差距，不只是预算问题。"
+  },
+  {
+   "id": "sync-ceo-18",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "会员和App这块的运营，是不是也有问题？",
+   "answer_zh": "有，这块更偏技术和数字化的细节，建议你去问技术与数字副总裁，他对会员体系和线上平台的运作更清楚。我只能从大局告诉你，这确实是我们过去几年投入不够聚焦的一块。"
+  },
+  {
+   "id": "sync-ceo-19",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们现在的库存水位健康吗？",
+   "answer_zh": "正在改善。这两个季度我们更积极地管理sell-in，大中华区库存金额和件数都实现了两位数下降，库存单位数同比骤降超过20%。这是主动收缩换回来的，短期收入会承压，但长期看是必须要做的事。"
+  },
+  {
+   "id": "sync-ceo-20",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "消费者对我们的品牌好感度，现在处于什么水平？",
+   "answer_zh": "新疆棉事件之后，好感度从75%左右骤降到42%，这几年虽然没有再出现类似量级的负面事件，但也没有看到明显的回升，说明修复工作做得还不够，这不是靠一两次营销活动能解决的。"
+  },
+  {
+   "id": "sync-ceo-21",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "高仿产品对我们品牌的影响，你怎么看？",
+   "answer_zh": "这是个容易被低估的问题。国内高仿产业链已经很成熟，有些消费者甚至分不清正品和高仿，鉴定平台还出现过“正品做工不如高仿”的说法，这些声音混在一起，会让消费者觉得“耐克质量变差了”，其实里面有相当一部分是高仿造成的误解，但对品牌的伤害是真实的。"
+  },
+  {
+   "id": "sync-ceo-22",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们的门店客流情况怎么样？",
+   "answer_zh": "不太乐观，最近的数据显示客流有两位数的下滑，动销也不足。这跟品牌吸引力下降、加上折扣心理固化都有关系，消费者宁愿等大促也不愿意正价进店购买。"
+  },
+  {
+   "id": "sync-ceo-23",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你觉得这一连串问题，本质上是不是耐克在中国“水土不服”？",
+   "answer_zh": "我不完全同意“水土不服”这个说法，因为我们在中国已经40年了，不是新玩家。我更愿意把它理解为“过去成功的打法已经不够用了”——市场变了，消费者变了，我们调整的速度没有跟上变化的速度。"
+  },
+  {
+   "id": "sync-ceo-24",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "如果要给这一连串问题排一个优先级，你会怎么排？",
+   "answer_zh": "我会把品牌信任修复排第一，因为它是其他一切的基础；其次是价格体系和渠道关系，因为这直接决定我们能不能健康地做生意；质量问题排第三，因为它相对更容易通过供应链管理解决。这只是我个人的排序，学员们可以有自己的判断。"
+  },
+  {
+   "id": "sync-ceo-25",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你觉得下滑这件事，对我们的经销商信心影响大吗？",
+   "answer_zh": "影响很大。经销商这几年经历了DTC调整带来的订单收缩，又看到终端在打折清库存，他们对我们品牌的信心是打了折扣的，这也是我们现在要花很大力气修复批发渠道关系的原因。\n\n二、竞品类（共25题）"
+  },
+  {
+   "id": "sync-ceo-26",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "安踏和李宁现在对我们的真实威胁有多大？",
+   "answer_zh": "已经不是“追赶者”级别的威胁了。安踏去年营收802亿人民币，市占率21.8%，连续四年行业第一，体量已经超过我们大中华区业务本身。这不是情绪化的判断，是实打实的数字。"
+  },
+  {
+   "id": "sync-ceo-27",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "安踏靠什么做到这个体量的？",
+   "answer_zh": "多品牌矩阵。主品牌守大众价格带，FILA守高端时尚，迪桑特和可隆去年流水增速分别是35%和70%，专攻专业户外这个我们布局较弱的领域。三个品牌共用供应链，成本上有规模效应，我们只有一个品牌在同时防守所有价格带。"
+  },
+  {
+   "id": "sync-ceo-28",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们该学安踏做多品牌吗？",
+   "answer_zh": "这是个大问题，值得认真讨论，但不是CEO一句话能定的。我们历史上收购整合的成绩不算好，Umbro、Converse都没完全整合好。更现实的路径可能是用现有的产品系列做差异化分层，而不是仓促收购新品牌。"
+  },
+  {
+   "id": "sync-ceo-29",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "李宁最近的势头怎么样？",
+   "answer_zh": "李宁的跑步业务是个信号，流水占比从16%涨到31%，说明专业运动这条路他们是真的在投入，不只是喊口号。这提醒我们，跑步这个品类不能只守不攻。"
+  },
+  {
+   "id": "sync-ceo-30",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "Adidas这几年是怎么翻身的？",
+   "answer_zh": "他们做对了我们没做好的几件事：减少折扣依赖、修复渠道关系、加强专业跑步内容。这几件事听起来简单，但需要总部真正下决心，短期牺牲一些收入去换回价格体系和渠道信任，这正是我们现在要面对的取舍。"
+  },
+  {
+   "id": "sync-ceo-31",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "Amer Sports（始祖鸟母公司）对我们是什么级别的威胁？",
+   "answer_zh": "现阶段体量还小，但方向值得警惕。始祖鸟代表的高端专业户外、萨洛蒙代表的越野跑场景，切的都是我们布局薄弱但增长很快的细分赛道，毛利率还比我们高出十几个百分点。"
+  },
+  {
+   "id": "sync-ceo-32",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你觉得本土品牌能追上我们的品牌力吗？",
+   "answer_zh": "品牌力这件事很微妙。安踏、李宁在“国货认同”这个维度上，已经建立起我们很难复制的情感连接。但在全球化的专业运动权威性上，我们还是有历史积累的，问题是能不能把这个积累转化成消费者今天愿意买单的理由。"
+  },
+  {
+   "id": "sync-ceo-33",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们和这些竞争对手比，渠道覆盖上差在哪？",
+   "answer_zh": "低线城市。安踏、李宁在县域市场的零售网络比我们密集得多，而这几年DTC调整又让我们主动收缩了经销商网络，等于在这个战场上是我们自己先后退的。"
+  },
+  {
+   "id": "sync-ceo-34",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "竞争格局这么激烈，我们还有没有明显的优势？",
+   "answer_zh": "有，但要用对地方。我们在专业运动的全球研发积累、40年在中国建立的品牌资产、以及在一二线城市的门店网络，这些还在，关键是怎么把这些优势兑现成消费者今天的购买理由。"
+  },
+  {
+   "id": "sync-ceo-35",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "如果安踏、李宁的多品牌打法持续奏效，会不会说明单品牌模式已经过时了？",
+   "answer_zh": "我不认为单品牌就一定过时，但确实需要更精细的分层运营。用一个品牌同时覆盖大众到高端、休闲到专业，对内部资源分配的要求比多品牌更高，这是我们要正视的挑战。"
+  },
+  {
+   "id": "sync-ceo-36",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "总部有没有让我们对标某个具体的竞争对手？",
+   "answer_zh": "更多是对标Adidas的复苏打法，因为它证明了这套“减少折扣、修复渠道、聚焦专业内容”的方法在中国市场是可行的，不是纸上谈兵。"
+  },
+  {
+   "id": "sync-ceo-37",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "从CEO的角度，你最担心哪个竞争对手？",
+   "answer_zh": "安踏。不是因为它进攻性最强，而是因为它的多品牌矩阵和供应链效率是结构性优势，短期内很难被追平，而李宁、Amer相对还是单点突破。"
+  },
+  {
+   "id": "sync-ceo-38",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "安踏、李宁、Adidas、Amer Sports，这几个对手你会怎么给他们“排位”？",
+   "answer_zh": "如果按结构性威胁排序：安踏第一，体量和多品牌矩阵都对我们构成全方位压力；Adidas第二，因为它证明了复苏路径可行，直接对标我们的高端心智；李宁第三，跑步这个单点突破值得警惕；Amer Sports第四，体量还小但方向危险。这个排位每年都可能变，学员们做战略时要动态看。"
+  },
+  {
+   "id": "sync-ceo-39",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们和这几个对手比，谁的增长最健康、最可持续？",
+   "answer_zh": "从财务结构看，Adidas的增长质量目前看起来最健康，因为它是在减少折扣依赖的前提下实现的；安踏体量大但要看多品牌协同能不能一直保持；Amer Sports增长快，但2024年基数很低，2026年大概率会面临增速回落的压力。"
+  },
+  {
+   "id": "sync-ceo-40",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "竞争对手里，有没有谁的打法是我们完全学不来的？",
+   "answer_zh": "安踏的多品牌矩阵比较难复制，因为那涉及很多年的并购和整合积累，我们现在仓促去学，风险很大。相比之下，Adidas的“减少折扣、修复渠道、聚焦专业内容”这套打法，方法论上是我们可以借鉴的。"
+  },
+  {
+   "id": "sync-ceo-41",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "Cathy Sparks上任大中华区负责人，这释放了什么信号？",
+   "answer_zh": "这释放的信号是总部希望用更贴近全球标准的方式管理这个区域，某种程度上也是对过去几年区域自主决策效果的一种回应。这个变化对我们意味着更强的总部协同，也意味着本地团队需要更主动地用数据说话，而不是单纯依赖本地经验。"
+  },
+  {
+   "id": "sync-ceo-42",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们跟Footlocker、JD Sport这些传统零售商的关系，现在怎么样？",
+   "answer_zh": "正在修复中，这是“Win Now”计划从“止血”转向“进攻”的关键一步——我们重新规划了优质产品的资源分配，提升了合作伙伴的盈利空间。全球范围内批发渠道已经出现回暖，这说明稳定的渠道关系确实是重塑销量的基础。"
+  },
+  {
+   "id": "sync-ceo-43",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "安踏和李宁，谁的国际化程度更高？谁更值得警惕？",
+   "answer_zh": "目前两者国际化程度都还有限，主要精力还是在国内市场深耕，这其实对我们是个窗口期——如果我们能在他们分心国际化之前把中国市场的问题解决好，主动权还在我们手上。"
+  },
+  {
+   "id": "sync-ceo-44",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "本土品牌在儿童和青少年市场的布局，是不是也值得关注？",
+   "answer_zh": "这个问题更适合问产品副总裁，他对品类布局更清楚。我只能从大局告诉你，年轻一代消费者的品牌认同正在从小培养，这确实是个值得重视的长期战场。"
+  },
+  {
+   "id": "sync-ceo-45",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们和国际品牌比（不只是Adidas），比如Puma、Under Armour，处境有什么不同？",
+   "answer_zh": "Puma、Under Armour在中国的体量本来就比我们小很多，还没有形成直接的正面威胁，我更关注的还是安踏、李宁这些本土巨头和Adidas这个体量相当的国际对手，这是当下真正决定我们排位的两条战线。"
+  },
+  {
+   "id": "sync-ceo-46",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "从总部的视角看，中国的竞争格局和其他市场比，有什么特殊性？",
+   "answer_zh": "特殊性在于，中国是少数几个本土品牌能在专业运动领域正面挑战我们的市场，在欧美市场我们主要对手还是Adidas、Puma这些国际品牌，但在中国，安踏、李宁这种深度本土化、供应链和渠道效率都很强的对手，是我们在其他市场很少遇到的对手类型。"
+  },
+  {
+   "id": "sync-ceo-47",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们跟对手在运动员代言和体育营销上的打法有什么不同？",
+   "answer_zh": "这方面市场副总裁更清楚细节，我只能说，新疆棉事件之后我们对代言人的选择变得更谨慎，而安踏、李宁在这方面反而借势加大了投入，绑定国家荣誉和奥运赞助，这一进一退之间，声量上出现了差距。"
+  },
+  {
+   "id": "sync-ceo-48",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你觉得竞争对手最容易被我们忽视的动作是什么？",
+   "answer_zh": "是他们在低线城市的零售网络扩张。这些动作不像新品发布那样引人注目，但长期看，渠道覆盖的差距一旦拉开，会持续影响我们在增量市场里的份额，这是容易被忽视但影响深远的竞争维度。"
+  },
+  {
+   "id": "sync-ceo-49",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们该如何评估一个竞争对手是否值得“正面硬碰”？",
+   "answer_zh": "我个人的判断标准是看对方的护城河是不是我们短期能追平的——比如始祖鸟的专业户外技术积累很深，我们就不适合硬碰；但如果对方的优势主要是渠道和响应速度，那是我们通过组织调整可以追赶的，这个判断没有标准答案，值得学员们仔细论证。"
+  },
+  {
+   "id": "sync-ceo-50",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "竞争对手这几年在董事会层面的战略耐心，是不是也比我们更强？",
+   "answer_zh": "某种程度上是的。安踏、李宁作为本土企业，决策链条更短，董事会对短期波动的容忍度也更高；我们作为跨国公司的一个区域，既要对总部负责，又要应对本地竞争节奏，这确实是结构性的差异。\n\n三、策略类（共25题）"
+  },
+  {
+   "id": "sync-ceo-51",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "面对这些问题，我们应该采取进攻还是防守策略？",
+   "answer_zh": "这正是我希望学员们认真思考的问题，我不会替你们下结论。防守意味着先稳住价格体系和渠道关系，把流血止住；进攻意味着现在就加码跑步、高端户外这些新赛道。现实中往往是两者结合，但资源有限，先后顺序很关键。"
+  },
+  {
+   "id": "sync-ceo-52",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "如果只能选一个品类重点投入，你会选哪个？",
+   "answer_zh": "从大局看，跑步是最合理的选择——市场空间最大，我们有专业运动的基因，而且李宁已经验证了这条路能带动整体增长。但具体怎么做，要听产品副总裁的判断，那是他的专业领域。"
+  },
+  {
+   "id": "sync-ceo-53",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "DTC战略是不是应该放弃？",
+   "answer_zh": "不是放弃，是要重新校准。数据已经说明问题——批发渠道在回暖，直营还在下滑。合理的方向是直营和批发双轮驱动，直营做品牌体验，批发做规模覆盖，但具体的渠道政策要问运营副总裁。"
+  },
+  {
+   "id": "sync-ceo-54",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "品牌定位需要调整吗？往哪个方向调？",
+   "answer_zh": "我认为需要往“专业运动权威”回归，而不是继续被“打折潮流品牌”这个标签困住。潮流可以是副产品，但不能是主线，这方面市场副总裁会有更细的洞察和打法。"
+  },
+  {
+   "id": "sync-ceo-55",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "关税每年给我们增加约10亿美元成本，你怎么看这个问题？",
+   "answer_zh": "这是总部层面很头疼的一件事。提价风险很大，我们的定价弹性本来就因为常年打折被削弱了；把产能转出东南亚又需要三五年时间。现实的做法可能是调整产品结构，把高毛利品类占比提上去，用结构对冲成本，但具体方案财务副总裁会算得更清楚。"
+  },
+  {
+   "id": "sync-ceo-56",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "高端户外这块市场，我们要不要正面对抗始祖鸟？",
+   "answer_zh": "我倾向于不正面硬碰。始祖鸟在硬核专业户外的技术积累很深，我们更现实的打法是用ACG系列切“城市户外”这个更大众的场景，避开它最强的领域，这样护城河反而更容易建立。"
+  },
+  {
+   "id": "sync-ceo-57",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "五年后，你希望大中华区变成什么样子？",
+   "answer_zh": "我希望我们重新被消费者认知为“专业运动品牌”而不是“折扣潮流品牌”，价格体系健康、经销商关系稳固，并且在跑步这个品类上有真正拿得出手的本土化产品。这是我个人的期望，不代表最终战略只能长这样。"
+  },
+  {
+   "id": "sync-ceo-58",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "在资源有限的情况下，你会优先给哪个部门更多预算？",
+   "answer_zh": "这是个真实的取舍，我不会回避。如果一定要排序，我会优先支持能直接修复价格体系和渠道信任的举措，因为这是所有增长的基础；其次是产品创新，因为没有好产品，渠道信任也撑不了多久。"
+  },
+  {
+   "id": "sync-ceo-59",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们该不该收购一个高端户外品牌，就像安踏收购始祖鸟那样？",
+   "answer_zh": "值得考虑，但我个人比较谨慎，因为我们过去的收购整合记录不算亮眼。如果要走这条路，需要非常谨慎地选团队、定边界，这也是我会在董事会上认真讨论的问题。"
+  },
+  {
+   "id": "sync-ceo-60",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你觉得学员们在制定战略时，最容易忽略什么？",
+   "answer_zh": "容易忽略执行的现实约束。很多战略在PPT上很漂亮，但没想清楚组织有没有人、供应链跟不跟得上、总部会不会批。我建议你们多和COO、CHRO聊聊，别只从“应该做什么”出发。"
+  },
+  {
+   "id": "sync-ceo-61",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们现在的战略重心，应该更偏向防御性修复，还是进攻性投资？",
+   "answer_zh": "我个人认为现阶段应该先用大约六到七成的资源做防御性修复——稳价格、修渠道——剩下三四成投向跑步这类确定性较高的进攻机会，但这只是我的直觉，具体的资源分配要靠财务测算支撑。"
+  },
+  {
+   "id": "sync-ceo-62",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "如果五年战略只能讲一个核心故事，你希望是什么？",
+   "answer_zh": "我希望核心故事是“耐克重新赢得中国消费者的信任”，而不是单纯的“收入反弹”。信任回来了，数字自然会跟上；反过来，靠短期促销拉动的数字反弹是不可持续的。"
+  },
+  {
+   "id": "sync-ceo-63",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你如何看待“进攻性收购”与“有机增长”这两条路径的取舍？",
+   "answer_zh": "有机增长更可控，但速度慢；收购能换时间，但风险高，尤其考虑到我们过去的整合记录。这个取舍没有标准答案，取决于学员们对风险的判断，我很期待看到不同的战略选择背后的逻辑。"
+  },
+  {
+   "id": "sync-ceo-64",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你怎么看待“价格战”这个选项，我们要不要跟对手拼价格？",
+   "answer_zh": "我个人非常不倾向于打价格战。我们的成本结构决定了打价格战会进一步侵蚀本就承压的毛利率，而且会加深消费者“耐克就是打折货”的印象，这跟我们想重建的“专业运动权威”定位是背道而驰的。"
+  },
+  {
+   "id": "sync-ceo-65",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "女性运动这个赛道，值得我们重点投入吗？",
+   "answer_zh": "我认为值得关注，这跟跑步一样，是市场增长快、我们布局还不够充分的领域，但具体怎么做需要产品和市场副总裁给出更细的判断，我从大局的角度支持在这个方向上做探索。"
+  },
+  {
+   "id": "sync-ceo-66",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们要不要考虑“农村包围城市”，先从低线城市打回来？",
+   "answer_zh": "这个思路有一定道理，因为我们这几年确实在低线城市失守了不少份额，但低线市场的性价比敏感度更高，需要配合更接地气的定价和产品策略，这需要运营和产品副总裁一起来评估可行性。"
+  },
+  {
+   "id": "sync-ceo-67",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "品牌重塑需要多大的营销预算投入？",
+   "answer_zh": "具体数字要问财务副总裁，我只能说，品牌重塑不是靠砸钱堆出来的，历史上很多品牌翻身案例，靠的是内容和产品本身的说服力，而不是单纯的营销声量，这是我对预算分配的一个提醒。"
+  },
+  {
+   "id": "sync-ceo-68",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们该不该考虑推出一个针对中国市场的独立子品牌？",
+   "answer_zh": "这是个值得认真论证的大胆想法。好处是可以摆脱主品牌“打折潮流”的负面认知，重新建立心智；风险是需要从零建立品牌资产，投入和时间成本都不低。这类决策通常需要董事会层面的深入讨论。"
+  },
+  {
+   "id": "sync-ceo-69",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "面对总部的“Win Now”全球打法，我们要不要全盘照搬？",
+   "answer_zh": "我不认为应该全盘照搬。北美市场验证有效的方法论，需要结合中国的渠道结构、消费者心理和竞争格局做本地化调整，全盘照搬风险很大，这也是我在总部沟通中反复强调的一点。"
+  },
+  {
+   "id": "sync-ceo-70",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们的五年战略，应该以“收入反弹”还是“份额修复”作为核心指标？",
+   "answer_zh": "我个人更倾向于份额和品牌健康优先于短期收入反弹，因为份额和信任是可持续增长的基础，而单纯追求收入反弹容易让我们重新掉入依赖折扣的陷阱，这是过去几年的教训。"
+  },
+  {
+   "id": "sync-ceo-71",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "从组织角度，我们要不要考虑重新给大中华区更大自主权，作为战略的一部分？",
+   "answer_zh": "这确实是我个人一直在争取的方向，但这不完全是我能单方面决定的，需要通过持续的业绩证明和总部建立更多信任。学员们如果在战略里提到组织自主权的诉求，最好能配合具体的业绩里程碑作为支撑。"
+  },
+  {
+   "id": "sync-ceo-72",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们该怎么平衡“专业运动”和“潮流时尚”这两个属性？",
+   "answer_zh": "我认为专业运动应该是主线，潮流时尚可以是自然产生的副产品，而不是反过来。过去几年我们潮流属性太强、专业属性被稀释，这也是品牌定位模糊的原因之一，重新校准这个主次关系很关键。"
+  },
+  {
+   "id": "sync-ceo-73",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们要不要重新考虑代言人和体育营销策略？",
+   "answer_zh": "这方面市场副总裁会有更细的判断，但从大局看，新疆棉事件后我们确实变得更谨慎，这种谨慎某种程度上也让我们在声量上落后于对手，这个平衡怎么找回来，是市场团队需要认真思考的问题。"
+  },
+  {
+   "id": "sync-ceo-74",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你对学员们最终选择“进攻型”还是“防守型”战略，有没有个人倾向？",
+   "answer_zh": "我不会把我的倾向强加给你们，但我可以说，如果一个战略完全没有防守动作，只谈进攻，我会怀疑它对现实风险的考虑不够；反过来，如果完全没有进攻动作，我会担心它错过了跑步这类确定性较高的增长机会。好的战略通常是两者兼顾，只是权重不同。"
+  },
+  {
+   "id": "sync-ceo-75",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "如果学员的战略最终和董事会的直觉不一致，你会怎么处理？",
+   "answer_zh": "我会认真听学员的逻辑，只要论证扎实、数据支撑充分，我愿意被说服去调整自己的直觉。战略评审不是要迎合董事会的既有想法，而是要看谁的判断更经得起推敲，这也是我希望这个访谈能给学员们的信心。\n\n四、执行类（共25题）"
+  },
+  {
+   "id": "sync-ceo-76",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "大中华区现在的自主决策权有多大？",
+   "answer_zh": "说实话，正在收缩。总部希望用在北美验证过的“Win Now”打法复制到中国，这意味着更多标准化的全球流程，我们过去那种因地制宜的空间，正在变小。"
+  },
+  {
+   "id": "sync-ceo-77",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "为什么总部会收紧大中华区的自主权？",
+   "answer_zh": "因为过去几年的下滑，总部对区域自主决策的信心受到了影响，他们更倾向于相信一套在北美验证过的方法论，而不是让区域完全自己摸索。这是可以理解的，但也确实带来了摩擦。"
+  },
+  {
+   "id": "sync-ceo-78",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们向总部申请资源或者产品定制，流程复杂吗？",
+   "answer_zh": "目前趋严。这不是我一个人能改变的，但我会在董事会层面持续争取——用扎实的本地数据和案例去说服总部相信本地判断的价值，而不是被动接受所有标准化要求。"
+  },
+  {
+   "id": "sync-ceo-79",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "有没有本地团队争取到自主权的成功案例？",
+   "answer_zh": "有，王嘉尔成为Nike和Jordan的全球合作伙伴，就是中国团队主动促成、并说服总部认可的案例。这说明只要有足够扎实的本地洞察和数据支撑，总部是愿意被说服的。"
+  },
+  {
+   "id": "sync-ceo-80",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "面对总部和区域的张力，你个人是怎么应对的？",
+   "answer_zh": "我尽量做“翻译者”的角色——把总部的全球标准翻译成本地能落地的打法，同时把本地的真实情况翻译成总部能理解、能被数据说服的语言。这个角色不轻松，但很关键。"
+  },
+  {
+   "id": "sync-ceo-81",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "库存和折扣治理，执行层面最大的难点是什么？",
+   "answer_zh": "短期收入一定会承压，因为我们主动收缩了sell-in。这需要团队和董事会都能忍受几个季度的数字不好看，而不是一看报表难看就打退堂鼓，这是执行上最需要定力的地方。"
+  },
+  {
+   "id": "sync-ceo-82",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "部门之间在资源分配上，冲突大吗？",
+   "answer_zh": "不小。比如产品部门想要更多预算做本土化设计，供应链部门想要更多预算做质量管控，市场部门想要更多预算做品牌修复——这些诉求都合理，但预算是有限的，我需要在董事会上做取舍，这也是我希望学员们理解的现实。"
+  },
+  {
+   "id": "sync-ceo-83",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你怎么平衡“给团队争取资源”和“对总部负责”这两个角色？",
+   "answer_zh": "这确实是我每天都在做的平衡。我需要既是团队的代言人，把本地的真实困难和机会讲清楚，也要是总部战略的执行者，确保我们的行动符合全球一致性。两边都不能只讨好一边。"
+  },
+  {
+   "id": "sync-ceo-84",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "执行层面，你觉得最容易被学员低估的风险是什么？",
+   "answer_zh": "组织和人才的风险。很多战略假设“招到合适的人、组建合适的团队”是理所当然的，但在人才市场竞争激烈的今天，这一步经常比想象中难，我建议多找人员与文化副总裁聊聊。"
+  },
+  {
+   "id": "sync-ceo-85",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "如果学员的战略需要总部批准大量新预算，现实吗？",
+   "answer_zh": "要看有没有扎实的数据和清晰的投资回报逻辑。总部不是不愿意投钱，而是需要被说服这笔钱花得值。学员们在写战略的时候，最好能想清楚“如果我是总部，我凭什么批准这笔预算”。"
+  },
+  {
+   "id": "sync-ceo-86",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你对学员们最终提交的战略，最看重哪一点？",
+   "answer_zh": "我最看重这个战略有没有一个清晰的核心想法，有没有真正想清楚进攻和防守的取舍，以及有没有说清楚耐克要如何跟安踏、李宁真正区别开来——这些我在角色卡里其实也提到过。"
+  },
+  {
+   "id": "sync-ceo-87",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "作为CEO，你希望学员从这次访谈中带走什么？",
+   "answer_zh": "我希望你们不只是记住几个数字，而是理解这些数字背后一整套互相牵动的取舍——渠道、品牌、产品、组织，动一个都会影响其他几个。好的战略是能把这些取舍讲清楚，而不是假装它们不存在。"
+  },
+  {
+   "id": "sync-ceo-88",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们的组织架构，最近有没有大的调整？",
+   "answer_zh": "有，各品类负责人现在更多是由总部直接空降或强协同管理，这是总部希望把“全球标准”更彻底地落地到中国的一部分，这个变化对本地团队的自主决策空间有直接影响。"
+  },
+  {
+   "id": "sync-ceo-89",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "大中华区团队的士气怎么样，这几年下滑对团队的影响大吗？",
+   "answer_zh": "说实话，压力很大。连续多个季度业绩不理想，加上总部管控在收紧，团队里确实有一些疲惫和不确定感，这也是我作为CEO需要花很多精力去稳定军心、同时争取资源的原因。"
+  },
+  {
+   "id": "sync-ceo-90",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "如果学员的战略需要跨部门协同（比如产品+市场+供应链一起发力），执行难度大吗？",
+   "answer_zh": "难度不小。每个部门都有自己的KPI和资源约束，跨部门协同需要有清晰的责任划分和共同的目标，我建议学员们在写执行方案时，具体说明谁牵头、谁配合，而不是笼统地说“各部门协同”。"
+  },
+  {
+   "id": "sync-ceo-91",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们评估一个新战略是否可执行，通常会看哪些维度？",
+   "answer_zh": "主要看三个维度：组织有没有对应的人才和团队、供应链和渠道能不能支撑、总部预算和授权能不能到位。三个维度但凡有一个明显不现实，这个战略在执行层面就会遇到很大阻力。"
+  },
+  {
+   "id": "sync-ceo-92",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "总部对大中华区的业绩考核，这几年有没有变化？",
+   "answer_zh": "从纯粹看收入增长，逐渐加入了品牌健康度和渠道关系这些指标，这跟我们主动进行库存治理、牺牲短期收入的做法是配套的——如果考核还是只看收入，我们就没有空间做这些长期正确的事。"
+  },
+  {
+   "id": "sync-ceo-93",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "大中华区在新品上市的时间表上，有多大的自主权？",
+   "answer_zh": "目前自主权有限，大部分新品的全球上市节奏是总部统一安排的，我们能做的更多是本地化的营销配合和渠道分配，如果学员的战略里包含大量“中国专属新品”的设想，需要认识到这个现实约束。"
+  },
+  {
+   "id": "sync-ceo-94",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "面对总部收紧管控，我们是不是也在争取一些例外？",
+   "answer_zh": "是的，我们在争取一些关键节点上的弹性，比如重大营销节点的本地化调整权限，但这需要用扎实的业绩和数据去换，不是靠沟通技巧就能拿到的。"
+  },
+  {
+   "id": "sync-ceo-95",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "如果学员的战略执行需要三到五年才能见效，董事会能接受吗？",
+   "answer_zh": "只要能看到阶段性的、可验证的里程碑，董事会是能接受长周期战略的，真正难以被接受的是“看不到任何阶段性验证点、只讲长期愿景”的战略，学员们在写方案时最好设计清晰的分阶段指标。"
+  },
+  {
+   "id": "sync-ceo-96",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "我们现在的决策链条，从提案到落地大概需要多久？",
+   "answer_zh": "常规的区域性决策大概一到两个季度，但涉及全球资源调配或者品牌重大调整的决策，可能需要半年甚至更久，这跟总部审批的严谨程度有关，学员们做时间表时要留出这个缓冲。"
+  },
+  {
+   "id": "sync-ceo-97",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "团队里有没有人明确反对现在的“向总部靠拢”的方向？",
+   "answer_zh": "团队内部确实有不同声音，有人认为应该更坚定地争取本地自主权，也有人认为跟随总部标准更稳妥。我个人的角色更多是在这两种声音之间找平衡，而不是简单地选边站。"
+  },
+  {
+   "id": "sync-ceo-98",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "如果我们要新建一个团队去执行某个新方向（比如高端户外），大概需要多久才能组建起来？",
+   "answer_zh": "核心团队搭建大概需要六个月到一年，但如果涉及到专业性很强的岗位，比如户外产品设计，招聘周期可能更长，这方面人员与文化副总裁会有更准确的判断。"
+  },
+  {
+   "id": "sync-ceo-99",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "你觉得学员们提交的战略方案，最常见的执行盲区是什么？",
+   "answer_zh": "最常见的是低估跨部门协调的复杂度和总部审批的时间成本，很多方案在逻辑上很漂亮，但没有认真推演“这件事从提出到真正落地，中间要经过哪些人的同意”，这是我最希望学员们补上的一课。"
+  },
+  {
+   "id": "sync-ceo-100",
+   "personas": [
+    "ceo"
+   ],
+   "keywords": [],
+   "question_zh": "作为CEO，你个人在执行层面最大的顾虑是什么？",
+   "answer_zh": "我最大的顾虑是团队在连续承压的情况下，会不会因为求快而重蹈DTC激进调整的覆辙——好的方向如果执行节奏太急，反而会制造新的问题，这是我在审阅任何执行方案时都会特别关注的一点。"
+  },
+  {
+   "id": "sync-cto-01",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们的数字渠道最近表现怎么样？",
+   "answer_zh": "不理想。以最近一个季度为例，数字渠道营收同比下滑了26%左右，直营数字渠道跌幅甚至到过36%。这不是单一原因，是我们的平台布局、内容运营、会员体验多个环节同时在拖后腿。"
+  },
+  {
+   "id": "sync-cto-02",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字渠道下滑，是产品问题还是平台问题？",
+   "answer_zh": "更多是平台和运营问题。我们的数字化投资历史上比较依赖海外通用的App架构，没有充分针对中国消费者习惯做本地化，这跟微信小程序、抖音直播这些本土场景的用户习惯是有落差的。"
+  },
+  {
+   "id": "sync-cto-03",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "为什么我们没有更早重视抖音、小红书这些本土平台？",
+   "answer_zh": "说实话，这跟我们全球决策链条较长有关系。很多产品和内容决策要经过全球审批，等流程走完，本土的热点周期往往已经过去了，这是我们在中国这种快节奏市场里吃的一个亏。"
+  },
+  {
+   "id": "sync-cto-04",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "会员App和小程序的体验，现在处于什么水平？",
+   "answer_zh": "基础功能都有，但个性化和内容运营这块还不够精细。对比本土平台的千人千面推荐能力，我们在数据利用和内容响应速度上还有明显差距。"
+  },
+  {
+   "id": "sync-cto-05",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化投入不够是因为预算问题，还是别的原因？",
+   "answer_zh": "预算是一部分，但更关键的是决策速度和本地化授权。有些投入需要总部审批周期很长，等批下来，市场窗口可能已经变了，这跟纯粹缺钱是两回事。"
+  },
+  {
+   "id": "sync-cto-06",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "客户数据现在是怎么被使用的？",
+   "answer_zh": "我们有会员体系在积累数据，但跨渠道打通得还不够充分，微信、天猫、抖音、自有App这几个渠道的数据没有完全整合成一个统一的消费者画像，这直接限制了我们做精准运营的能力。"
+  },
+  {
+   "id": "sync-cto-07",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字渠道下滑，对线下门店有没有连带影响？",
+   "answer_zh": "有。数字渠道往往承担着给门店导流、做会员维系的作用，数字体验跟不上，间接也会影响门店的转化和复购，这是一个连锁反应，不是孤立的问题。"
+  },
+  {
+   "id": "sync-cto-08",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "为什么直营数字渠道跌幅比批发渠道更严重？",
+   "answer_zh": "因为直营数字渠道对内容运营和平台算法的依赖更直接，本土平台的算法逻辑变化很快，我们如果跟不上节奏，流量和转化会掉得比传统批发渠道更快更明显。"
+  },
+  {
+   "id": "sync-cto-09",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们现在的技术团队规模够不够支撑数字化转型？",
+   "answer_zh": "团队具备基础能力，但本土化专项人才，比如熟悉抖音电商生态、小程序开发生态的人才，还需要加强，这也跟人才市场竞争激烈有关，具体可以问人员与文化副总裁。"
+  },
+  {
+   "id": "sync-cto-10",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化落后，是不是也加剧了库存问题？",
+   "answer_zh": "有一定关联。数字渠道本可以做更精准的动态定价和库存分配，如果这块能力强，一定程度上能缓解线下的库存积压压力，这也是我认为值得投入的原因之一。"
+  },
+  {
+   "id": "sync-cto-11",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "从技术角度看，我们目前最大的短板是什么？",
+   "answer_zh": "本土内容与算法响应速度。技术架构本身不是最大的问题，真正的短板是我们能不能像本土平台的商家一样快速响应热点、快速迭代内容和活动。"
+  },
+  {
+   "id": "sync-cto-12",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化问题是不是也和总部集权的趋势有关？",
+   "answer_zh": "有一定关系。很多数字化决策涉及全球统一的技术架构和数据合规要求，本土化调整需要跟总部协调，这确实会拉长响应时间，这一点我没法回避。"
+  },
+  {
+   "id": "sync-cto-13",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "FY2025Q4电商渠道下滑31%，具体是哪些环节出了问题？",
+   "answer_zh": "主要是三个环节叠加：内容触达不够本土化，导致流量成本上升；私域会员运营不够精细，复购率不理想；再加上直营渠道为了控价减少了促销力度，短期内进一步压低了成交转化，这三者叠加造成了那个季度特别明显的下滑。"
+  },
+  {
+   "id": "sync-cto-14",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们的官方App，用户活跃度怎么样？",
+   "answer_zh": "活跃度还有提升空间，跟微信小程序、天猫旗舰店比，独立App的打开频次天然更低，这是行业普遍现象，但我们在App内的内容和互动设计上，确实还可以做得更有粘性。"
+  },
+  {
+   "id": "sync-cto-15",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化投入的历史欠账，大概是从什么时候开始积累的？",
+   "answer_zh": "大概是过去五六年，行业整体在往抖音、小红书这些内容电商平台迁移的时候，我们的投入重心还相对集中在传统电商和自有App上，等意识到内容电商的重要性时，已经落后了一两个身位。"
+  },
+  {
+   "id": "sync-cto-16",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们现在有没有做用户流失分析？",
+   "answer_zh": "有基础的分析，但还不够精细。我们知道复购率在下降，但对“为什么这批用户不再回购”的归因还不够系统，这也是我认为值得优先补强的数据能力。"
+  },
+  {
+   "id": "sync-cto-17",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化落后是不是也影响了我们对消费者需求的洞察速度？",
+   "answer_zh": "是的，这一点很关键。本土平台的商家能通过实时数据快速感知消费者偏好变化，我们目前的数据反馈链条更长，等我们意识到某个产品或内容不受欢迎时，往往已经错过了最佳调整窗口。"
+  },
+  {
+   "id": "sync-cto-18",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们的技术架构，是全球统一的，还是有本地定制？",
+   "answer_zh": "底层技术架构是全球统一的，这样做的好处是维护成本低、数据安全合规更容易保证，但坏处是本地化定制的灵活度会受限，这也是我们数字化落后于本土平台的结构性原因之一。"
+  },
+  {
+   "id": "sync-cto-19",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化问题里，有没有哪一块是纯粹的历史包袱，跟现在的团队关系不大？",
+   "answer_zh": "全球统一的技术架构和审批流程算是历史包袱，这不是现在团队能力的问题，而是过去的组织设计决定的，我们现在做的很多工作，其实是在这个历史框架内寻找本地化的空间。"
+  },
+  {
+   "id": "sync-cto-20",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "线上线下库存打通做得怎么样？",
+   "answer_zh": "目前打通程度有限，这也是我们数字化的一个短板——理想状态下，线上线下库存应该实时联动，帮助我们更精准地做动态定价和调拨，但目前这套系统的成熟度还不够。"
+  },
+  {
+   "id": "sync-cto-21",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们在小红书这类内容种草平台上的布局怎么样？",
+   "answer_zh": "起步相对较晚，内容运营团队还在建设阶段，这跟我们全球内容审批流程较长有关系，小红书这种平台需要非常灵活、贴近社区文化的内容打法，这方面我们确实需要加速追赶。"
+  },
+  {
+   "id": "sync-cto-22",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化人才的流失情况严重吗？",
+   "answer_zh": "有一定的流失压力，因为本土互联网和竞品品牌都在抢同样的人才，我们的薪酬体系和晋升速度如果跟不上市场节奏，确实会面临人才流失的风险，这方面需要和人员与文化副总裁紧密配合。"
+  },
+  {
+   "id": "sync-cto-23",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们对消费者数字画像的颗粒度，大概处于什么水平？",
+   "answer_zh": "目前主要基于购买记录和基础会员信息，行为数据的颗粒度还不够细，比如浏览路径、内容互动这些更细粒度的数据还没有被充分利用起来，这是我们下一步想补强的能力。"
+  },
+  {
+   "id": "sync-cto-24",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "你觉得数字化问题里，哪个是最容易被误解为“技术不行”，其实是别的原因？",
+   "answer_zh": "很多人会觉得是我们技术能力不够，但其实核心瓶颈是组织流程和本地授权，不是纯技术问题。我们的技术底座其实是有能力支撑更好体验的，关键是能不能让本地团队更快地把这些能力用起来。"
+  },
+  {
+   "id": "sync-cto-25",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字渠道的问题,总部有没有专门的资源支持我们改善？",
+   "answer_zh": "有,但需要我们自己先拿出清晰的诊断和方案去申请,总部不会主动分配额外预算,这也是我认为数字化团队需要更主动地量化问题、提出方案的原因。\n\n二、竞品类（共25题）"
+  },
+  {
+   "id": "sync-cto-26",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "安踏、李宁在数字化上投入了什么？",
+   "answer_zh": "他们在直播电商和自有小程序生态上投入很大，尤其是抖音直播购物，本土团队反应速度快，能快速把新品和促销信息转化成销量，这方面确实值得我们学习。"
+  },
+  {
+   "id": "sync-cto-27",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们和竞品在天猫、抖音上的运营方式有什么不同？",
+   "answer_zh": "本土品牌的内容团队更贴近平台算法逻辑，选品、直播节奏、达人合作这些环节响应更快；我们的内容和活动往往要经过更长的审批链条，节奏上天然慢一拍。"
+  },
+  {
+   "id": "sync-cto-28",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "竞品的会员体系和我们比，有什么优势？",
+   "answer_zh": "他们的会员权益和小程序体验更贴合中国消费者习惯，比如更灵活的积分玩法、更本土化的社群运营，这些细节上的打磨，我们确实需要补课。"
+  },
+  {
+   "id": "sync-cto-29",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "安踏的多品牌矩阵，在数字化上是怎么协同的？",
+   "answer_zh": "据我们观察，他们几个品牌共用底层的数据和供应链系统，但在内容和用户运营上是分开打法的，这样既有规模效应又保留了各品牌的本土调性，这个思路值得参考。"
+  },
+  {
+   "id": "sync-cto-30",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "李宁的直播电商做得怎么样？",
+   "answer_zh": "从公开数据看，李宁在直播和社交电商上的投入产出比不错，他们把国潮设计和直播内容结合得比较自然，这是内容和产品调性高度匹配的结果，不只是砸钱能做到的。"
+  },
+  {
+   "id": "sync-cto-31",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "如果要在数字化上追赶竞品，我们最该优先补哪一块？",
+   "answer_zh": "我认为是内容响应速度和本土化内容团队的授权，技术平台可以逐步搭建，但内容节奏跟不上，再好的技术也发挥不出效果。"
+  },
+  {
+   "id": "sync-cto-32",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "竞品在用户数据利用上，是不是比我们更成熟？",
+   "answer_zh": "在本土场景的数据颗粒度上，他们确实更细，因为长期扎根本土平台，积累的用户行为数据更贴近这里的消费习惯，这是我们需要正视的差距。"
+  },
+  {
+   "id": "sync-cto-33",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们有没有可能在某个数字化细分领域反超竞品？",
+   "answer_zh": "我认为在会员精细化运营和跨渠道数据打通上，我们有机会，因为耐克全球在数字基础设施上的技术积累其实是有优势的，关键是能不能把这个优势本地化落地。"
+  },
+  {
+   "id": "sync-cto-34",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "竞品的小程序生态和我们比，用户体验差在哪？",
+   "answer_zh": "主要是本地化细节，比如支付流程、社群互动、本土热点的响应速度，这些看似细小的体验差异，累积起来就是完全不同的用户粘性。"
+  },
+  {
+   "id": "sync-cto-35",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "抖音直播购物这块，我们和头部竞品的差距有多大？",
+   "answer_zh": "差距不小，这块我们起步较晚，无论是团队经验还是内容打法都需要补课，但这也是增长最快的细分渠道之一，值得优先投入。"
+  },
+  {
+   "id": "sync-cto-36",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "竞品在技术投入上是不是比我们更激进？",
+   "answer_zh": "不完全是投入规模的问题，更多是决策链条短、本土授权大，同样的预算，他们能更快转化成产品和用户体验的改进。"
+  },
+  {
+   "id": "sync-cto-37",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们能不能直接照搬竞品的数字化打法？",
+   "answer_zh": "不建议直接照搬，因为我们的品牌定位、全球技术架构和组织流程都不一样。更现实的做法是理解他们打法背后的逻辑——本地授权、快速迭代——然后在我们自己的体系里找到可行的实现方式。"
+  },
+  {
+   "id": "sync-cto-38",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "从技术角度看，安踏、李宁最值得我们警惕的地方是什么？",
+   "answer_zh": "是他们把技术、内容、供应链三者打通得很紧密，直播间下单能直接联动库存和物流。我们各个环节相对独立，协同效率上还有差距，这是更深层的系统性问题，不只是某个App做得好不好。"
+  },
+  {
+   "id": "sync-cto-39",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们和竞品在私域流量运营上，差距体现在哪？",
+   "answer_zh": "本土品牌的私域运营更精细，比如通过企业微信、社群做高频的用户触达和转化，我们目前私域体系还在搭建阶段，用户沉淀和运营节奏都还不够成熟。"
+  },
+  {
+   "id": "sync-cto-40",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "竞品在直播间的转化率，是不是明显比我们高？",
+   "answer_zh": "从公开信息看，头部本土品牌的直播转化率确实更高，一部分原因是他们的直播内容更接地气、主播更懂本土消费者心理，另一部分是他们的供应链能支撑更灵活的直播专属定价和赠品策略。"
+  },
+  {
+   "id": "sync-cto-41",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "安踏、李宁有没有自建技术团队，还是依赖外部服务商？",
+   "answer_zh": "据我们了解，头部本土品牌基本都是自建核心技术团队，尤其是数据和算法能力，这样能更快响应市场变化，这也是我们需要强化自有团队能力、减少对外部服务商依赖的原因之一。"
+  },
+  {
+   "id": "sync-cto-42",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "竞品在会员积分和权益设计上，有什么创新的地方？",
+   "answer_zh": "他们的积分玩法更游戏化，比如结合社交裂变、限时任务这些机制来提升活跃度，这方面确实比我们传统的积分兑换体系更有吸引力，值得我们借鉴其中的产品设计思路。"
+  },
+  {
+   "id": "sync-cto-43",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们跟竞品在跨境技术合作上，有什么不同？",
+   "answer_zh": "我们背靠耐克全球的技术资源，理论上有更强的底层能力，但本土品牌在与国内互联网大厂（比如平台方）的合作深度上更领先，能拿到更多定制化的流量和数据支持，这是我们需要努力争取的合作空间。"
+  },
+  {
+   "id": "sync-cto-44",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "竞品在客服和售后的数字化体验上，做得怎么样？",
+   "answer_zh": "本土品牌的智能客服响应速度和问题解决效率普遍更高，这跟他们更早采用AI客服技术、并且积累了更多本土化的问答语料有关，这方面我们还有提升空间。"
+  },
+  {
+   "id": "sync-cto-45",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们和竞品比，在数字化人才储备上谁更有优势？",
+   "answer_zh": "短期看，头部本土品牌的数字化人才储备更充分，因为他们本身脱胎于或者深度合作互联网行业；但长期看，耐克全球的技术资源和培训体系，如果能更好地本地化落地，其实是有潜力反超的。"
+  },
+  {
+   "id": "sync-cto-46",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "竞品有没有在做我们完全没有布局的数字化尝试？",
+   "answer_zh": "据我们观察，一些本土品牌已经开始尝试AI虚拟试穿、虚拟主播这类新技术应用，我们在这块还处于观望和小规模测试阶段，这是值得关注的技术趋势。"
+  },
+  {
+   "id": "sync-cto-47",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们和竞品在跨渠道会员打通上，谁做得更好？",
+   "answer_zh": "本土品牌普遍做得更好，因为他们很多本身就是从单一平台生态里成长起来的，打通难度相对小；我们涉及全球多个系统的整合，技术复杂度更高，这也是我们进度相对慢的客观原因。"
+  },
+  {
+   "id": "sync-cto-48",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "如果安踏、李宁在数字化上继续领先，长期会对我们造成什么影响？",
+   "answer_zh": "长期看，数字化能力的差距会转化成用户数据资产的差距，谁掌握更精细的消费者洞察，谁就能在产品和营销上更精准，这个差距如果不追赶，会像滚雪球一样越滚越大。"
+  },
+  {
+   "id": "sync-cto-49",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "从技术角度，我们最应该向哪个竞品学习？",
+   "answer_zh": "如果只选一个，我会说是李宁在直播电商和产品内容结合上的打法，因为这不只是技术投入，更体现了内容团队、产品团队和技术团队之间的高效协同，这种协同模式本身就值得我们研究。"
+  },
+  {
+   "id": "sync-cto-50",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "竞品的技术团队规模，大概是我们的多少倍？",
+   "answer_zh": "没有确切的公开数字，但从招聘规模和公开信息推测，头部本土品牌的本土数字化团队规模可能是我们的两到三倍，这也从侧面说明了他们在这块投入的坚定程度。\n\n三、策略类（共25题）"
+  },
+  {
+   "id": "sync-cto-51",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "未来五年，我们的数字化战略应该往哪个方向走？",
+   "answer_zh": "我认为核心是“本土化优先”：把内容决策权和运营节奏更多下放给本地团队，同时把耐克全球的技术底座作为支撑，而不是反过来让全球流程主导本地体验。"
+  },
+  {
+   "id": "sync-cto-52",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "应该优先投资哪个平台——微信小程序、天猫，还是抖音？",
+   "answer_zh": "我不主张只押注一个，这三者承担的角色不同：小程序适合做会员深度运营，天猫适合做旗舰形象和确定性成交，抖音适合做内容种草和即时转化。合理的做法是按各自角色分配资源，而不是单点押注。"
+  },
+  {
+   "id": "sync-cto-53",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "AI和个性化推荐，我们有没有可能追上本土平台的水平？",
+   "answer_zh": "有可能，但需要时间和数据积累。耐克全球在算法能力上是有基础的，关键是要用足够多的本土用户数据去训练和调优，这也是我认为值得投入的中长期方向。"
+  },
+  {
+   "id": "sync-cto-54",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "如果只能选一个数字化项目重点推进，你会选什么？",
+   "answer_zh": "我会优先选跨渠道会员数据打通，因为这是所有后续精细化运营、个性化推荐、动态库存管理的基础，没有这个底座，其他项目效果都会打折扣。"
+  },
+  {
+   "id": "sync-cto-55",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "技术投入应该优先服务电商增长，还是门店体验升级？",
+   "answer_zh": "我倾向于两者并重，但如果非要排序，我会先做门店与线上的数据打通，因为这能同时提升两边的转化效率，投入产出比更高。"
+  },
+  {
+   "id": "sync-cto-56",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们要不要考虑用生成式AI做客服或者内容生产？",
+   "answer_zh": "值得探索，尤其是在内容生产效率上，生成式AI可以帮我们更快跟上本土热点节奏，但这需要配合足够的人工审核和品牌调性把控，不能完全交给机器。"
+  },
+  {
+   "id": "sync-cto-57",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "你觉得学员在设计数字化战略时，最容易踩的坑是什么？",
+   "answer_zh": "容易把“上一个新平台/新技术”当成战略本身，而不是先想清楚要解决的具体问题。技术是工具，不是目的，我建议先明确目标场景，再选合适的技术方案。"
+  },
+  {
+   "id": "sync-cto-58",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化转型，需要多长时间才能看到明显效果？",
+   "answer_zh": "基础设施打通大概需要一到两年，但用户心智和习惯的改变，通常需要更长时间，我建议学员们对数字化项目的见效周期有现实预期，不要指望一两个季度就有质变。"
+  },
+  {
+   "id": "sync-cto-59",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们该不该效仿竞品做自己的独立直播间团队？",
+   "answer_zh": "我认为值得做，但要想清楚定位——不是简单复制竞品的打法，而是结合我们的产品专业度，做更偏向“专业内容+种草”的差异化直播风格，而不是纯粹低价走量。"
+  },
+  {
+   "id": "sync-cto-60",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化投入和品牌调性之间，会不会有冲突？",
+   "answer_zh": "有可能，比如过度依赖低价直播可能会稀释品牌高端感，这方面需要和市场副总裁密切配合，技术只是执行手段，品牌调性的把控不是我这边能单独决定的。"
+  },
+  {
+   "id": "sync-cto-61",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "未来我们要不要建立自己的私域流量体系？",
+   "answer_zh": "我认为这是值得优先投入的方向，私域流量体系能让我们更少依赖平台算法的波动，把用户资产真正沉淀在自己手里，这对长期抗风险能力很关键。"
+  },
+  {
+   "id": "sync-cto-62",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "从技术角度看，五年后理想的数字化状态是什么样？",
+   "answer_zh": "我希望我们能做到全渠道数据实时打通、内容决策本地化授权、以及用AI辅助的个性化会员运营，这三者结合起来，才能真正在本土数字生态里跟竞品正面竞争。"
+  },
+  {
+   "id": "sync-cto-63",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们要不要考虑自建一个类似小红书的社区功能？",
+   "answer_zh": "我不建议自建独立社区平台，投入产出比不高，用户习惯已经沉淀在现有的头部平台上。更现实的做法是把资源投入到在这些平台上做更好的内容运营，而不是另起炉灶。"
+  },
+  {
+   "id": "sync-cto-64",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "未来的技术投入，是应该更偏向获客，还是偏向留存？",
+   "answer_zh": "我认为现阶段应该更偏向留存和复购，因为获客成本一直在上升，而我们现有的会员基数还有很大的精细化运营空间，把现有用户服务好，投入产出比会更高。"
+  },
+  {
+   "id": "sync-cto-65",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们要不要投入虚拟试穿这类新技术？",
+   "answer_zh": "值得小范围试点，尤其是在鞋类这种对合脚度敏感的品类上，虚拟试穿能一定程度降低退换货率，但要注意这类技术目前成熟度还有限，不适合作为战略级的重资源投入。"
+  },
+  {
+   "id": "sync-cto-66",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化战略里，要不要包含线下门店的数字化改造？",
+   "answer_zh": "应该包含，门店数字化（比如智能试穿镜、线上线下库存联动）能提升线下体验和转化，这跟纯电商增长同样重要，数字化不应该被理解为只服务线上渠道。"
+  },
+  {
+   "id": "sync-cto-67",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们要不要设立一个专门的“本土创新实验室”来加快数字化迭代？",
+   "answer_zh": "这个想法我很支持，一个相对独立、审批链条更短的本地创新单元，可以帮助我们更快测试新想法，再把验证过的方案推广到更大范围，这是很多跨国公司在中国市场采用的有效模式。"
+  },
+  {
+   "id": "sync-cto-68",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数据安全和合规，会不会限制我们的数字化创新空间？",
+   "answer_zh": "会有一定限制，尤其是跨境数据传输方面有明确的合规要求，但这不代表创新空间被完全锁死，我们可以在合规框架内，通过本地化的数据存储和处理架构来兼顾创新和安全。"
+  },
+  {
+   "id": "sync-cto-69",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们要不要考虑和头部直播机构建立深度战略合作，而不是自建团队？",
+   "answer_zh": "我认为两者可以并行——短期通过和头部机构合作快速起量、积累经验，长期还是要建立自己的核心内容和主播能力，完全依赖外部机构风险较大，比如议价权和品牌调性控制都会受限。"
+  },
+  {
+   "id": "sync-cto-70",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "从技术角度，你觉得AI在未来五年会给我们带来什么样的机会？",
+   "answer_zh": "我认为最大的机会在个性化推荐和智能库存管理这两块，AI能帮我们更精准地预测需求、减少库存浪费，同时给消费者提供更贴合个人偏好的产品推荐，这两个方向的投资回报会比较确定。"
+  },
+  {
+   "id": "sync-cto-71",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们要不要把更多预算从传统电商平台转移到内容电商平台？",
+   "answer_zh": "我倾向于逐步转移，但不是一刀切。天猫这类传统电商平台在确定性成交上还有不可替代的作用，内容电商更适合做增量和种草，合理的做法是根据各自角色动态调整预算比例，而不是完全放弃某一方。"
+  },
+  {
+   "id": "sync-cto-72",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化战略要不要把“会员付费制”（类似其他品牌的付费会员）纳入考虑？",
+   "answer_zh": "值得探索，付费会员如果设计得好，能提升核心用户的粘性和终身价值，但需要有足够有吸引力的权益支撑，这需要和市场、产品团队一起设计，不是技术单方面能决定的。"
+  },
+  {
+   "id": "sync-cto-73",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们要不要在技术战略里明确“本土优先”的原则，哪怕这意味着要挑战全球统一架构？",
+   "answer_zh": "我认为值得在战略里明确提出，但要用循序渐进的方式去争取，比如先从某个具体场景（例如会员运营系统）争取本地化授权，用实际效果说服总部，而不是一开始就要求全面推翻全球架构。"
+  },
+  {
+   "id": "sync-cto-74",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化战略执行的第一年，你建议优先做哪几件具体的事？",
+   "answer_zh": "我建议优先做三件事：打通跨渠道会员数据、组建本土内容团队、在一到两个重点平台（比如抖音）加大直播投入。这三件事投入产出比相对确定，也能为后续更大的数字化投资积累经验和数据基础。"
+  },
+  {
+   "id": "sync-cto-75",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "如果学员的战略要求数字化“全面赶超”竞品，你觉得现实吗？",
+   "answer_zh": "全面赶超在五年内比较难，更现实的目标是在一到两个关键领域（比如私域运营或者会员精细化）建立起明确的相对优势，而不是试图在所有维度上都超过对手，学员们在写战略时最好聚焦优先级，而不是面面俱到。\n\n四、执行类（共25题）"
+  },
+  {
+   "id": "sync-cto-76",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化转型在执行层面，最大的障碍是什么？",
+   "answer_zh": "审批流程和本地授权不够。很多好的想法卡在等总部批准这一步，本土市场变化很快，等审批走完，最佳时间窗口经常已经过去了。"
+  },
+  {
+   "id": "sync-cto-77",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "要建立本土内容团队，大概需要多久才能见效？",
+   "answer_zh": "团队搭建大概需要六个月到一年，但要真正培养出对本土平台算法和热点敏感的团队默契，通常需要更长时间的实战积累，这不是短期能速成的。"
+  },
+  {
+   "id": "sync-cto-78",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们和总部在数据治理上，会有摩擦吗？",
+   "answer_zh": "会有。全球有统一的数据合规要求，本土化的数据使用需求有时候和这些要求存在张力，需要花时间和总部的数据团队协调，这不是我一个人能单方面决定的。"
+  },
+  {
+   "id": "sync-cto-79",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "技术团队和市场、产品团队之间，协同顺畅吗？",
+   "answer_zh": "总体在改善，但历史上确实存在各自为政的问题，比如内容团队想要的技术支持和技术团队的排期优先级经常对不上，这需要更紧密的跨部门协作机制。"
+  },
+  {
+   "id": "sync-cto-80",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "如果学员的战略里包含大量新技术投入，执行上现实吗？",
+   "answer_zh": "要看具体范围。小范围的本土化改造，比如优化小程序体验，是现实的；但如果涉及大规模重构全球技术架构，通常需要更长周期和更多总部协调，学员们需要区分这两种量级的差异。"
+  },
+  {
+   "id": "sync-cto-81",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "招聘本土数字化人才，难度大吗？",
+   "answer_zh": "不小，因为安踏、李宁这些本土品牌也在抢同样的人才池，尤其是熟悉抖音电商、内容运营的人才竞争非常激烈，这块建议多和人员与文化副总裁交流。"
+  },
+  {
+   "id": "sync-cto-82",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们做数字化项目，预算审批的现实周期大概多长？",
+   "answer_zh": "常规项目大概一个季度左右，但如果涉及跨部门、跨区域的系统性投入，周期会明显拉长，学员们在做战略时间表时，最好把这个现实因素考虑进去。"
+  },
+  {
+   "id": "sync-cto-83",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化项目的效果，是怎么被内部衡量的？",
+   "answer_zh": "主要看数字渠道的转化率、会员活跃度和复购率这些指标，也会看私域流量的沉淀规模，这些指标最终都要能连接到实际的收入贡献，而不是停留在“用户量”这种虚荣指标上。"
+  },
+  {
+   "id": "sync-cto-84",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "如果我们想加快本土化响应速度，组织架构需要怎么调整？",
+   "answer_zh": "我认为需要把更多内容和活动的审批权限下放给本地团队，减少跨时区、跨层级的审批环节，这需要总部对本地团队的信任度提升，不完全是技术问题。"
+  },
+  {
+   "id": "sync-cto-85",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "技术团队现在面临的最大资源瓶颈是什么？",
+   "answer_zh": "本土化专项人才和本地授权额度，技术预算本身不是最大瓶颈，真正卡脖子的是能不能让本地团队快速做决定、快速上线，而不是被流程拖慢。"
+  },
+  {
+   "id": "sync-cto-86",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们和竞品比，技术迭代速度差距有多大？",
+   "answer_zh": "差距主要不在技术能力本身，而在决策和上线速度，本土品牌从想法到上线可能只需要几周，我们目前平均要慢不少，这是我们最需要改善的执行效率问题。"
+  },
+  {
+   "id": "sync-cto-87",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "学员的战略如果依赖某个新技术平台，你会怎么帮他们评估可行性？",
+   "answer_zh": "我会先看这个技术在中国本土有没有成熟的落地案例，其次看我们现有团队能不能支撑，最后看总部审批链条大概需要多久，这三个维度综合起来才能判断现实不现实。"
+  },
+  {
+   "id": "sync-cto-88",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "作为CTO，你希望学员从这次访谈中带走什么？",
+   "answer_zh": "我希望你们明白，数字化不是简单地“上新技术”，而是要把技术、内容、组织授权三者放在一起考虑。很多好战略最后执行不下去，不是技术不行，是组织跟不上技术的节奏。"
+  },
+  {
+   "id": "sync-cto-89",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们的技术团队和全球总部的技术团队，是怎么协作的？",
+   "answer_zh": "我们有常规的跨时区同步机制，但由于时差和优先级排序的差异，很多本地紧急需求需要排队等待全球团队的资源支持，这也是我们希望逐步建立更多本地自主技术能力的原因。"
+  },
+  {
+   "id": "sync-cto-90",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "如果我要做一个本地化的小程序功能升级，大概流程是怎样的？",
+   "answer_zh": "需要先提交需求评估，确认是否需要全球技术团队参与架构层面的改动；如果只是本地内容和界面层面的调整，我们本地团队有一定自主权限，可以更快推进，这也是我们努力争取更多这类“本地可决策范围”的原因。"
+  },
+  {
+   "id": "sync-cto-91",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "技术项目的优先级，是怎么排的？",
+   "answer_zh": "主要看对收入和用户体验的直接影响程度，同时也要考虑技术债务和系统稳定性的权重，这几个因素综合打分排序，但坦白说，资源有限，很多有价值的项目也只能排队等待。"
+  },
+  {
+   "id": "sync-cto-92",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们和其他区域（比如东南亚、欧洲）共享技术资源吗？",
+   "answer_zh": "会共享底层技术架构和部分标准化工具，但具体的内容运营和本地化功能是各区域独立负责的，这种模式的好处是降低重复建设成本，坏处是本地化需求有时候要和其他区域排队竞争全球资源。"
+  },
+  {
+   "id": "sync-cto-93",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "如果学员提出“三个月内上线一个新数字化项目”，现实吗？",
+   "answer_zh": "要看项目范围。如果是运营层面的调整，比如上线一个新的会员活动页面，三个月是可行的；但如果涉及底层系统改造，三个月基本不现实，学员们在设计时间表时，最好先明确项目属于哪个层级。"
+  },
+  {
+   "id": "sync-cto-94",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们的数字化项目，失败率高吗？有没有典型的失败原因？",
+   "answer_zh": "有一定失败率，最常见的原因不是技术实现不了，而是低估了跨部门协同的复杂度，或者对本土用户习惯的判断有偏差，导致上线后效果不及预期，这也是我评估任何新项目时会重点关注的风险点。"
+  },
+  {
+   "id": "sync-cto-95",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "技术团队在争取预算时，通常怎么说服总部？",
+   "answer_zh": "主要靠具体的数据模型和试点验证——先用小范围测试拿到初步数据，证明投入产出比，再拿这些数据去争取更大规模的预算，纯粹讲愿景很难说服总部，数据和试点结果才是最有说服力的。"
+  },
+  {
+   "id": "sync-cto-96",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们和竞品的技术迭代速度差距，有没有具体的量化方式？",
+   "answer_zh": "我们内部会看“从需求提出到功能上线”的平均周期，本土品牌这个周期可能是我们的一半甚至更短，这个指标是我们持续在跟踪和试图改善的核心执行效率指标。"
+  },
+  {
+   "id": "sync-cto-97",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "如果我们想加快数字化项目落地速度，最直接的一步是什么？",
+   "answer_zh": "我认为最直接的一步是建立一个本地小范围授权的“快速通道”，针对特定类型的低风险项目（比如内容和活动运营），减少不必要的全球审批环节，这个机制我们正在和总部争取。"
+  },
+  {
+   "id": "sync-cto-98",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "数字化项目的效果评估周期，一般是多久？",
+   "answer_zh": "常规项目会设一个季度做初步评估，重大项目会拉长到半年到一年，评估维度包括转化率、活跃度、复购率这些核心指标，也会看是否达到了项目立项时设定的具体目标。"
+  },
+  {
+   "id": "sync-cto-99",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "我们和市场部门在内容审批上的协作机制，具体是怎样的？",
+   "answer_zh": "目前的机制是内容团队负责创意和文案，技术团队负责平台适配和数据追踪，市场部门负责最终的品牌调性审核，这个链条环节不算少，我们正在探索怎么在保证审核质量的前提下压缩审批时间。"
+  },
+  {
+   "id": "sync-cto-100",
+   "personas": [
+    "cto"
+   ],
+   "keywords": [],
+   "question_zh": "作为CTO，你觉得学员在设计执行方案时，应该怎么合理安排数字化项目的时间表？",
+   "answer_zh": "我建议把项目按“运营层面”和“架构层面”分类，运营层面的项目可以按季度推进，架构层面的项目要预留半年到一年甚至更长时间，并且在关键节点设置总部沟通和审批的缓冲期，这样时间表才会现实可信。"
+  },
+  {
+   "id": "sync-cmo-01",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的品牌定位是什么？这个定位近五年发生了怎样的变化？",
+   "answer_zh": "过去耐克的品牌定位是两个标签叠加——专业运动领域的权威，加上潮流文化的引领者。但近五年两个标签都在松动。专业属性上，安踏在跑步、李宁在篮球上持续追赶。潮流属性上，Dunk和Air Force 1的复刻过多，加上常年打折，稀缺性被透支。结果是耐克的定位变得模糊——不够专业，不够潮流，也不够有文化认同。消费者知道耐克曾经很厉害，但说不清楚现在的耐克代表什么。"
+  },
+  {
+   "id": "sync-cmo-02",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克的全球品牌叙事“Just Do It”和中国消费者的情感需求之间是否存在错配？",
+   "answer_zh": "存在错配。“Just Do It”的内核是个人英雄主义、竞技突破，这个价值观在中国并非完全无效——专业运动员和重度运动爱好者仍然会被打动。但中国年轻消费者的运动场景变了——过去是“上场打球所以买篮球鞋”，现在是“通勤轻运动、周末徒步、偶尔跑步”，运动已经生活化了。耐克的全球叙事依然围绕“竞技”展开，中国消费者今天更需要“日常陪伴”和“生活方式的认同”。解决方案不是放弃“Just Do It”，而是在中国市场找到一个翻译层——把“竞技精神”翻译成“日常运动中的自我超越”。"
+  },
+  {
+   "id": "sync-cmo-03",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "国货品牌崛起后，耐克作为国际品牌在中国市场的品牌叙事应该怎么调整？",
+   "answer_zh": "需要从“仰视叙事”转向“平视叙事”。过去几十年的逻辑是“国际品牌优于本土品牌”——消费者买耐克是在“向上靠拢”。这个叙事今天已经失效了。Z世代不再仰视国际品牌，他们更关注“这个品牌理解我吗？尊重我吗？”。耐克新的叙事方向应该是：承认中国消费者是全球运动市场的重要参与者，耐克不需要“教育”中国消费者，而是要和中国的运动爱好者一起定义“更好的运动体验”。不是去模仿国货的“民族自豪”叙事——作为美国品牌永远讲不过安踏。耐克能赢的是“专业伙伴”这个定位——我不是你的文化代言人，但我是你运动生涯中最可靠的专业伙伴。"
+  },
+  {
+   "id": "sync-cmo-04",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "安踏的多品牌矩阵和耐克的单品牌模式，在品牌战略层面各自的优劣势是什么？",
+   "answer_zh": "安踏多品牌的核心优势是“分而治之”——安踏主品牌打大众、FILA打高端时尚、始祖鸟和萨洛蒙打专业户外，各品牌独立运营、独立定价。市场下行时一个品牌承压其他可以补位。耐克单品牌的核心优势是“集中火力”——所有资源汇聚到Swoosh一个标志上，可以形成巨大的品牌势能。但缺点是同一个Swoosh既要覆盖大众走量款，又要保持高端专业定价权，还要兼顾潮流稀缺性，很难同时满足。安踏市占率21.8%连续四年中国第一，耐克份额滑落至约14.6%。"
+  },
+  {
+   "id": "sync-cmo-05",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "如果耐克要重建在中国市场的品牌壁垒，最核心应该从哪里入手？",
+   "answer_zh": "最核心的切入点应该是跑步赛道，但不是通过广告投放去“说”自己是跑步品牌，而是通过产品创新加本土社群两条腿“做”出专业跑步品牌的认知。产品层面，需要一款真正的“中国专属跑鞋”——不是把全球款换个配色，而是基于中国跑者的脚型数据、跑步习惯、道路条件开发的。社群层面，需要建立从专业运动员到大众跑者的完整渗透链路。为什么选跑步？这是中国运动鞋服市场中规模最大、增速最稳的赛道，而且在这个赛道上耐克的品牌势能还在。"
+  },
+  {
+   "id": "sync-cmo-06",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国的品牌定位应该调整吗？往哪个方向调？",
+   "answer_zh": "应该回归“专业运动权威”作为主标签，潮流作为自然结果而非战略主线。过去几年耐克在潮流上投入太多资源，结果潮流属性因为过度复刻和打折被稀释了，专业属性又被竞品追赶。Adidas的复苏已经证明了这条路——减少折扣、强化运动专业内容、重建品牌壁垒。但“回归专业”不等于放弃潮流——AJ和Dunk的文化资产仍然有价值，只是不能再用“换配色冲销量”的方式来消耗它。"
+  },
+  {
+   "id": "sync-cmo-07",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国的品牌营销投入和产出效率，和竞品相比如何？",
+   "answer_zh": "耐克的品牌营销投入绝对值仍然很大，但产出效率在下降。原因有三：一是营销内容与本土消费者情感连接不够深，全球模板化的广告创意在中国市场共鸣度低；二是渠道错配——大量预算投在自有App和官网，而中国消费者的注意力在抖音、小红书、微信；三是折扣促销消耗了品牌营销的效果——消费者记住的是“耐克又在打折”而不是“耐克又出了什么好产品”。相比之下，安踏和李宁的营销预算更聚焦、更本土化、更贴近消费者的日常触点。"
+  },
+  {
+   "id": "sync-cmo-08",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的品牌定位应该从“潮流引领者”转向“专业运动权威”吗？",
+   "answer_zh": "应该回归“专业运动权威”作为主标签，潮流作为自然结果而非战略主线。过去几年耐克在潮流上投入太多资源，结果潮流属性因为过度复刻和打折被稀释了，专业属性又被竞品追赶。Adidas的复苏已经证明了这条路——减少折扣、强化运动专业内容、重建品牌壁垒。但“回归专业”不等于放弃潮流——AJ和Dunk的文化资产仍然有价值，只是不能再用“换配色冲销量”的方式来消耗它。\n\n 二、消费者洞察（5题）"
+  },
+  {
+   "id": "sync-cmo-09",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "品牌好感度具体是怎么变化的？现在的水平如何？",
+   "answer_zh": "新疆棉事件前品牌好感度约75%，事件后骤降至约42%。之后几年持续走弱，叠加了多重因素：产品做工下滑让“品质感”标签被削弱；常态化折扣让“高端”标签被稀释；国货品牌好感持续上升，消费者对比之下对耐克的心理评价进一步走低。虽然近两年跌幅收窄，但整体还没有回到事件前的水平。"
+  },
+  {
+   "id": "sync-cmo-10",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "新疆棉事件过去好几年了，为什么影响还在？",
+   "answer_zh": "因为我们从没有正式就采购问题道歉或给出明确表态，只是悄悄下架了声明，被很多消费者解读为傲慢。加上安踏、李宁那几年顺势把国货认同感和这件事绑定在一起，Z世代消费者是在那个氛围里长大的，对我们天然有距离感。每次新的营销或品控争议，都会重新唤醒那段负面记忆。"
+  },
+  {
+   "id": "sync-cmo-11",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "签约王嘉尔等本土代言人，为什么感觉效果不明显？",
+   "answer_zh": "代言人的作用是放大和传递品牌信息。但如果品牌信息本身是模糊的，或者消费者已经不接受了，代言人效应就会打折。核心问题是：消费者对耐克的品牌感知不是“不知道这个品牌”，而是“不再认同这个品牌”——这是认知问题，不是曝光问题。代言人解决的是短期注意力，但品牌好感度修复需要产品、价格、渠道、品牌多个环节同时改善。"
+  },
+  {
+   "id": "sync-cmo-12",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "Z世代消费者为什么不再像以前那样追捧耐克了？",
+   "answer_zh": "三个原因。第一，文化认同转向——Z世代成长于国货崛起时代，天然对本土文化有归属感。第二，消费逻辑变了——从“品牌崇拜”转向“价值认同”，耐克的“洋品牌滤镜”消失。第三，耐克的产品叙事没能跟上——Z世代要的是“这个品牌懂我”，而不是“这个品牌很厉害”。"
+  },
+  {
+   "id": "sync-cmo-13",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "中国消费者对运动品牌“国潮”元素的真实态度是什么？",
+   "answer_zh": "“国潮”不是简单的印花和符号堆砌，而是文化认同的表达。Z世代消费者认为国货品牌的文化叙事是“自然的”“发自内心的”，而国际品牌的国风营销是“硬蹭的”“表面化的”。安踏和李宁将传统文化元素与现代设计结合的做法引发了广泛情感共鸣。耐克做国潮的问题不是“要不要做”，而是“怎么做”——简单堆砌生肖、灯笼等符号，消费者一眼就能看出是“海外品牌硬蹭本土热点”。\n\n 三、竞品品牌策略（5题）"
+  },
+  {
+   "id": "sync-cmo-14",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "安踏和李宁在品牌营销上分别做对了什么？",
+   "answer_zh": "安踏做对三件事：多品牌分层触达——主品牌绑奥运国家队、FILA走高端时尚、始祖鸟/萨洛蒙卡位专业户外；“民族自豪感”的持续经营——它本身就代表中国体育的官方形象；签约流量明星加奥运冠军的组合。李宁做对两件事：“中国李宁”系列用潮流设计语言重写了国货的运动时尚叙事；把专业跑步和篮球的产品力与品牌故事深度绑定。两者共同点：用本土文化叙事建立情感壁垒，这个壁垒耐克很难复制。"
+  },
+  {
+   "id": "sync-cmo-15",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "安踏的多品牌矩阵中，哪个品牌对耐克的威胁最大？",
+   "answer_zh": "迪桑特和可隆所在的高端户外梯队威胁最直接——迪桑特2025年流水破100亿（+35%），可隆流水破60亿（+70%）。它们直接切割耐克在专业户外运动场景中的份额。FILA和安踏主品牌主打大众和时尚，与耐克的正面竞争强度反而在降低，因为价格带和客群已经出现分化。耐克用单一品牌同时应对安踏三层品牌的进攻，防守压力极大。"
+  },
+  {
+   "id": "sync-cmo-16",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "李宁跑步品类成为第一大品类，对耐克意味着什么？",
+   "answer_zh": "李宁跑步流水同比增长10%，占比从2021年的16%连续提升至31%，首次超越篮球和运动时尚成为第一大品类。专业跑鞋销量超2600万双。这意味着耐克在跑步这个核心赛道上面临的压力不只是来自Hoka、昂跑这些专业跑鞋品牌，还有来自国货的正面竞争。跑步是耐克的传统优势品类之一，现在这个优势正在被侵蚀。"
+  },
+  {
+   "id": "sync-cmo-17",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "Adidas在大中华区的复苏对耐克意味着什么？",
+   "answer_zh": "Adidas证明了一件事：在中国市场，产品创新加减少折扣加本土化运营，是可以把失去的份额重新抢回来的。Adidas大中华区已连续11个季度增长，毛利率提升至52.6%。Adidas复苏路径对耐克最大的启示是：品牌修复是可行的，但需要时间、需要纪律（控折扣）、需要真正的产品创新，而不是靠换配色和打折来维持销量。"
+  },
+  {
+   "id": "sync-cmo-18",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "昂跑、Hoka等专业跑步品牌对耐克的威胁是什么？",
+   "answer_zh": "它们切中的是耐克最薄弱的环节——专业跑步的深度。Hoka专攻超厚轻量缓震中底解决长距离足部劳损，On打造独家CloudTec镂空气囊缓震形成差异化专利技术。耐克主力跑鞋走“万金油均衡路线”，在细分场景里缺乏强记忆点。这些品牌虽然体量尚小，但在专业跑者群体中的口碑正在快速积累，而专业跑者正是耐克品牌势能的源头——失去他们，大众市场的说服力也会跟着下降。\n\n 四、品牌健康与修复（9题）"
+  },
+  {
+   "id": "sync-cmo-19",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的品牌好感度修复，最应该从哪里切入？",
+   "answer_zh": "从产品入手。消费者对品牌的认知，70%来自产品本身。没有真正好的、针对中国消费者的产品，所有品牌营销都是空中楼阁。具体来说：推出一款真正的“中国专属”产品——不是全球款换配色，而是基于中国消费者的需求开发的。产品到位之后，品牌叙事才有落脚点，营销投入才有转化基础。"
+  },
+  {
+   "id": "sync-cmo-20",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的品牌信任修复，最大的障碍是什么？",
+   "answer_zh": "最大的障碍是“历史欠账”和“当前行为”之间的不一致。消费者记得新疆棉事件中耐克的立场，也看到耐克至今没有做出让中国消费者满意的补救。同时，消费者看到耐克还在依赖折扣清库存、还在靠换配色撑销量、还没有拿出一款真正让中国市场兴奋的产品。信任修复需要“言行一致”——说回归专业，就要拿出专业的产品；说尊重中国市场，就要做出尊重中国消费者的实际行动。"
+  },
+  {
+   "id": "sync-cmo-21",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克的内容营销策略，最大的问题是什么？",
+   "answer_zh": "最大的问题是“全球模板化”和“本土表面化”。全球广告配上中文字幕不代表本地化，春节推一款生肖鞋也不代表懂中国文化。真正的本土化内容需要理解中国消费者的生活方式、文化语境和情感需求。安踏和李宁的内容之所以能引发共鸣，是因为它们根植于本土文化叙事，而不是在外部套一个“中国风”的壳。耐克需要建立真正的本土内容创作能力，而不是依赖全球模板的本地化翻译。"
+  },
+  {
+   "id": "sync-cmo-22",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "如果让您给耐克总部写一份关于中国品牌策略的“必须做”和“停止做”清单，会写什么？",
+   "answer_zh": "“必须做”三件事：第一，推出一款真正的中国专属产品——不是全球款换配色，是基于中国消费者需求开发的；第二，建立本土内容创作能力，不再依赖全球模板的本地化翻译；第三，用非价格手段（会员专属体验、限量款抽签资格）替代部分折扣功能，逐步恢复价格纪律。“停止做”三件事：第一，停止用“换配色”当创新；第二，停止把营销预算和折扣预算混为一谈；第三，停止用“全球模板+中国元素包装”的方式做本土化内容。"
+  },
+  {
+   "id": "sync-cmo-23",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国的品牌营销，最应该停止做什么？",
+   "answer_zh": "最应该停止的是“用折扣替代品牌建设”。过去几年耐克在品牌营销上的投入不少，但效果被折扣促销大量稀释——消费者记住的是“耐克又在打折”而不是“耐克又出了什么好产品”。折扣不是营销，折扣是销售促进。品牌营销的目的是建立品牌资产和溢价能力，折扣恰恰在消耗这两样东西。应该停止把营销预算和折扣预算混为一谈，让品牌营销回归品牌建设本身。"
+  },
+  {
+   "id": "sync-cmo-24",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克的会员体系和中国国货品牌的私域运营相比，差距在哪里？",
+   "answer_zh": "差距不在功能上——Nike App和SNKRS的功能并不差。问题出在用户触达的场景上。中国消费者每天打开的是微信、抖音、小红书、天猫，耐克要求用户跳转到独立App，等于在路径上多设了一道门。国货的私域运营完全嵌在微信小程序、企业微信、微信群里，用户不用离开日常App就能完成从种草到购买的全过程。另一个差距是运营节奏——国货私域可以每天发内容、每周上新品，耐克中国App受全球品牌规范约束，灵活度差很多。"
+  },
+  {
+   "id": "sync-cmo-25",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克如何应对Amer Sports在高端户外场景的切割？",
+   "answer_zh": "两个选择：自主研发高端户外产品线，但时间成本高、品牌认知从零建立难度大；收购一个高端户外品牌，直接获取品牌资产和产品技术。考虑到耐克历史上收购整合能力较弱，更现实的路径是：聚焦“运动户外”而非“纯户外”——用Nike ACG系列打轻户外/城市户外场景，避开始祖鸟擅长的硬核登山、攀岩等专业性极强、需要深厚技术积累的细分领域。这个策略不追求在专业户外领域战胜Amer，而是在城市户外这个市场规模更大的场景中巩固耐克的护城河。"
+  },
+  {
+   "id": "sync-cmo-26",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "安踏的多品牌战略是否意味着耐克的单品牌模式在中国已经失效？",
+   "answer_zh": "不意味着失效，但意味着需要更精准的场景分层运营。安踏用三个独立品牌覆盖不同人群，避免了单一品牌形象稀释。耐克只有一个品牌，但可以通过产品系列差异化——跑步线主打专业、AJ线主打潮流、基础款主打性价比——实现类似效果。前提是各条产品线在渠道陈列、营销话术和目标人群上做到足够清晰的分层。核心挑战是如何在不同场景和价格带之间保持主品牌调性一致。"
+  },
+  {
+   "id": "sync-cmo-27",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "如果要在跑步赛道和安踏、Hoka、昂跑竞争，品牌层面的关键动作是什么？",
+   "answer_zh": "第一，在中国市场投放1-2款本土专属跑鞋——类似Adidas的“中国限定”策略，而不是简单把全球款拿来卖。第二，签约中国本土马拉松顶尖选手和跑圈KOL，建立专业可信度，而不是依赖全球体育巨星代言。第三，在一线城市开设跑步体验中心，把“卖鞋”升级为“卖跑步服务”——脚型测试、跑姿分析、训练课程。这三件事的核心逻辑是：让中国消费者相信耐克是认真在做适合他们的跑步产品，而不是在敷衍。"
+  },
+  {
+   "id": "sync-cmo-28",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "品牌战略落地，最大的执行障碍是什么？",
+   "answer_zh": "最大的障碍是“总部审批周期”和“本土市场节奏”之间的时间差。一个好的本土化内容创意，从提案到审批到上线，经常需要跨时区、跨层级的多个环节。等流程走完，市场的热点窗口可能已经过去了。这不是团队能力问题，是组织流程问题，需要总部理解中国市场“快”的重要性。"
+  },
+  {
+   "id": "sync-cmo-29",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "中国专属产品的开发，需要什么样的内部支持？",
+   "answer_zh": "需要三方面的支持。第一，产品研发端的本地授权——能够基于中国消费者的脚型数据和穿着习惯做独立开发，而不是只能从全球产品库里选款。第二，供应链端的本地响应——中国专属产品的打样、修改、生产周期需要比全球款更快。第三，品牌端的本地叙事——中国专属产品需要有自己的故事，而不是简单地被说成“中国限定配色”。这三者缺一不可。"
+  },
+  {
+   "id": "sync-cmo-30",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "如果学员的战略里包含大量“品牌重塑”的内容，你觉得需要多长时间才能见效？",
+   "answer_zh": "品牌信任重建通常需要三到五年。这不是做几轮广告投放就能解决的，需要产品、价格、渠道、服务多个环节同步改善，而且这些改善需要被消费者真实感知到。这个时间周期我建议学员们在战略里写清楚，不要暗示“半年就能看到品牌好感度大幅回升”，那不现实。"
+  },
+  {
+   "id": "sync-cmo-31",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "从品牌战略角度看，国货品牌最值得我们学习的一点是什么？",
+   "answer_zh": "是它们对本土文化叙事的深耕能力。安踏和李宁不是在做“营销活动”，而是在做“文化表达”——它们的产品和内容是生长在中国消费者的日常语境里的。耐克需要学习的不是具体某个campaign的打法，而是这种“从本土文化出发”的品牌思维。当然，学习不等于模仿，耐克不能变成安踏的翻版——差异化比模仿更重要。"
+  },
+  {
+   "id": "sync-cmo-32",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的品牌好感度，和主要竞品相比处于什么水平？",
+   "answer_zh": "从公开的消费者调研来看，新疆棉事件前耐克的好感度在行业中处于领先位置，约为75%。事件后出现了明显下滑，据媒体报道跌至约42%。而安踏和李宁在国潮趋势推动下好感度持续上升。此消彼长之间，差距已显著缩小。虽然不同调研机构的具体数值有差异，但趋势是明确的——耐克在品牌情感连接上正在被国货品牌追赶，尤其是在年轻消费者群体中。2026财年大中华区全年营收58.47亿美元，同比下降11%，连续八个季度负增长，进一步印证了好感度下滑对业绩的持续影响。"
+  },
+  {
+   "id": "sync-cmo-33",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "大中华区在品牌内容决策上的自主权有多大？",
+   "answer_zh": "目前自主权有限。大部分品牌层面的内容调性和叙事框架是全球统一的，本地团队能做的更多是局部调整和落地执行。这跟总部的“全球一致性优先”原则有关。当然，我们也在争取一些关键节点上的弹性——比如重大营销节点的本地化调整权限，但这需要用扎实的业绩和数据去换。"
+  },
+  {
+   "id": "sync-cmo-34",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "品牌修复效果怎么衡量？有没有具体的KPI？",
+   "answer_zh": "主要看品牌好感度、正价销售占比、消费者推荐意愿这几个核心指标。品牌好感度是最直接的品牌健康指标；正价销售占比反映品牌溢价能力的恢复程度；消费者推荐意愿衡量的是品牌口碑的改善情况。这三个指标各有侧重，结合起来才能全面评估品牌修复的真实进展。"
+  },
+  {
+   "id": "sync-cmo-35",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "作为CMO，你希望学员从这次访谈中带走什么？",
+   "answer_zh": "我希望你们理解，品牌战略不是写漂亮的品牌宣言，而是要回答一个根本问题：消费者凭什么愿意为耐克支付比安踏更高的价格？这个溢价不是天生的，是产品、渠道、内容、体验共同支撑的。如果你们的战略不能清楚地回答这个问题，那它只是一个愿望清单，不是战略。\n\n 五、品牌资产与危机管理（4题）"
+  },
+  {
+   "id": "sync-cmo-36",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的品牌资产，除了好感度之外，还有哪些维度在下降？",
+   "answer_zh": "品牌资产不只是好感度，还包括品牌知名度、感知质量、品牌联想和品牌忠诚度。耐克在中国的问题不只是“不喜欢了”，而是多个维度同时在走弱。\n\n感知质量在下降——消费者对“越南产”做工的抱怨直接反映在对产品品质的评价上。品牌联想在模糊——过去提到耐克想到“篮球”“潮流”“专业”，现在消费者想到的可能是“打折”“复刻”“溢价不再”。品牌忠诚度在流失——复购率下降，消费者转向安踏、李宁后不再回流。这几个维度叠加，修复难度比单一好感度下降更大。"
+  },
+  {
+   "id": "sync-cmo-37",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的品牌传播，和本土品牌在“话语权”上的差距具体是什么？",
+   "answer_zh": "安踏和李宁在中国市场拥有“定义者”地位——安踏定义“国民运动品牌”、李宁定义“国潮运动时尚”。耐克过去是“潮流定义者”，现在这个话语权正在被稀释。\n\n差距具体体现在三个层面。第一是话题主导权——安踏李宁发新品能引发全网讨论，耐克新品的热度明显下降。第二是用户自发传播——国货品牌的用户在社交媒体上的二创内容、开箱测评数量远超耐克，这种“用户帮品牌说话”的生态是耐克缺失的。第三是文化定义权——“什么是中国年轻人的运动时尚”这个定义权已经不在耐克手里了。"
+  },
+  {
+   "id": "sync-cmo-38",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的品牌危机管理能力怎么样？",
+   "answer_zh": "新疆棉事件的处理暴露了耐克在品牌危机管理上的短板——反应慢、态度模糊、缺乏本土化的危机沟通策略。事件发酵后，耐克没有及时给出针对中国消费者的回应，错过了信任修复的黄金窗口。\n\n对比来看，本土品牌在类似事件中的响应速度和本土化沟通更到位。品牌危机管理能力本身应该成为品牌战略的一部分——包括危机预警机制、本土化危机沟通预案、决策授权流程等。但耐克在这方面的体系建设明显不足，更多是“出了事再说”的被动应对。"
+  },
+  {
+   "id": "sync-cmo-39",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的品牌故事，和消费者的“自我认同”之间有没有断裂？",
+   "answer_zh": "有断裂。消费者买运动品牌不只是买功能，也是买“我想成为什么样的人”。安踏讲的是“中国力量”“民族自豪”，李宁讲的是“中国创造”“文化自信”，这些故事和消费者的自我认同直接挂钩——买安踏是因为“我是中国人，我骄傲”。\n\n耐克讲的是“竞技突破”“挑战极限”，和普通消费者的日常生活距离较远。大部分消费者不是专业运动员，他们更需要的是“这个品牌理解我的生活方式”，而不是“这个品牌告诉我该怎么突破极限”。品牌故事和消费者自我认同之间的连接，是耐克需要重新建立的东西。\n\n 六、体育营销与社群建设（4题）"
+  },
+  {
+   "id": "sync-cmo-40",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "安踏FILA在高端时尚领域的品牌建设，对耐克有什么启示？",
+   "answer_zh": "FILA不靠“专业运动”背书，而是靠“菁英生活方式”建立了品牌壁垒。它不做“跑得最快”“跳得最高”的叙事，而是做“穿FILA的人过什么样的生活”——网球、高尔夫、度假、品质感。这让FILA在中国市场的品牌定位非常清晰：高端时尚运动。\n\n这对耐克的启示是：在中国市场，“专业”不是唯一的品牌路径。耐克过去太依赖“专业”这一个支点，当专业属性被安踏、李宁追赶时，缺少其他支点来支撑品牌价值。耐克应该思考：除了“专业运动”，耐克在中国还能代表什么？"
+  },
+  {
+   "id": "sync-cmo-41",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国的品牌年轻化，问题出在哪里？",
+   "answer_zh": "品牌年轻化不只是找年轻代言人、做年轻化内容。核心问题是“品牌价值观是否和年轻一代共鸣”。\n\nZ世代关心什么？环保、可持续、多元包容、社会公平。耐克在全球有这些价值观的表达，但在中国市场的本地化表达不足——全球价值观配上中文字幕不等于本地化。安踏李宁抓住的是“文化认同”这个更贴近中国年轻人情感需求的切入点。年轻化是系统性问题，不是营销动作问题。"
+  },
+  {
+   "id": "sync-cmo-42",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的体育营销策略，和安踏李宁有什么不同？",
+   "answer_zh": "耐克的体育营销依赖全球顶级体育巨星——乔丹、詹姆斯、C罗、姆巴佩。这些代言人在全球范围有影响力，但在中国市场的本土共鸣度正在下降。中国消费者更关注本土运动员——谷爱凌（安踏）、韦德（李宁）、中国国家队的赞助归属。\n\n安踏的体育营销策略是“国家队+本土明星”——赞助中国奥委会、签约本土运动员，直接把品牌和中国体育的荣誉绑定。李宁的策略是“专业赛事+本土IP”——赞助CBA、签约本土篮球运动员。耐克的全球巨星策略在中国市场的“性价比”正在下降，因为消费者更在意“这个品牌支持中国运动员吗”而不是“这个品牌签了谁”。"
+  },
+  {
+   "id": "sync-cmo-43",
+   "personas": [
+    "cmo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的运动社群建设，和竞品比处于什么水平？",
+   "answer_zh": "运动社群是品牌和消费者建立深度连接的重要载体。昂跑的社群运营是行业标杆——每周组织跑步活动、建立跑者社区、让用户成为品牌大使。安踏、李宁也在加大社群投入，在一线城市建立跑步俱乐部、篮球社群。\n\n耐克在这块起步较早（Nike Run Club），但近几年的投入和运营力度明显不足。NRC的活跃度和用户粘性在下降，而竞品的社群活动频率、用户参与度在上升。社群的缺失意味着耐克和消费者之间少了一个“日常连接”的触点——不只是买鞋的时候才想到耐克，而是每周都有理由和耐克发生互动。"
+  },
+  {
+   "id": "sync-coo-01",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克的产品为什么被消费者认为“做工越来越差”？",
+   "answer_zh": "核心原因是产能转移带来的品控落差。2025财年超过70%的鞋类产能已转移到越南和印尼。东南亚代工厂的问题：产业链配套不完整——运动鞋涉及几十种材料和辅料，越南本地供应链完整度无法和中国相比；工人熟练度偏低——运动鞋制造是精细活，越南和印尼的工人大多缺乏经验；库存高压下工厂赶单——品牌方库存积压时要求代工厂加速出货，进一步挤压质检时间。结果是同一款鞋，“越南产”和“中国产”在鞋标对位、溢胶控制、走线规整度上存在可感知的差距。"
+  },
+  {
+   "id": "sync-coo-02",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "安踏、李宁的供应链优势具体体现在哪里？",
+   "answer_zh": "体现在产地集中、响应速度和成本控制三个维度。安踏、李宁的供应链全部集中在中国境内，物流半径短、沟通成本低、打样和修改几天就能完成。国货品牌依托国内完整供应链，可以快速响应直播、短视频的爆款需求，灵活控价、减少库存折价损失。耐克70%以上的鞋类产能分布在越南和印尼，任何新品从设计到量产到运抵中国，周期天然比本土品牌长。"
+  },
+  {
+   "id": "sync-coo-03",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "关税对耐克中国供应链的具体影响是什么？",
+   "answer_zh": "关税每年带来约10亿美元额外成本。走量款利润薄，关税成本很难通过提价消化；高端款虽然利润空间厚一些，但长期也需要产能转移来保持全球定价的一致性。产能转移不是一年能完成的事，需要3到5年的长期布局。"
+  },
+  {
+   "id": "sync-coo-04",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克供应链应该怎么应对关税压力？",
+   "answer_zh": "分品类应对。走量款（基础跑鞋Pegasus、训练鞋Metcon）利润较薄，优先寻找低关税产地布局（印度、墨西哥、非洲）。高端款（碳板跑鞋Alphafly、功能性服饰）利润空间较厚，短期可承受部分关税成本，但长期也需要产能转移。短期内更现实的是优化产品组合——提高高毛利品类的销售占比，通过结构升级对冲关税成本。"
+  },
+  {
+   "id": "sync-coo-05",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国的供应链，最应该优先做什么？",
+   "answer_zh": "最应该优先做的是“在中国保留高附加值环节的产能”。具体来说：高端跑鞋（碳板、超临界发泡中底等需要精密工艺的产品）保留在中国生产；快反品类（需要快速响应市场热点的产品）在中国建立小批量产能；功能性服饰（对做工要求高的品类）保留中国供应链。走量款可以继续在东南亚生产，但高附加值、高品质要求的产品线应该回流中国。"
+  },
+  {
+   "id": "sync-coo-06",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在东南亚的产能布局现状如何？",
+   "answer_zh": "根据Nike年报数据，2025财年超过70%的鞋类产能已转移到越南和印尼，中国产能占比持续下降。产能转移的原因是规避对华关税和降低人工成本，但带来的问题是品控下降和供应链响应速度变慢。东南亚代工厂的产业链配套不完整、工人熟练度偏低，品控标准执行不到位。\n\n 二、渠道与经销商（6题）"
+  },
+  {
+   "id": "sync-coo-07",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克目前的渠道结构是怎样的？各渠道表现如何？",
+   "answer_zh": "渠道结构大致是批发占五成多，直营（门店加数字）占四成多。关键是趋势——2025财年大中华区批发收入同比下滑13%，直营收入同比下滑12%，数字渠道下滑幅度更大。不是直营替代了批发，是两条渠道同时在萎缩。行业整体蛋糕没变小，但耐克的份额在收缩，最直接的表现就是渠道端全线承压。安踏市占率21.8%连续四年中国第一，我们掉到了约14.6%。"
+  },
+  {
+   "id": "sync-coo-08",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "DTC战略怎么影响了耐克和经销商的关系？",
+   "answer_zh": "DTC战略本身没有错——掌握消费者数据和更高毛利率对品牌有长期价值。问题出在执行方式上。耐克为推DTC主动削减了滔搏、宝胜等头部经销商的供货配额和热门款分配。经销商失去主推动力后，把门店最好的陈列位置给了安踏、李宁、Hoka。现在耐克重新开放配额，但经销商被“抛弃”过一次，不敢再像以前那样全力投入。"
+  },
+  {
+   "id": "sync-coo-09",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "滔搏、宝胜这些经销商对耐克的态度发生了什么变化？",
+   "answer_zh": "从“依赖”到“观望”。过去耐克是滔搏、宝胜最核心的品牌资源。耐克削减配额后，经销商被迫找替代品牌。更严重的是信任裂痕——耐克先砍配额、再重新开放，传递的信号是“耐克对渠道伙伴的态度取决于它自己需不需要你”，不是“长期合作伙伴”。滔搏直营门店毛销售面积同比减少13.4%。信任修复至少需要3到5年的稳定合作周期。"
+  },
+  {
+   "id": "sync-coo-10",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "如果要在“恢复经销商合作”和“继续发展DTC”之间做资源分配，应该怎么选？",
+   "answer_zh": "没有二选一，必须双轮驱动。但当前阶段，恢复经销商合作的优先级应该高于DTC扩张。理由有三：经销商关系一旦彻底破裂，下沉市场的渠道覆盖就永久性丢失了；经销商是耐克面对市场波动的风险缓冲层；批发渠道已经出现回暖信号——2026财年Q1全球批发收入同比增长7%。具体操作上：热销款和限量款优先给核心经销商，直营渠道的折扣不能低于经销商的批发价格，避免渠道之间打价格战。"
+  },
+  {
+   "id": "sync-coo-11",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的渠道下沉覆盖率存在什么问题？",
+   "answer_zh": "下沉市场覆盖的短板是DTC战略的直接后遗症。过去耐克通过滔搏、宝胜等经销商网络触达三四线城市。经销商被削减配额后，部分门店减少了耐克货品，部分直接关了。而安踏、李宁的门店渗透到了三四线和县域市场，抓住增量客流。下沉市场的重建需要时间，而且需要重新理解这些消费者的运动场景和购买决策方式。"
+  },
+  {
+   "id": "sync-coo-12",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的渠道策略调整，最大的执行难点是什么？",
+   "answer_zh": "最大的难点是“信任重建需要时间，但业绩压力要求立即见效”之间的矛盾。经销商信任修复需要3到5年的稳定合作，但总部和资本市场要求尽快看到业绩改善。这意味着耐克需要在“让利给经销商以修复关系”和“维持利润以满足资本市场预期”之间做艰难的平衡。另一个难点是组织惯性——过去几年全公司都在推DTC，现在要转向双轮驱动，团队的心态和能力都需要时间调整。\n\n 三、库存与折扣（6题）"
+  },
+  {
+   "id": "sync-coo-13",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克的库存问题到底有多严重？根源是什么？",
+   "answer_zh": "2025财年末耐克全球库存75亿美元。大中华区没有单独披露，但从渠道全线打折的力度可以反推压力不小。库存问题的根源有三层：渠道结构上，DTC砍掉批发商后失去了“库存蓄水池”；产品层面，缺乏真正的爆款新品，正价商品动销不足；折扣层面，折扣常态化后形成“不打折不买”的预期。这是一个闭环：库存→打折→品牌贬值→更难卖→更多库存。好消息是大中华区库存金额和件数均实现双位数下降，说明去库存有进展。"
+  },
+  {
+   "id": "sync-coo-14",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "折扣对耐克渠道生态的具体破坏机制是什么？",
+   "answer_zh": "破坏从三个方向同时发生。消费者侧——长期打折重塑了价格预期，正价销售周期从几个月缩短到几周。经销商侧——直营渠道低价促销和经销商形成价格倒挂，经销商利润被压缩，不愿给耐克留最好的货架位置。品牌侧——AJ和Dunk的二级市场溢价基本消失。耐克毛利率已降至42.7%，比安踏低17.6个百分点，比Adidas低5个百分点。"
+  },
+  {
+   "id": "sync-coo-15",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克目前的折扣策略在调整吗？",
+   "answer_zh": "是的。CFO明确表示在过去两个季度“更激进地减少促销”后，数字渠道全价实现率正在恢复。耐克正在主动收缩供给、清理老旧库存，不惜以短期收入下滑为代价也要夺回价格体系控制权。折扣力度在缩减，大中华区库存金额和件数均实现双位数下降。但折扣管控需要持续坚持至少2到3年才能看到品牌定价权的实质性恢复。"
+  },
+  {
+   "id": "sync-coo-16",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "折扣这个“毒药”，怎么才能戒掉？",
+   "answer_zh": "戒掉折扣需要同时做三件事。第一，源头控制——更精准的需求预测和更灵活的补货机制，从源头减少过剩供给。第二，渠道分流——奥莱、电商、经销商各有不同的清库存节奏，组合使用可以避免所有渠道同时打折。第三，退出机制——给折扣设定明确的“退出时间表”，告诉市场“这批货清完就恢复正价”。这三件事需要同时做，单做任何一件都打破不了循环。"
+  },
+  {
+   "id": "sync-coo-17",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的定价策略应该怎么调整？",
+   "answer_zh": "核心方向是“恢复价格纪律、重建溢价能力”。具体措施：减少数字渠道的常态化促销；新品上市后设定明确的“不打折保护期”；热销款和限量款严格控量，恢复稀缺性；用非价格手段（会员专属、优先购买权）替代部分折扣功能。但这需要总部和中国区共同的决心——短期内收入会承压，但长期看是唯一正确的方向。"
+  },
+  {
+   "id": "sync-coo-18",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克的库存管理应该怎么改进？",
+   "answer_zh": "核心方向是“更精准的需求预测和更灵活的补货机制”。过去我们在大中华区的需求预测精度不够，加上东南亚产能的长周期，导致供需错配严重。改进方向：第一，利用数据做更精准的品类和区域需求预测；第二，建立更灵活的补货机制，而不是一次性大量铺货；第三，恢复经销商作为库存缓冲层的角色，分散库存风险。\n\n 四、门店与运营效率（4题）"
+  },
+  {
+   "id": "sync-coo-19",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的门店网络应该怎么优化？",
+   "answer_zh": "“关、转、升”三个字。关——关闭低效门店，把资源集中到高势能位置。转——部分门店从“销售导向”转为“体验导向”，提供跑姿分析、脚型测试等服务。升——旗舰店升级为“品牌殿堂”，不仅是卖货，更是品牌体验的物理载体。门店数量不是越多越好，单店质量才是关键。"
+  },
+  {
+   "id": "sync-coo-20",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的门店体验，和安踏、李宁的差距在哪里？",
+   "answer_zh": "安踏、李宁的门店更“接地气”——产品陈列按运动场景分类（跑步区、篮球区、户外区），消费者进店就知道“我该看什么”。耐克的门店有时过于注重“品牌调性”而牺牲了“购物便利性”——消费者进店后不知道自己要找的产品在哪里。另一个差距是导购——国货品牌的导购更懂产品、更会推荐，耐克的导购培训需要加强。"
+  },
+  {
+   "id": "sync-coo-21",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "门店客流和动销情况怎么样？",
+   "answer_zh": "不太乐观，最近的数据显示客流有两位数的下滑，动销也不足。跟品牌吸引力下降、加上折扣心理固化都有关系。耐克自有门店营收在2026财年Q2下降了5%。门店效率参差不齐——核心商圈的旗舰店可能坪效不错，但大量扩张期的门店效率并不高。"
+  },
+  {
+   "id": "sync-coo-22",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "如果让您给耐克总部写一份关于中国运营策略的“必须做”和“停止做”清单，会写什么？",
+   "answer_zh": "“必须做”三件事：重建经销商信任——稳定的供货承诺、透明的分配规则、合理的利润空间；供应链分品类优化——高附加值产品回流中国，走量款留在东南亚；门店网络“关转升”——关闭低效门店，升级旗舰体验店。“停止做”三件事：停止用“砍经销商配额”来推动DTC；停止在自有渠道无节制打折；停止把“门店数量”当成功指标——质量比数量重要。\n\n 五、运营效率与执行（8题）"
+  },
+  {
+   "id": "sync-coo-23",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "供应链转移到东南亚后，对响应速度的影响有多大？",
+   "answer_zh": "影响是结构性的。安踏、李宁的供应链全在中国境内，从设计到上架的周期可以压缩到几周。耐克的设计在美国、产能在东南亚、市场在中国——跨三个时区、两个大洋，任何调整都需要更长的周期。同样一个市场热点出现，国货从决策到产品落地可能只要几周，耐克可能需要几个月。这不是运营效率的问题，是供应链地理分布带来的结构性差距。"
+  },
+  {
+   "id": "sync-coo-24",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的供应链韧性如何？",
+   "answer_zh": "供应链韧性不只是“快”，还包括面对突发事件的抗风险能力。疫情、地缘政治、自然灾害都可能冲击供应链。\n\n耐克的供应链高度集中在越南和印尼——超过70%的鞋类产能在这两个国家。一旦某个区域出现工厂停工、海运中断、关税突变，整个链条都会受影响。相比之下，安踏、李宁的供应链全部集中在中国境内，面对突发事件的响应能力和恢复速度更强。供应链韧性是运营战略的重要组成部分，但耐克在这方面的布局过于集中，存在系统性风险。"
+  },
+  {
+   "id": "sync-coo-25",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "大中华区的运营决策自主权有多大？",
+   "answer_zh": "目前在收缩。DTC激进调整带来的后遗症让总部对区域自主决策的信心下降，他们更倾向于用北美验证过的方法论来管理。本地运营层面的调整我们还有一定自主权，但涉及全球供应链网络重构、重大渠道政策调整，都需要总部审批。这不是CEO一个人能改变的，需要我们用扎实的本地业绩去重新建立信任。"
+  },
+  {
+   "id": "sync-coo-26",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "产品质量问题，在运营层面怎么改善？",
+   "answer_zh": "产品质量改善需要从三个环节同时入手。第一，代工厂的品控标准执行——需要派驻更多品控人员、加强工厂培训和审计，而不是单纯依赖代工厂自检。第二，产品设计阶段的“可制造性”评估——有些设计在东南亚工厂就是做不好，应该在设计阶段就考虑制造可行性。第三，消费者反馈的闭环机制——把投诉和退货数据系统性地反馈给供应链，形成“问题→归因→改进”的闭环。这三件事都需要投入，但没有捷径。"
+  },
+  {
+   "id": "sync-coo-27",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "如果学员的战略要求“三个月内完成渠道重构”，你觉得现实吗？",
+   "answer_zh": "不现实。渠道重构涉及经销商关系修复、供货政策调整、门店运营优化多个层面，每一项都需要至少一到两年的时间才能看到明显效果。三个月内能完成的顶多是制定计划和启动沟通，真正的效果需要更长时间才能显现。学员们在写时间表时，建议把渠道重构作为一个跨年度的系统工程来规划，而不是季度性的速赢项目。"
+  },
+  {
+   "id": "sync-coo-28",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "本土品牌在渠道下沉和门店效率上，比我们强在哪？",
+   "answer_zh": "强在两个地方。一是门店密度——安踏、李宁在县域市场的门店覆盖率远超我们，我们DTC调整后下沉市场出现了大面积空白。二是门店管理——本土品牌的门店更“接地气”，产品陈列按运动场景分类，消费者进店就知道该看什么；耐克的门店有时过于注重“品牌调性”而牺牲了“购物便利性”。"
+  },
+  {
+   "id": "sync-coo-29",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "作为COO，你希望学员从这次访谈中带走什么？",
+   "answer_zh": "我希望你们记住一句话：好的战略必须经得起执行的考验。再完美的战略，如果执行不了就是废纸。战略的价值不在于它看起来多漂亮，而在于它能不能在真实的中国市场环境下落地。写战略的时候多想想：这件事谁来做？要多久？需要什么资源？如果这三个问题答不清楚，这个战略大概率会死在执行路上。"
+  },
+  {
+   "id": "sync-coo-30",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "如果学员的战略需要大量供应链调整，你觉得需要多长时间才能见效？",
+   "answer_zh": "分品类优化大概需要一到两年看到初步效果，但大规模产能调整需要三到五年。因为这不只是选址问题，还涉及供应商认证、工人培训、品控体系重建等多个环节。学员们在战略里如果提到供应链调整，建议给足时间缓冲，不要写“一年内完成供应链重构”这种不现实的时间表。\n\n 六、物流与即时零售（4题）"
+  },
+  {
+   "id": "sync-coo-31",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的退货率和售后成本，趋势如何？",
+   "answer_zh": "品控下滑直接导致退货率上升。东南亚产能转移后，消费者对“越南产”鞋子的不满意率明显高于“中国产”，退货和换货的诉求增加。退货率的上升不仅影响品牌口碑，还增加了逆向物流成本、售后处理成本、库存折价损失。\n\n这些“隐性成本”在财报中不易被单独识别，但对运营利润的影响是真实的。一件退货的物流和处理成本可能是原售价的10-15%，这部分成本最终由品牌方承担。改善品控不仅是品牌问题，也是成本问题。"
+  },
+  {
+   "id": "sync-coo-32",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的物流网络，能否支撑“即时零售”的需求？",
+   "answer_zh": "即时零售（30分钟达）是当前的增长点，但它高度依赖线下门店作为现货仓。美团、京东到家的即时履约能力取决于品牌的门店密度——门店越多，配送距离越短，履约成本越低。\n\n耐克收缩批发网络后，线下现货节点大幅减少。滔搏、宝胜这些经销商门店原本是耐克在即时零售中的天然节点，但DTC调整后，这些门店的耐克库存减少，无法有效支撑即时零售的履约需求。安踏、李宁依托大量经销商门店，在即时零售竞争中处于有利位置。这不是物流能力的问题，是渠道策略的连锁反应。"
+  },
+  {
+   "id": "sync-coo-33",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的门店盈利模型，和竞品比有什么不同？",
+   "answer_zh": "耐克直营门店的盈利模型和经销商门店完全不同——直营门店承担品牌展示功能，盈利要求相对宽松；经销商门店纯粹是生意，盈利要求更严格。\n\nDTC调整后，耐克自己承担了更多门店的盈利压力。直营门店的租金、人力、运营成本全部由品牌方承担，而安踏、李宁通过经销商分担了这部分风险和成本。在门店层面，安踏、李宁的单店盈利压力小于耐克，因为经销商会主动优化低效门店、调整产品组合。这种盈利模型的差异，直接影响渠道策略的可持续性。"
+  },
+  {
+   "id": "sync-coo-34",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的门店选址策略，和竞品有什么不同？",
+   "answer_zh": "耐克的门店集中在一二线核心商圈的高势能位置，追求品牌形象最大化。安踏、李宁的门店分布更广——既有一二线核心商圈的门店，也有三四线、县域市场的门店，追求覆盖最大化。\n\n两种策略各有利弊。耐克的策略能维持高端品牌形象，但在当前市场环境下，“重形象轻覆盖”正在丢失下沉市场的增量机会。下沉市场的消费者不是不想买耐克，是耐克的门店不在他们身边。当安踏、李宁在下沉市场的门店密度持续增加时，耐克的缺席会让消费者形成“这个品牌离我很远”的心理距离。\n\n 七、库存数字化与门店标准化（3题）"
+  },
+  {
+   "id": "sync-coo-35",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的渠道库存管理，数字化程度如何？",
+   "answer_zh": "渠道库存管理的数字化程度直接影响库存健康度。理想的状态是实时掌握每一级渠道的库存水位——总仓、区域仓、门店仓、经销商仓的库存数据实时联动，动态调整供货和调拨。\n\n耐克在这方面的系统建设还有提升空间。不同渠道的库存数据打通程度有限，经销商库存的可见性不足。而安踏已经实现了AI辅助订货，2024年AI辅助订货金额超过20亿元。数字化能力的差距，直接体现在库存管理的精度上——更精准的预测、更及时的调拨、更少的积压。"
+  },
+  {
+   "id": "sync-coo-36",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的门店运营标准化程度如何？",
+   "answer_zh": "直营门店和经销商门店的运营标准是否一致？不同城市、不同商圈的门店体验是否统一？\n\n耐克在直营门店的标准化程度较高——统一的陈列标准、服务流程、视觉规范。但经销商门店的执行力参差不齐——有的门店体验接近直营，有的门店在陈列、导购、服务上差距明显。这种不一致性会影响消费者对品牌的一致感知。消费者在直营店体验到的是“耐克品牌”，在经销商门店体验到的是“这家店在卖耐克”，两者体验的落差会影响品牌整体的信任度。"
+  },
+  {
+   "id": "sync-coo-37",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的经销商管理，最需要改进什么？",
+   "answer_zh": "最需要改进的是“承诺的稳定性”。经销商需要的不是更多的折扣，而是可预期的供货和稳定的利润空间。过去几年DTC调整频繁，经销商不知道下一季能拿到什么货、拿多少，不敢做长期规划。改进方向：建立透明、可预期的分配机制，热销款和限量款的分配规则清晰化，让经销商知道“我做得好就能拿到好货”。\n\n 共同维度补充问题（3题）"
+  },
+  {
+   "id": "sync-coo-38",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克在中国市场的ESG和可持续发展沟通，和竞品比处于什么水平？",
+   "answer_zh": "ESG是国际品牌在中国市场建立差异化的重要维度，但耐克在这方面的本地化沟通明显不足。消费者越来越关注品牌的环保承诺和可持续行动，安踏和李宁在ESG方面的本土化表达更贴近中国消费者的语境——比如安踏的“绿色供应链”、李宁的“循环经济”等本土化叙事。\n\n耐克的全球可持续发展目标在中国市场的传播力度较弱，消费者感知不到耐克在这方面的努力。在ESG成为消费者决策重要因素的背景下，这是一个被忽视的品牌资产。"
+  },
+  {
+   "id": "sync-coo-39",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "耐克和安踏、李宁在下沉市场的消费者洞察，主要差异在哪里？",
+   "answer_zh": "下沉市场的消费者和一二线城市的消费者在品牌认知、消费能力、购买决策方式上存在显著差异。下沉市场消费者对价格的敏感度更高，对品牌“高端感”的追求低于一二线城市，更看重“性价比”和“实用性”。\n\n耐克在下沉市场的消费者洞察积累不足，主要原因是缺乏足够的门店触点和本地化的消费者调研。安踏、李宁长期扎根下沉市场，对这部分消费者的理解更深入。这种洞察差距直接影响了产品定价、渠道策略和营销内容的精准性。"
+  },
+  {
+   "id": "sync-coo-40",
+   "personas": [
+    "coo"
+   ],
+   "keywords": [],
+   "question_zh": "如果学员的战略中提到了“ESG”“可持续发展”“下沉市场”这些维度，你会怎么建议？",
+   "answer_zh": "我会建议学员不要把这些当作“加分项”来写，而是当作战略的有机组成部分。ESG不能只是一句“我们承诺可持续发展”，要有具体可衡量的目标和行动计划。下沉市场不能只是一句“我们要加大下沉市场投入”，要说清楚“去哪个城市、开什么类型的店、卖什么价格带的产品、用什么方式触达消费者”。\n\n战略的价值在于“具体”，而不是“全面”。一个敢做取舍、聚焦几个关键战场的战略，比一个面面俱到但没有重点的战略更有说服力。"
+  },
+  {
+   "id": "sync-kb-01",
+   "personas": [
+    "ceo",
+    "cfo",
+    "cmo",
+    "coo",
+    "chro",
+    "cto",
+    "cpo"
+   ],
+   "keywords": [
+    "通用知识库",
+    "general knowledge base"
+   ],
+   "question_zh": "耐克中国通用知识库（第1部分）：核心事实、数据与来源",
+   "answer_zh": "1.1-1.3 数据整理\n\n一、通用知识\n\n序号\n\n来源\n\n核心事实\n\n数据\n\n页码\n\n标签\n\n1\n\n资料研读-财报提取\n\nGreater China收入FY2025\n\n6.586B美元；同比-13%；剔汇率-12%\n\n《Nike FY2025 10-K》P40\n\n通用知识\n\n2\n\n资料研读-财报提取\n\nGreater China EBIT FY2025\n\n1.602B美元；同比-31%\n\n《Nike FY2025 10-K》P40\n\n通用知识\n\n3\n\n资料研读-财报提取\n\nWholesale变化\n\n-13%\n\n《Nike FY2025 10-K》P43\n\n通用知识\n\n4\n\n资料研读-财报提取\n\nNIKE Direct变化\n\n-12%\n\n《Nike FY2025 10-K》P43\n\n通用知识\n\n5\n\n资料研读-财报提取\n\nDigital销售变化\n\n-22%\n\n《Nike FY2025 10-K》P43\n\n通用知识\n\n6\n\n资料研读-财报提取\n\nStore销售变化\n\n-6%\n\n《Nike FY2025 10-K》P43\n\n通用知识\n\n7\n\n资料研读-财报提取\n\nComparable Store Sales\n\n-7%\n\n《Nike FY2025 10-K》P43\n\n通用知识\n\n8\n\n资料研读-财报提取\n\nGreater China毛利率变化\n\n-420bps\n\n《Nike FY2025 10-K》P43\n\n通用知识\n\n9\n\n资料研读-财报提取\n\n大中华区总部\n\n上海\n\n《Nike FY2025 10-K》P28\n\n通用知识\n\n10\n\n资料研读-财报提取\n\nGreater China为报告分部\n\nNike Brand报告经营分部\n\n《Nike FY2025 10-K》P5\n\n通用知识\n\n11\n\n资料研读-财报提取\n\n鞋类中国制造占比\n\n17%\n\n《Nike FY2025 10-K》P6\n\n通用知识\n\n12\n\n资料研读-财报提取\n\n服装中国制造占比\n\n15%\n\n《Nike FY2025 10-K》P6\n\n通用知识\n\n13\n\n资料研读-财报提取\n\nFY2024收入\n\n7.545B美元\n\n《Nike FY2025 10-K》P40\n\n通用知识\n\n14\n\n资料研读-财报提取\n\nFY2023收入\n\n7.248B美元\n\n《Nike FY2025 10-K》P40\n\n通用知识\n\n15\n\n资料研读-财报提取\n\nFY2022收入\n\n7.547B美元\n\n《Nike FY2025 10-K》P40\n\n通用知识\n\n16\n\n资料研读-财报提取\n\nFY2021收入\n\n8.290B美元\n\n《Nike FY2025 10-K》P40\n\n通用知识\n\n17\n\n资料研读-财报提取\n\nFY2025 EBIT率\n\n24.3%\n\n《Nike FY2025 10-K》P40\n\n通用知识\n\n18\n\n资料研读-财报提取\n\nFY2024毛利率\n\n50.2%\n\n《Nike FY2025 10-K》P40\n\n通用知识\n\n19\n\n资料研读-财报提取\n\nFY2023毛利率\n\n51.0%\n\n《Nike FY2025 10-K》P40\n\n通用知识\n\n20\n\n材料研读－竞品分析\n\nNike 2025营收\n\n463亿美元；同比-10%\n\n通用知识\n\n21\n\n材料研读－竞品分析\n\n安踏2025营收\n\n802亿元；同比+13.3%\n\n通用知识\n\n22\n\n材料研读－竞品分析\n\nAmer Sports营收\n\n65.7亿美元；同比+27%\n\n通用知识\n\n23\n\n材料研读－竞品分析\n\nAdidas营收\n\n248亿欧元；同比+13%\n\n通用知识\n\n24\n\n材料研读－竞品分析\n\nNike中国营收\n\n65.9亿美元→58.5亿美元\n\n通用知识\n\n25\n\n材料研读－竞品分析\n\nNike净利润\n\n32亿美元；-44%\n\n通用知识\n\n26"
+  },
+  {
+   "id": "sync-kb-02",
+   "personas": [
+    "ceo",
+    "cfo",
+    "cmo",
+    "coo",
+    "chro",
+    "cto",
+    "cpo"
+   ],
+   "keywords": [
+    "通用知识库",
+    "general knowledge base"
+   ],
+   "question_zh": "耐克中国通用知识库（第2部分）：核心事实、数据与来源",
+   "answer_zh": "材料研读－竞品分析\n\n安踏净利润\n\n135.9亿元；+13.9%\n\n通用知识\n\n27\n\n材料研读－竞品分析\n\nAmer净利润\n\n4.3亿美元；+489%\n\n通用知识\n\n28\n\n材料研读－竞品分析\n\nAdidas净利润\n\n13.8亿欧元；+67%\n\n通用知识\n\n29\n\n材料研读－竞品分析\n\n安踏市场份额\n\n21.8%\n\n通用知识\n\n30\n\n材料研读－竞品分析\n\n安踏主品牌收入\n\n347.5亿元；+3.7%\n\n通用知识\n\n31\n\n材料研读－竞品分析\n\nFILA收入\n\n284.7亿元；+6.9%\n\n通用知识\n\n32\n\n材料研读－竞品分析\n\n迪桑特流水\n\n>100亿元\n\n通用知识\n\n33\n\n材料研读－竞品分析\n\n可隆流水\n\n>60亿元\n\n通用知识\n\n34\n\n材料研读－竞品分析\n\n研发投入\n\n约22亿元\n\n通用知识\n\n35\n\n材料研读－竞品分析\n\nArc'teryx收入\n\n28.6亿美元；+30%\n\n通用知识\n\n36\n\n材料研读－竞品分析\n\nSalomon收入\n\n24亿美元；+31%\n\n通用知识\n\n37\n\n材料研读－竞品分析\n\nAmer中国收入\n\n18.6亿美元；+43.4%\n\n通用知识\n\n38\n\n材料研读－竞品分析\n\n新增门店\n\n近100家\n\n通用知识\n\n39\n\n材料研读－竞品分析\n\nAdidas中国收入\n\n36.2亿欧元；+13%\n\n通用知识\n\n40\n\n材料研读－竞品分析\n\n连续11季度增长\n\n11季度\n\n通用知识\n\n41\n\n行业宏观数据表（财报版）\n\nNike FY2024中国收入\n\n75.45亿美元；+8%剔汇率\n\n《FY24 Nike年报》P44\n\n通用知识\n\n42\n\n行业宏观数据表（财报版）\n\nAdidas FY2024中国收入\n\n34.59亿欧元；+10%剔汇率\n\n《FY24 Adidas年报》P113\n\n通用知识\n\n43\n\n行业宏观数据表（财报版）\n\nANTA收入\n\n708.26亿元；+13.6%\n\n《ANTA 2024年报》P16\n\n通用知识\n\n44\n\n行业宏观数据表（财报版）\n\nAmer中国收入\n\n12.98亿美元\n\n《FY24 Amer年报》P3,P8\n\n通用知识\n\n45\n\n行业宏观数据表（财报版）\n\nGDP\n\n5.0%\n\n《ANTA 2024年报》P22\n\n通用知识\n\n46\n\n行业宏观数据表（财报版）\n\n社零\n\n48.8万亿元；+3.5%\n\n《ANTA 2024年报》P22\n\n通用知识\n\n47\n\n行业宏观数据表（财报版）\n\nTechnical Apparel\n\n21.94亿美元\n\n《FY24 Amer年报》P8\n\n通用知识\n\n48\n\n行业宏观数据表（财报版）\n\nOutdoor Performance\n\n18.36亿美元\n\n《FY24 Amer年报》P8\n\n通用知识\n\n49\n\n行业宏观数据表（财报版）\n\nArc'teryx收入\n\n突破20亿美元\n\n《FY24 Amer年报》P3\n\n通用知识\n\n50\n\n行业宏观数据表（财报版）\n\nSalomon鞋类\n\n突破10亿美元\n\n《FY24 Amer年报》P4\n\n通用知识\n\n51\n\n行业宏观数据表（财报版）\n\n其他品牌收入\n\n106.8亿元；+53.7%\n\n《ANTA 2024年报》P16,P41\n\n通用知识\n\n52\n\n行业宏观数据表（财报版）\n\n网上零售\n\n13.1万亿元；+6.5%\n\n《ANTA 2024年报》P26\n\n通用知识\n\n53\n\n行业宏观数据表（财报版）\n\n安踏电商\n\n35.1%；+21.8%\n\n《ANTA 2024年报》P26\n\n通用知识\n\n54\n\n行业宏观数据表（财报版）\n\nAI辅助订货\n\n>20亿元\n\n《ANTA 2024年报》P26\n\n通用知识\n\n55\n\n行业宏观数据表（财报版）\n\nAmer DTC\n\n44%\n\n《FY24 Amer年报》P3\n\n通用知识\n\n二、框架知识"
+  },
+  {
+   "id": "sync-kb-03",
+   "personas": [
+    "ceo",
+    "cfo",
+    "cmo",
+    "coo",
+    "chro",
+    "cto",
+    "cpo"
+   ],
+   "keywords": [
+    "通用知识库",
+    "general knowledge base"
+   ],
+   "question_zh": "耐克中国通用知识库（第3部分）：核心事实、数据与来源",
+   "answer_zh": "序号\n\n来源\n\n核心事实\n\n数据\n\n页码\n\n标签\n\n1\n\n资料研读-财报提取\n\n本地连接\n\nNeed to connect locally\n\n《Q4 FY2025 Transcript》P25\n\n框架知识\n\n2\n\n资料研读-财报提取\n\n提升生产率\n\nDrive productivity\n\n《Q4 FY2025 Transcript》P25\n\n框架知识\n\n3\n\n材料研读－竞品分析\n\n渠道战略失误\n\n过度DTC\n\n框架知识\n\n4\n\n材料研读－竞品分析\n\n产品创新停滞\n\n靠换配色\n\n框架知识\n\n5\n\n材料研读－竞品分析\n\n品牌定位模糊\n\n专业与潮流之间\n\n框架知识\n\n6\n\n材料研读－竞品分析\n\n三层品牌卡位\n\n多品牌战略\n\n框架知识\n\n7\n\n材料研读－竞品分析\n\n买专业趋势\n\n从买logo到买专业\n\n框架知识\n\n8\n\n材料研读－竞品分析\n\nAdidas复苏\n\n产品创新+减少折扣+本土化\n\n框架知识\n\n9\n\n材料研读－竞品分析\n\n竞争格局\n\nNike被夹击\n\n框架知识\n\n10\n\n材料研读－竞品分析\n\n消费者心智\n\nNike位置下降\n\n框架知识\n\n11\n\n行业宏观数据表（财报版）\n\n运动参与率上升\n\n结构驱动\n\n《FY24 Adidas年报》P79\n\n框架知识\n\n12\n\n行业宏观数据表（财报版）\n\n健康意识提升\n\n结构驱动\n\n《FY24 Adidas年报》P79\n\n框架知识\n\n三、情境知识\n\n序号\n\n来源\n\n核心事实\n\n数据\n\n页码\n\n标签\n\n1\n\n资料研读-财报提取\n\n毛利率下降原因\n\nFX不利；库存减值准备增加\n\n《Nike FY2025 10-K》P43\n\n情境知识\n\n2\n\n资料研读-财报提取\n\n中国恢复节奏\n\nRecovery will take time\n\n《Q4 FY2025 Transcript》P7\n\n情境知识\n\n3\n\n资料研读-财报提取\n\n长期看好中国\n\nLong-term opportunity\n\n《Q4 FY2025 Transcript》P24\n\n情境知识\n\n4\n\n资料研读-财报提取\n\n品牌机会\n\n1.3 billion consumers\n\n《Q4 FY2025 Transcript》P24\n\n情境知识\n\n5\n\n材料研读－竞品分析\n\nWin Now计划\n\n推出Win Now\n\n情境知识\n\n6\n\n行业宏观数据表（财报版）\n\n提振消费\n\n首要任务\n\n《ANTA 2024年报》P22\n\n情境知识\n\n7\n\n行业宏观数据表（财报版）\n\n2025展望\n\n高单位数增长\n\n《FY24 Adidas年报》P116\n\n情境知识"
+  }
+ ]
 }

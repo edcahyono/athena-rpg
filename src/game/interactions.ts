@@ -8,7 +8,7 @@ import { TASKS, TRACKS, trackForPersona } from "../../shared/gameContent.js";
 import { PERSONA_MAP } from "../../shared/personas.config.js";
 import { api, state } from "../net/api";
 import {
-  showLines, showChoice, chatMode, sequentialQuiz, prepPanel, taskPanel, reviewWorkPanel, boardDeckPanel, showLoading, toast,
+  showLines, showChoice, chatMode, sequentialQuiz, prepPanel, taskPanel, reviewWorkPanel, boardDeckPanel, boardResultPanel, showLoading, toast,
   startTimer, stopTimer, updateHUD,
 } from "../ui/ui";
 import { L, fmt, UI, lang } from "../i18n";
@@ -107,9 +107,48 @@ async function supervisor(npc: NpcDef) {
     return await showLines(name, [L(LIN_LINES.allDone)]);
   }
   const n = Object.values(state.personas).filter((p) => p.used > 0).length;
+  const align = state.engagement.alignments;
 
-  // Mid-engagement synthesis checkpoint — after 3+ interviews Lin wants an
-  // interim readout (and the board won't convene without it).
+  // Phase gate 1 — As-Is Alignment. After enough interviews to have a diagnosis,
+  // the client must confirm the as-is before benchmarking can begin.
+  if (!align.asis.agreed && n >= 3) {
+    await showLines(name, [L(UI.asisIntro)]);
+    while (true) {
+      const answer = await taskPanel(L(UI.asisTitle), L(UI.asisPrompt), align.asis.lastFeedback || undefined);
+      if (answer === null) return;
+      const res = await api.alignmentAsis(answer);
+      if (res.delta) toast(fmt(UI.credToast, { n: res.delta }));
+      if (res.result === "agreed" || res.result === "already") {
+        await showLines(name, [fmt(UI.asisAgreed, { n: res.delta || 25 })]);
+        return;
+      }
+      await showLines(name, [`${res.feedback}`, L(UI.asisRevise)]);
+      const again = await showChoice(name, L(UI.asisRevise), [L(UI.alignReviseBtn), L(UI.alignLaterBtn)]);
+      if (again !== 0) return;
+    }
+  }
+
+  // Phase gate 2 — Benchmark Alignment. Only after the as-is is agreed; the
+  // client disputes irrelevant comparisons before the to-be design is allowed.
+  if (align.asis.agreed && !align.benchmark.agreed) {
+    await showLines(name, [L(UI.benchIntro)]);
+    while (true) {
+      const answer = await taskPanel(L(UI.benchTitle), L(UI.benchPrompt), align.benchmark.lastFeedback || undefined);
+      if (answer === null) return;
+      const res = await api.alignmentBenchmark(answer);
+      if (res.delta) toast(fmt(UI.credToast, { n: res.delta }));
+      if (res.result === "agreed" || res.result === "already") {
+        await showLines(name, [fmt(UI.benchAgreed, { n: res.delta || 25 })]);
+        return;
+      }
+      await showLines(name, [`${res.feedback}`, L(UI.benchRevise)]);
+      const again = await showChoice(name, L(UI.benchRevise), [L(UI.alignReviseBtn), L(UI.alignLaterBtn)]);
+      if (again !== 0) return;
+    }
+  }
+
+  // Mid-engagement synthesis checkpoint — after the benchmark is aligned Lin
+  // wants an interim readout (and the board won't convene without it).
   if (!state.flags.interimDone && n >= 3) {
     await showLines(name, [L(UI.interimIntro)]);
     const answer = await taskPanel(L(UI.interimTitle), fmt(UI.interimPrompt, { n }));
@@ -335,6 +374,25 @@ async function midNpc(npc: NpcDef) {
 
 /* --------------------------- final boardroom --------------------------- */
 
+/**
+ * Defense stage (Wave 3, Part F) — after the deck/pitch is scored, the recipient
+ * fires 5 challenge questions at its weakest points; the player answers, and the
+ * final score = 60% deck + 40% defense. Returns the merged score/checklist, or
+ * null if the player backs out (their deck score then stands).
+ */
+async function runDefense(): Promise<{ score: number; checklist: any[] } | null> {
+  let qres: any;
+  try { qres = await api.defenseQuestions(); } catch (e: any) { toast(e.message); return null; }
+  const questions = (qres.questions || []).map((q: any) => q.text).filter(Boolean);
+  if (!questions.length) return null;
+  await showLines(L(UI.defenseTitle), [L(UI.defenseIntro)]);
+  const answers = await sequentialQuiz(L(UI.defenseTitle), questions, "", []);
+  if (answers === null) return null; // backed out — deck score stands
+  const g: any = await api.defenseGrade(answers);
+  await showLines(L(UI.defenseTitle), [g.feedback, fmt(UI.defenseResult, { deck: g.deckScore, def: g.defenseScore, final: g.finalScore })]);
+  return { score: g.finalScore, checklist: g.checklist || [] };
+}
+
 async function boardTable(_npc: NpcDef) {
   const boardName = lang === "zh" ? "董事会会议室" : "Boardroom";
   if (state.board.done) {
@@ -362,20 +420,29 @@ async function boardTable(_npc: NpcDef) {
     });
     if (!ok) return;
 
+    // Who receives the pitch — the sim board, or a classroom instructor.
+    const rc = await showChoice(L(UI.boardTitle), L(UI.recipientPrompt), [L(UI.recipientBoard), L(UI.recipientProf)]);
+    await api.setRecipient(rc === 1 ? "professorGuo" : "board").catch(() => {});
+
     // Choose how to present: upload a polished deck (each exec evaluates it
     // from their own lens), or speak live and take their questions.
     const mode = await showChoice(L(UI.boardTitle), L(UI.boardPresentPrompt), [L(UI.boardPresentDeck), L(UI.boardPresentLive)]);
     if (mode === 0) {
-      const evals = await boardDeckPanel();
-      if (!evals) return; // cancelled — come back when ready
+      const review = await boardDeckPanel();
+      if (!review) return; // cancelled — come back when ready
       await showLines(L(UI.boardTitle), [L(UI.boardDeckReactions)]);
-      for (const e of evals) {
+      for (const e of review.evals || []) {
         const tag = e.verdict === "strong" ? "✅" : e.verdict === "weak" ? "⚠️" : e.verdict === "error" ? "…" : "➖";
         await showLines(e.name, [`${tag} ${e.comments}`]);
       }
+      // Defense stage — the recipient challenges the pitch; final = deck + defense.
+      const defended = await runDefense();
       await api.boardEnd().catch(() => {});
+      const finalScore = defended ? defended.score : review.score;
+      const finalChecklist = defended ? defended.checklist : (review.checklist || []);
+      if (typeof finalScore === "number") await boardResultPanel(finalScore, finalChecklist);
       toast(L(UI.boardConcluded));
-      return; // deck presented + evaluated — the board is concluded
+      return; // deck presented + defended — the board is concluded
     }
   }
 
@@ -401,7 +468,15 @@ async function boardTable(_npc: NpcDef) {
     },
     onLeave: async () => {
       stopTimer();
-      await api.boardEnd().catch(() => {});
+      // Runs after chatMode's lifecycle — must self-handle errors here.
+      try {
+        const r: any = await api.boardEnd();
+        // Defense stage, then the deliverable: final score + per-exec checklist.
+        const defended = await runDefense();
+        const score = defended ? defended.score : r?.score;
+        const checklist = defended ? defended.checklist : (r?.checklist || []);
+        if (typeof score === "number") await boardResultPanel(score, checklist);
+      } catch { /* scoring is best-effort; the meeting still concluded */ }
       toast(L(UI.boardConcluded));
     },
   });

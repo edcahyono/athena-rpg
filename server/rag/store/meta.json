@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-07-17T04:30:39.309Z",
+  "builtAt": "2026-07-20T18:29:02.576Z",
   "embeddings": "voyage-3.5",
   "personas": [
     "ceo",
@@ -10,5 +10,5 @@
     "cto",
     "chro"
   ],
-  "totalChunks": 43
+  "totalChunks": 349
 }

@@ -40,11 +40,39 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: bold; color: #f8f8f0; text-shadow: 0 1px 2px #000; letter-spacing: 0.5px;
 }
-#hud-menu, #hud-fullscreen, #hud-notebook {
+#hud-menu, #hud-fullscreen, #hud-notebook, #hud-binder {
   font-family: inherit; font-size: 15px; cursor: pointer; line-height: 1;
   background: #23233a; color: #ffd75e; border: 2px solid #ffd75e; border-radius: 4px; padding: 3px 8px;
 }
-#hud-menu:hover, #hud-fullscreen:hover, #hud-notebook:hover { background: #ffd75e; color: #10101a; }
+#hud-menu:hover, #hud-fullscreen:hover, #hud-notebook:hover, #hud-binder:hover { background: #ffd75e; color: #10101a; }
+
+/* ---- Engagement Binder (Wave 2 workspace) ---- */
+.ws-counts { font-size: 12px; color: var(--accent); font-weight: bold; margin: 2px 0 8px; }
+.ws-sec { margin: 10px 0; border-top: 2px solid #ddd; padding-top: 8px; }
+.ws-sec h3 { margin: 0 0 6px; font-size: 14px; }
+.ws-packs { display: flex; flex-direction: column; gap: 6px; }
+.ws-pack { background: #eef3ee; border: 2px solid #cbd8cb; border-radius: 4px; padding: 6px 8px; font-size: 12px; }
+.ws-pack .ws-src { display: inline-block; background: var(--accent); color: #fff; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 3px; vertical-align: middle; }
+.ws-pack p { margin: 4px 0 0; color: #333; }
+.ws-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; background: #fff; border: 2px solid #ccc; border-radius: 4px; padding: 5px 8px; margin-bottom: 4px; font-size: 12px; }
+.ws-item.ws-bad { border-color: #d98a2b; background: #fdf3e6; }
+.ws-warn { color: #c0561b; font-style: normal; font-weight: bold; font-size: 11px; white-space: nowrap; }
+.ws-ok { color: var(--accent); font-style: normal; font-size: 11px; white-space: nowrap; }
+.ws-x { background: #eee; border: 2px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 11px; padding: 1px 7px; color: #a11; flex-shrink: 0; }
+.ws-x:hover { background: #f4caca; }
+.ws-ta { width: 100%; min-height: 44px; border: 3px solid var(--ink); border-radius: 4px; padding: 6px; background: #fff; resize: vertical; font-family: inherit; font-size: 12px; margin-top: 4px; }
+.ws-chk-label { font-size: 11px; color: #666; margin: 5px 0 2px; }
+.ws-chks { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.ws-chk { font-size: 11px; display: inline-flex; align-items: center; gap: 3px; background: #f2f2ea; border: 2px solid #ddd; border-radius: 4px; padding: 2px 6px; cursor: pointer; }
+.ws-add { margin-top: 6px; background: var(--accent); color: #fff; border: 3px solid var(--ink); border-radius: 4px; padding: 4px 14px; cursor: pointer; font-family: inherit; font-size: 12px; }
+.ws-link { color: var(--accent); text-decoration: underline; cursor: pointer; font-weight: bold; }
+.ws-ro { border: 2px solid #ccc; border-radius: 4px; padding: 6px 8px; margin-bottom: 6px; background: #fff; }
+.ws-ro b { font-size: 12px; }
+.ws-ro-fb { font-size: 11px; color: #555; margin: 4px 0 0; font-style: italic; }
+/* Skills-you're-building reference */
+.skill-row { border-top: 2px solid #ddd; padding: 8px 0; }
+.skill-row h3 { margin: 0 0 4px; font-size: 13px; color: var(--accent); }
+.skill-row p { margin: 2px 0; font-size: 12px; }
 
 #objective {
   display: flex; gap: 8px; align-items: baseline;
@@ -53,6 +81,22 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 }
 #obj-label { color: #7ee787; font-weight: bold; }
 #obj-why { color: #8a93a6; font-size: 11px; }
+
+/* ---- Engagement Tracker — the 5-phase consulting spine ---- */
+#tracker {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  background: #10101a; border: 3px solid #3a3a4a; border-top: 2px dashed #2a2a3a; border-bottom: none;
+  padding: 5px 12px; font-size: 11px;
+}
+#tracker-title { color: #ffd75e; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; font-size: 10px; }
+#tracker-steps { display: flex; gap: 6px; flex-wrap: wrap; }
+.tstep {
+  padding: 2px 7px; border-radius: 3px; border: 2px solid #3a3a4a; white-space: nowrap;
+  color: #8a93a6; background: #181826; letter-spacing: 0.3px; cursor: default;
+}
+.tstep.done { color: #7ee787; border-color: #2a6e46; background: #14261a; }
+.tstep.current { color: #10101a; border-color: #ffd75e; background: #ffd75e; font-weight: bold; }
+.tstep.locked { opacity: 0.65; }
 
 #phaser { border: 3px solid #3a3a4a; border-top: none; }
 #phaser canvas { display: block; }

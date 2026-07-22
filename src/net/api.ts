@@ -24,6 +24,22 @@ export interface GameState {
   updatedAt: number;
   credibility: number;
   flags: { metSupervisor: boolean; interimDone: boolean; boardDone: boolean; debriefDone: boolean };
+  engagement: {
+    phase: string;
+    completed: Record<string, boolean>;
+    alignments: {
+      asis: { agreed: boolean; attempts: number; lastFeedback: string | null };
+      benchmark: { agreed: boolean; attempts: number; lastFeedback: string | null };
+    };
+  };
+  settings: { recipient: string };
+  workspace: {
+    dataPacks: { id: string; t: number }[];
+    interviews: { personaId: string; playerSummary: string; score: number; feedback: string }[];
+    painPoints: { id: string; domain?: string; severity?: string; statement: string; evidenceRefs: string[] }[];
+    findings: { id: string; statement: string; evidenceRefs: string[] }[];
+    recommendations: { id: string; statement: string; findingRefs: string[]; targetExecs: string[] }[];
+  };
   tasks: Record<string, { status: string; delta: number; feedback?: string }>;
   personas: Record<string, { used: number; warmth: number; active: { expiresAt: number } | null }>;
   gatekeepers: Record<string, { hasTalked: boolean }>;
@@ -75,6 +91,14 @@ export const api = {
   boardChat: (text: string) => post("board/chat", { text }),
   boardReviewDeck: (text: string) => post("board/review-deck", { text }),
   boardEnd: () => post("board/end"),
+  setRecipient: (recipient: string) => post("settings", { recipient }),
+  workspaceSummary: (personaId: string, summary: string) => post("workspace/summary", { personaId, summary }),
+  defenseQuestions: () => post("board/defense/questions"),
+  defenseGrade: (answers: string[]) => post("board/defense/grade", { answers }),
+  workspaceAdd: (kind: string, payload: object) => post("workspace/add", { kind, ...payload }),
+  workspaceRemove: (kind: string, id: string) => post("workspace/remove", { kind, id }),
+  alignmentAsis: (answer: string) => post("alignment/asis", { answer }),
+  alignmentBenchmark: (answer: string) => post("alignment/benchmark", { answer }),
   interim: (answer: string) => post("interim", { answer }),
   reviewWork: (reviewerId: string, filename: string, text: string) => post("review-work", { reviewerId, filename, text }),
   extractText: (filename: string, fileBase64: string) => post("extract-text", { filename, fileBase64 }),
