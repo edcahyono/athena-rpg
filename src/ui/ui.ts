@@ -72,11 +72,18 @@ export function updateHUD(floor: number) {
  * in-progress / locked so the player always knows where they are in the
  * consulting lifecycle, not just where they are in the building.
  */
+let lastTrackerPhase: string | null = null;
 function renderTracker() {
   const eng = state?.engagement;
   const bar = $("tracker");
   if (!eng || !state.flags.metSupervisor) { bar.hidden = true; return; }
   bar.hidden = false;
+  // Announce a phase change so the player knows to go get their next brief.
+  if (lastTrackerPhase && eng.phase !== lastTrackerPhase) {
+    const np = PHASES.find((p) => p.id === eng.phase);
+    if (np) toast(fmt(UI.phaseAdvanced, { label: L(np.short) }));
+  }
+  lastTrackerPhase = eng.phase;
   $("tracker-title").textContent = L(UI.trackerTitle);
   const steps = $("tracker-steps");
   steps.innerHTML = "";
@@ -86,7 +93,7 @@ function renderTracker() {
     const el = document.createElement("span");
     el.className = "tstep" + (done ? " done" : current ? " current" : " locked");
     el.textContent = `${done ? "✓" : current ? "▸" : "•"} ${L(ph.short)}`;
-    el.title = `${L(ph.name)} — ${done ? L(UI.phaseDone) : current ? L(UI.phaseCurrent) : L(UI.phaseLocked)}\n${L(ph.deliverable)}`;
+    el.title = `${L(ph.name)} (${done ? L(UI.phaseDone) : current ? L(UI.phaseCurrent) : L(UI.phaseLocked)})\n${L(ph.deliverable)}`;
     steps.appendChild(el);
   }
 }

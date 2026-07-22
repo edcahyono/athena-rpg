@@ -236,6 +236,13 @@ export const UI = {
   wsEvidence: { en: "evidence", zh: "证据" },
   wsEmpty: { en: "Nothing here yet.", zh: "这里还什么都没有。" },
 
+  // phase transition prompt + per-phase manager briefings
+  phaseAdvanced: { en: "✅ New phase: {label}. See Manager Lin (F12) for your brief.", zh: "✅ 进入新阶段：{label}。去12层找林经理领取本阶段说明。" },
+  linBriefDiagnose: { en: "Now the real work: the DIAGNOSE phase, which consultants call the 'as-is'. Go interview the executives on 15 and their teams on 11, pull the evidence into your binder (B), and log the pain points. When you've got a grounded picture, come back and present your diagnosis to me. No solutions yet, just what's broken and how you know.", zh: "现在是真正的工作：【诊断】阶段，顾问管它叫「现状（as-is）」。去15层访谈高管、11层访谈他们的团队，把证据整理进工作簿（B），并记录痛点。等你有了扎实的判断，回来把诊断汇报给我。先别谈解决方案，只说清楚哪里出了问题、你怎么知道的。" },
+  linBriefBenchmark: { en: "Good, the client agreed the diagnosis. Now BENCHMARK: measure Nike against real peers (Anta, Li-Ning, adidas) on numbers they actually disclose. Find where we're genuinely weaker and where the opening is, then bring me a recommended direction. I'll challenge any comparison that doesn't hold up.", zh: "很好，客户认可了诊断。现在进入【对标】：在对手真正披露的数据上，把耐克和安踏、李宁、阿迪达斯做对比。找出我们真正更弱的地方、以及机会在哪，然后带一个建议方向给我。任何站不住脚的比较，我都会质疑。" },
+  linBriefDesign: { en: "The priorities are agreed. Time to DESIGN the future state, the 'to-be'. Build your 5-year strategy in the binder, and make sure every recommendation traces back to a finding you already proved. When you have a draft, give me an interim readout before the board.", zh: "优先事项已达成一致。现在开始【设计】未来状态，也就是「蓝图（to-be）」。在工作簿里搭建你的五年战略，并确保每条建议都能追溯到你已经证明过的某个发现。有了草稿后，在上董事会之前先给我做一次中期汇报。" },
+  linBriefPresent: { en: "This is it, the PRESENT phase. Take your strategy to the boardroom on Floor 16. Present it, then be ready to defend it: they'll challenge your weakest points, one by one. Make it count.", zh: "到最后一步了，【汇报】阶段。带着你的战略去16层的董事会会议室。先汇报，然后准备好答辩：他们会逐一挑战你最薄弱的地方。全力以赴吧。" },
+
   // engagement tracker (HUD)
   trackerTitle: { en: "Engagement", zh: "项目进程" },
   phaseCurrent: { en: "in progress", zh: "进行中" },

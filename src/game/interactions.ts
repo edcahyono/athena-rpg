@@ -18,6 +18,24 @@ const $ = (id: string) => document.getElementById(id)!;
 const pick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 const nameOf = (npc: NpcDef) => `${L(npc.name)} · ${L(npc.role)}`;
 
+// Per-phase manager briefing: the first time the player sees Lin in a new
+// phase, she explains what this phase is for. localStorage tracks which phases
+// have already been briefed (purely narrative — safe to keep client-side).
+const PHASE_BRIEF: Record<string, any> = {
+  asis: UI.linBriefDiagnose,
+  benchmark: UI.linBriefBenchmark,
+  tobe: UI.linBriefDesign,
+  pitch: UI.linBriefPresent,
+};
+const BRIEFED_KEY = "athena-briefed";
+const getBriefed = (): Record<string, boolean> => {
+  try { return JSON.parse(localStorage.getItem(BRIEFED_KEY) || "{}"); } catch { return {}; }
+};
+const markBriefed = (phase: string) => {
+  const b = getBriefed(); b[phase] = true;
+  try { localStorage.setItem(BRIEFED_KEY, JSON.stringify(b)); } catch { /* ignore */ }
+};
+
 export async function interactProp(char: string): Promise<void> {
   const lines = PROP_LINES[char];
   if (lines && lines.length) await showLines("…", [L(pick(lines))]);
@@ -106,6 +124,15 @@ async function supervisor(npc: NpcDef) {
   if (state.flags.debriefDone) {
     return await showLines(name, [L(LIN_LINES.allDone)]);
   }
+
+  // First visit in a new phase → Lin briefs you on what this phase is for,
+  // before you're allowed to work the gate. Once briefed, fall through.
+  const phase = state.engagement.phase;
+  if (PHASE_BRIEF[phase] && !getBriefed()[phase]) {
+    markBriefed(phase);
+    return await showLines(name, [L(PHASE_BRIEF[phase])]);
+  }
+
   const n = Object.values(state.personas).filter((p) => p.used > 0).length;
   const align = state.engagement.alignments;
 
