@@ -42,6 +42,7 @@ export default class OfficeScene extends Phaser.Scene {
   private npcs: { def: NpcDef; sprite: Phaser.GameObjects.Sprite }[] = [];
   private npcLabels: { def: NpcDef; name: Phaser.GameObjects.Text; role: Phaser.GameObjects.Text }[] = [];
   private wanderers: { def: NpcDef; sprite: Phaser.GameObjects.Sprite; shadow: Phaser.GameObjects.Image; name: Phaser.GameObjects.Text; role: Phaser.GameObjects.Text; path: { x: number; y: number }[]; idx: number; dir: string; pauseUntil: number }[] = [];
+  private deskAnims: { img: Phaser.GameObjects.Image; phase: number }[] = [];
   private props: { char: string; x: number; y: number }[] = [];
   private elevators: { x: number; y: number }[] = [];
   private prompt!: Phaser.GameObjects.Text;
@@ -64,6 +65,7 @@ export default class OfficeScene extends Phaser.Scene {
     this.npcs = [];
     this.npcLabels = [];
     this.wanderers = [];
+    this.deskAnims = [];
     this.props = [];
     this.elevators = [];
     const layout = LAYOUTS[this.floor];
@@ -123,9 +125,10 @@ export default class OfficeScene extends Phaser.Scene {
       const giveDesk = seated && def.kind !== "persona";
       if (giveDesk) {
         const dyPix = y + TILE;
-        this.add.image(x, dyPix, "tile-desk").setDepth(dyPix);
-        const deskBody = walls.create(x, dyPix, "tile-desk") as Phaser.Physics.Arcade.Sprite;
-        deskBody.setVisible(false).refreshBody();
+        const deskImg = this.add.image(x, dyPix, "tile-work-0").setDepth(dyPix + 4);
+        this.deskAnims.push({ img: deskImg, phase: Math.floor(Math.random() * 400) });
+        const deskBody = walls.create(x, dyPix, "tile-work-0") as Phaser.Physics.Arcade.Sprite;
+        deskBody.setVisible(false).setSize(34, 20).refreshBody();
       }
       const shadow = this.add.image(x, y + 10, "shadow").setDepth(y - 1);
       const s = this.add.sprite(x, y + (seated ? 3 : 0), `char-${def.color}-down-0`).setDepth(y);
@@ -356,6 +359,8 @@ export default class OfficeScene extends Phaser.Scene {
     this.player.setDepth(this.player.y);
 
     if (this.wanderers.length) this.updateWanderers(time);
+    // Cubicle workers type away — toggle the two laptop frames (desynced per desk).
+    for (const d of this.deskAnims) d.img.setTexture(`tile-work-${Math.floor((time + d.phase) / 320) % 2}`);
 
     // interaction prompt
     const near = this.nearestNpc() || this.nearestProp();

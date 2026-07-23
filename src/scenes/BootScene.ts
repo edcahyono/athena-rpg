@@ -216,6 +216,32 @@ export default class BootScene extends Phaser.Scene {
       g.fillStyle(0x1a1d24); g.fillRect(14, 25, 4, 6); // stem
     });
 
+    // Big cubicle workstation (48x34, spans wider than a tile) with an open
+    // laptop and two hands on the keyboard. Two frames animate the hands so the
+    // worker looks like they're typing. Drawn IN FRONT of the seated NPC.
+    const workDesk = (g: Phaser.GameObjects.Graphics, hands: number) => {
+      g.fillStyle(OUTLINE); g.fillRect(0, 8, 48, 26);
+      g.fillStyle(0x9a6b40); g.fillRect(1, 9, 46, 24);        // desk wood
+      g.fillStyle(0xb5834f); g.fillRect(1, 9, 46, 5);         // lit top edge
+      g.fillStyle(0x845a34); g.fillRect(1, 30, 46, 3);        // shaded front
+      g.fillStyle(OUTLINE); g.fillRect(15, 3, 18, 17);        // laptop screen frame
+      g.fillStyle(0x2c3242); g.fillRect(16, 4, 16, 13);
+      g.fillStyle(0x7ec8e3); g.fillRect(17, 5, 14, 11);       // glowing screen
+      g.fillStyle(0xd6f2ff); g.fillRect(18, 6, 5, 3);         // glare
+      g.fillStyle(0x3a3f4a); g.fillRect(14, 19, 20, 8);       // keyboard base
+      g.fillStyle(0x555b68); g.fillRect(15, 20, 18, 1);
+      g.fillStyle(0x2a2e38); for (let kx = 16; kx < 31; kx += 3) g.fillRect(kx, 22, 2, 2); // keys
+      g.fillStyle(0xf4f0e4); g.fillRect(2, 20, 8, 10);        // papers
+      g.fillStyle(0xc9c2ae); g.fillRect(3, 22, 6, 1); g.fillRect(3, 25, 6, 1);
+      g.fillStyle(OUTLINE); g.fillCircle(42, 24, 4);
+      g.fillStyle(0xc0563a); g.fillCircle(42, 24, 3);         // coffee mug
+      g.fillStyle(0xe8b48c);                                  // typing hands (alternate)
+      if (hands === 0) { g.fillRect(17, 24, 4, 3); g.fillRect(27, 25, 4, 3); }
+      else { g.fillRect(17, 25, 4, 3); g.fillRect(27, 24, 4, 3); }
+    };
+    this.tex("tile-work-0", 48, 34, (g) => workDesk(g, 0));
+    this.tex("tile-work-1", 48, 34, (g) => workDesk(g, 1));
+
     // Matte-glass window (standard grey wall) — frosted panes, frame, faint skyline.
     this.tex("tile-window", T, T, (g) => {
       g.fillStyle(0x556077); g.fillRect(0, 0, T, T); // wall base (matches tile-wall)
