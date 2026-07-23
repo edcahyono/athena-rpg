@@ -1,6 +1,6 @@
 /** OfficeScene — one floor at a time; elevator restarts the scene with a new floor. */
 import Phaser from "phaser";
-import { TILE, BLOCKING, LAYOUTS, NPCS, NpcDef, PROP_LINES, spawnPoint } from "../config/world";
+import { TILE, BLOCKING, LAYOUTS, NPCS, NpcDef, PROP_LINES, spawnPoint, EXEC_OFFICES } from "../config/world";
 import { api, state } from "../net/api";
 import { ui, updateHUD, updateObjectiveBanner, elevatorPanel, elevatorClose, elevatorOpen, questLogPanel, workspacePanel, menuPanel, toast, applyStaticLabels, welcomePanel, setRelabelHandler } from "../ui/ui";
 import { interact, interactProp } from "../game/interactions";
@@ -43,6 +43,7 @@ export default class OfficeScene extends Phaser.Scene {
   private npcLabels: { def: NpcDef; name: Phaser.GameObjects.Text; role: Phaser.GameObjects.Text }[] = [];
   private wanderers: { def: NpcDef; sprite: Phaser.GameObjects.Sprite; shadow: Phaser.GameObjects.Image; name: Phaser.GameObjects.Text; role: Phaser.GameObjects.Text; path: { x: number; y: number }[]; idx: number; dir: string; pauseUntil: number }[] = [];
   private deskAnims: { img: Phaser.GameObjects.Image; phase: number }[] = [];
+  private execOffices: { execId: string; bounds: Phaser.Geom.Rectangle; cover: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text }[] = [];
   private props: { char: string; x: number; y: number }[] = [];
   private elevators: { x: number; y: number }[] = [];
   private prompt!: Phaser.GameObjects.Text;
@@ -66,6 +67,7 @@ export default class OfficeScene extends Phaser.Scene {
     this.npcLabels = [];
     this.wanderers = [];
     this.deskAnims = [];
+    this.execOffices = [];
     this.props = [];
     this.elevators = [];
     const layout = LAYOUTS[this.floor];
@@ -205,10 +207,29 @@ export default class OfficeScene extends Phaser.Scene {
 
     api.save({ floor: this.floor, x: this.player.x, y: this.player.y });
 
+    if (this.floor === 15) this.buildExecOffices();
+
     if (firstDay) this.runIntroCutscene();
 
     // Arrived by elevator → slide the doors open on the freshly-built floor.
     if ((this as any).viaElevator) elevatorOpen(this.floor);
+  }
+
+  /** F15 executive offices: an opaque frosted-glass cover + door label over each
+   *  office, so from the corridor you can't see who's inside — walk in and the
+   *  exec is revealed at their desk (handled in update). */
+  private buildExecOffices() {
+    for (const o of EXEC_OFFICES) {
+      const px = o.tx * TILE, py = o.ty * TILE, pw = o.w * TILE, ph = o.h * TILE;
+      const cover = this.add.rectangle(px + pw / 2, py + ph / 2, pw - 2, ph - 2, 0xcce0ec, 0.95)
+        .setDepth(9000).setStrokeStyle(3, 0x8fb0c4);
+      const label = this.add.text(px + pw / 2, py + ph - 10, L(o.label), {
+        fontFamily: "Courier New", fontSize: "12px", fontStyle: "bold", color: "#1f3038",
+        stroke: "#eaf4fa", strokeThickness: 3, align: "center", wordWrap: { width: pw - 6 },
+      }).setOrigin(0.5, 1).setDepth(10002);
+      const bounds = new Phaser.Geom.Rectangle(px - 8, py - 8, pw + 16, ph + 20);
+      this.execOffices.push({ execId: o.execId, bounds, cover, label });
+    }
   }
 
   /** Day one: Athena walks in from the entrance straight to her supervisor. */
@@ -361,6 +382,15 @@ export default class OfficeScene extends Phaser.Scene {
     if (this.wanderers.length) this.updateWanderers(time);
     // Cubicle workers type away — toggle the two laptop frames (desynced per desk).
     for (const d of this.deskAnims) d.img.setTexture(`tile-work-${Math.floor((time + d.phase) / 320) % 2}`);
+
+    // Executive offices: reveal the exec only while you're inside their office.
+    for (const o of this.execOffices) {
+      const inside = Phaser.Geom.Rectangle.Contains(o.bounds, this.player.x, this.player.y);
+      o.cover.setVisible(!inside);
+      o.label.setVisible(!inside);
+      const lbl = this.npcLabels.find((l) => l.def.id === `persona-${o.execId}`);
+      if (lbl) { lbl.name.setVisible(inside); lbl.role.setVisible(inside); }
+    }
 
     // interaction prompt
     const near = this.nearestNpc() || this.nearestProp();

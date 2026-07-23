@@ -59,7 +59,7 @@ const EXEC = [
   "#WNNNW.WNNNW.WNNNW.WNNNW#",
   "#WDDDW.WDDDW.WDDDW.WDDDW#",
   "#WgggW.WgggW.WgggW.WgggW#",
-  "#.......................#",
+  "#WgggW..................#",
   "#.......................#",
   "#.......................#",
   "#.......................#",
@@ -253,6 +253,20 @@ NPCS.push({
     { en: "When a meeting slot is spent, it's spent. There's no 'do-over' at this level.", zh: "会面额度用掉就是用掉了。到了这个层级，没有「重来一次」。" },
   ],
 });
+
+// Floor 15 executive offices — opaque frosted-glass rooms. From the corridor you
+// see only frosted glass + a door label; walk in and the exec is revealed at
+// their desk. tx/ty/w/h are the office's tile bounds (walls + interior). The CEO
+// office is the biggest.
+export const EXEC_OFFICES: { execId: string; label: BL; tx: number; ty: number; w: number; h: number }[] = [
+  { execId: "ceo",  label: { en: "CEO — Chief Executive", zh: "首席执行官 · 办公室" }, tx: 1, ty: 2, w: 5, h: 4 },
+  { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 7, ty: 2, w: 5, h: 3 },
+  { execId: "cmo",  label: { en: "CMO", zh: "首席营销官" }, tx: 13, ty: 2, w: 5, h: 3 },
+  { execId: "coo",  label: { en: "COO", zh: "首席运营官" }, tx: 19, ty: 2, w: 5, h: 3 },
+  { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 4, ty: 11, w: 5, h: 3 },
+  { execId: "cto",  label: { en: "VP Technology", zh: "技术副总裁" }, tx: 10, ty: 11, w: 5, h: 3 },
+  { execId: "cpo",  label: { en: "VP Product", zh: "产品副总裁" }, tx: 16, ty: 11, w: 5, h: 3 },
+];
 
 export const LAYOUTS: Record<number, string[]> = {
   10: OFFICE, 11: OFFICE, 12: LOBBY, 13: OFFICE, 14: OFFICE, 15: EXEC, 16: BOARDROOM,
