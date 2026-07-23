@@ -247,7 +247,7 @@ PERSONAS.forEach((p: any, i: number) => {
   });
 });
 NPCS.push({
-  id: "exec-ea", name: { en: "Vivian", zh: "薇薇安" }, role: { en: "Executive Assistant", zh: "高管助理" }, floor: 15, tx: 21, ty: 8, color: 0x5a8a7a, kind: "flavor",
+  id: "exec-ea", name: { en: "Vivian", zh: "薇薇安" }, role: { en: "Front Desk · Executive Suite", zh: "前台 · 高管区" }, floor: 15, tx: 12, ty: 6, color: 0x5a8a7a, kind: "flavor",
   lines: [
     { en: "Each executive only sees analysts vouched for by their Deloitte counterpart downstairs. Calendars here are brutally tight.", zh: "每位高管只见楼下德勤对口经理担保过的分析师。这里的日程紧得不近人情。" },
     { en: "When a meeting slot is spent, it's spent. There's no 'do-over' at this level.", zh: "会面额度用掉就是用掉了。到了这个层级，没有「重来一次」。" },

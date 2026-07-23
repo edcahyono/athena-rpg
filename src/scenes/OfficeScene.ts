@@ -99,6 +99,10 @@ export default class OfficeScene extends Phaser.Scene {
     else if (state && state.client.floor === this.floor && state.client.x > 0 && state.client.y > 0) {
       startX = state.client.x; startY = state.client.y;
     }
+    // Arrived by elevator → step out right in front of the doors, not mid-office.
+    if ((this as any).viaElevator) {
+      startX = 6 * TILE + TILE / 2; startY = 3 * TILE + TILE / 2; this.dir = "down";
+    }
     this.player = this.physics.add.sprite(startX, startY, "player-down-0");
     this.player.setSize(16, 12).setOffset(2, 16).setCollideWorldBounds(true);
     this.physics.add.collider(this.player, walls);
@@ -114,6 +118,15 @@ export default class OfficeScene extends Phaser.Scene {
       const wander = WANDER.has(def.id);
       const seated = !STANDING.has(def.id);
       if (seated) this.add.image(x, y - 2, "tile-chair").setDepth(y - 1); // chair behind the desk worker
+      // Personal cubicle desk (with laptop) directly in front — the worker sits
+      // behind it. Executives (F15) get their own office desks instead.
+      const giveDesk = seated && def.kind !== "persona";
+      if (giveDesk) {
+        const dyPix = y + TILE;
+        this.add.image(x, dyPix, "tile-desk").setDepth(dyPix);
+        const deskBody = walls.create(x, dyPix, "tile-desk") as Phaser.Physics.Arcade.Sprite;
+        deskBody.setVisible(false).refreshBody();
+      }
       const shadow = this.add.image(x, y + 10, "shadow").setDepth(y - 1);
       const s = this.add.sprite(x, y + (seated ? 3 : 0), `char-${def.color}-down-0`).setDepth(y);
       // Strollers move freely, so they get no static collider (won't block paths).
@@ -200,7 +213,8 @@ export default class OfficeScene extends Phaser.Scene {
     ui.cutscene = true;
     try {
       const lin = NPCS.find((n) => n.id === "supervisor")!;
-      await this.walkTo(lin.tx * TILE + TILE / 2, (lin.ty + 1) * TILE + TILE / 2);
+      // Stop below her desk (ty+1 is now the desk itself), then greet her across it.
+      await this.walkTo(lin.tx * TILE + TILE / 2, (lin.ty + 3) * TILE + TILE / 2);
       this.player.setTexture("player-up-0");
       ui.cutscene = false;
       await interact(lin, this.floor);
