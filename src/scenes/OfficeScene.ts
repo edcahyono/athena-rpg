@@ -17,10 +17,12 @@ const TEX: Record<string, string> = {
   n: "tile-window", N: "tile-exec-window",
   // Executive office door (press E to enter/exit)
   X: "tile-exec-door",
+  // Executive private office: G = glass wall, b = black interior floor
+  G: "tile-glass", b: "tile-black",
 };
 
 // Walkable rug tiles render under the player (low depth) instead of at row depth.
-const RUG = new Set(["c", "g"]);
+const RUG = new Set(["c", "g", "b"]);
 
 // Ambient NPCs that stay on their feet (they stroll/clean rather than sit at a
 // desk). Everyone else is seated in an office chair at their station.
@@ -165,6 +167,7 @@ export default class OfficeScene extends Phaser.Scene {
       let fi = this.floor; // vary the palette per floor
       for (const fy of FILLER_ROWS) {
         for (const fx of FILLER_COLS) {
+          if ([6, 7, 14, 15].includes(fx)) continue; // keep the elevator exit lanes clear
           const nearNpc = NPCS.some((n) => n.floor === this.floor && Math.hypot(n.tx - fx, n.ty - fy) < 2.6);
           let nearFurniture = false;
           for (let yy = fy - 1; yy <= fy + 2 && !nearFurniture; yy++)
@@ -248,6 +251,11 @@ export default class OfficeScene extends Phaser.Scene {
       elevatorOpen(this.floor);
       const outRow = this.floor === 16 ? 3 : 4; // boardroom table sits higher
       this.walkTo(this.player.x, outRow * TILE + TILE / 2).then(() => this.player.setTexture("player-down-0"));
+      // Safety: if the walk-out is ever obstructed, hand control back anyway so
+      // the player can never get stuck stepping out of the elevator.
+      this.time.delayedCall(1800, () => {
+        if (this.walkTarget) { const done = this.walkTarget.resolve; this.walkTarget = null; done(); }
+      });
     }
   }
 
@@ -265,6 +273,12 @@ export default class OfficeScene extends Phaser.Scene {
         fontFamily: "Courier New", fontSize: "12px", fontStyle: "bold", color: "#1f3038",
         stroke: "#eaf4fa", strokeThickness: 3, align: "center", wordWrap: { width: pw - 6 },
       }).setOrigin(0.5, 1).setDepth(10002);
+      // The exec's laptop desk, on the door side of their seat (drawn/animated
+      // here since executives are excluded from the open-floor cubicle desks).
+      const dside = Math.sign(o.door.ty - o.seat.ty) || 1;
+      const dyp = o.seat.ty * TILE + TILE / 2 + dside * 15;
+      const deskImg = this.add.image(o.seat.tx * TILE + TILE / 2, dyp, "tile-work-0").setDepth(dyp);
+      this.deskAnims.push({ img: deskImg, phase: Math.floor(Math.random() * 400) });
       const bounds = new Phaser.Geom.Rectangle(px + 4, py + 4, pw - 8, ph - 8);
       this.execOffices.push({ execId: o.execId, bounds, cover, label, meta: o });
     }

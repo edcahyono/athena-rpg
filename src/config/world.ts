@@ -10,7 +10,7 @@ import { PERSONAS, MID_PERSONAS } from "../../shared/personas.config.js";
 import type { BL } from "../i18n";
 
 export const TILE = 32;
-export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D", "n", "N", "X"]);
+export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D", "n", "N", "X", "G"]);
 
 // Palette for the decorative filler workers that fill the open floors.
 export const FILLER_COLORS = [0x76808f, 0x8f7680, 0x7f8f76, 0x76778f, 0x8f8676, 0x6f8087];
@@ -63,22 +63,26 @@ const OFFICE = [
 // (W walls, N glass backs) with a single door tile X: press E at the door to
 // enter/exit; the interior is frosted over until you're inside. The CEO's
 // office sits alone on the left, center — and is the biggest.
+// Floor 15 — seven identical private executive offices (all the same size).
+// Each is a small room walled in GLASS (G) with a simple BLACK interior (b) and
+// a single door (X): press E at the door to step inside/out. Frosted over until
+// you enter. Three offices along the top, four along the bottom.
 const EXEC = [
   "###NNNNNNNNNNNNNNNNNNN###",
   "#p.....EE......EE......p#",
-  "#......WNNNW.WNNNW.WNNNW#",
-  "#......WDDDW.WDDDW.WDDDW#",
-  "#......WgggW.WgggW.WgggW#",
-  "#......WWXWW.WWXWW.WWXWW#",
-  "#WWWWWW.................#",
-  "#WNNNNW.................#",
-  "#WDDDgX.................#",
-  "#WggggW.................#",
-  "#WWWWWW.................#",
-  "#.....WWXWW.WWXWW.WWXWW.#",
-  "#.....WgggW.WgggW.WgggW.#",
-  "#.....WDDDW.WDDDW.WDDDW.#",
-  "#p....WWWWW.WWWWW.WWWWW.#",
+  "#.......................#",
+  "#.GGG......GGG.....GGG..#",
+  "#.GbG......GbG.....GbG..#",
+  "#.GbG......GbG.....GbG..#",
+  "#.GbG......GbG.....GbG..#",
+  "#.GXG......GXG.....GXG..#",
+  "#.......................#",
+  "#GXG...GXG...GXG...GXG..#",
+  "#GbG...GbG...GbG...GbG..#",
+  "#GbG...GbG...GbG...GbG..#",
+  "#GbG...GbG...GbG...GbG..#",
+  "#GGG...GGG...GGG...GGG..#",
+  "#p.....................p#",
   "#########################",
 ];
 
@@ -243,7 +247,8 @@ MID_PERSONAS.forEach((p: any, i: number) => {
 // Floor 15: the seven Nike C-suite personas, each seated INSIDE their sealed
 // office (persona order: ceo, cfo, cmo, coo, chro, cto, cpo) — see EXEC layout
 // + EXEC_OFFICES. CEO in the big left-center office.
-const execSpots: [number, number][] = [[3, 9], [9, 4], [15, 4], [21, 4], [8, 12], [14, 12], [20, 12]];
+// Must match EXEC_OFFICES seats, in PERSONAS order (ceo,cfo,cmo,coo,chro,cto,cpo).
+const execSpots: [number, number][] = [[3, 4], [12, 4], [20, 4], [2, 12], [8, 12], [14, 12], [20, 12]];
 PERSONAS.forEach((p: any, i: number) => {
   const [tx, ty] = execSpots[i % execSpots.length];
   NPCS.push({
@@ -273,21 +278,24 @@ export interface ExecOffice {
   execId: string; label: BL; tx: number; ty: number; w: number; h: number;
   door: { tx: number; ty: number }; inside: { tx: number; ty: number }; outside: { tx: number; ty: number };
 }
-export const EXEC_OFFICES: ExecOffice[] = [
-  { execId: "ceo",  label: { en: "CEO — Chief Executive", zh: "首席执行官 · 办公室" }, tx: 1, ty: 6, w: 6, h: 5,
-    door: { tx: 6, ty: 8 }, inside: { tx: 5, ty: 8 }, outside: { tx: 7, ty: 8 } },
-  { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 7, ty: 2, w: 5, h: 4,
-    door: { tx: 9, ty: 5 }, inside: { tx: 8, ty: 4 }, outside: { tx: 9, ty: 6 } },
-  { execId: "cmo",  label: { en: "CMO", zh: "首席营销官" }, tx: 13, ty: 2, w: 5, h: 4,
-    door: { tx: 15, ty: 5 }, inside: { tx: 14, ty: 4 }, outside: { tx: 15, ty: 6 } },
-  { execId: "coo",  label: { en: "COO", zh: "首席运营官" }, tx: 19, ty: 2, w: 5, h: 4,
-    door: { tx: 21, ty: 5 }, inside: { tx: 20, ty: 4 }, outside: { tx: 21, ty: 6 } },
-  { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 6, ty: 11, w: 5, h: 4,
-    door: { tx: 8, ty: 11 }, inside: { tx: 7, ty: 12 }, outside: { tx: 8, ty: 10 } },
-  { execId: "cto",  label: { en: "VP Technology", zh: "技术副总裁" }, tx: 12, ty: 11, w: 5, h: 4,
-    door: { tx: 14, ty: 11 }, inside: { tx: 13, ty: 12 }, outside: { tx: 14, ty: 10 } },
-  { execId: "cpo",  label: { en: "VP Product", zh: "产品副总裁" }, tx: 18, ty: 11, w: 5, h: 4,
-    door: { tx: 20, ty: 11 }, inside: { tx: 19, ty: 12 }, outside: { tx: 20, ty: 10 } },
+export interface ExecOfficeSeat { tx: number; ty: number }
+export const EXEC_OFFICES: (ExecOffice & { seat: ExecOfficeSeat })[] = [
+  // Top row (door faces down into the corridor). All 3×4, identical.
+  { execId: "ceo",  label: { en: "CEO", zh: "首席执行官" }, tx: 2, ty: 3, w: 3, h: 5,
+    door: { tx: 3, ty: 7 }, inside: { tx: 3, ty: 6 }, outside: { tx: 3, ty: 8 }, seat: { tx: 3, ty: 4 } },
+  { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 11, ty: 3, w: 3, h: 5,
+    door: { tx: 12, ty: 7 }, inside: { tx: 12, ty: 6 }, outside: { tx: 12, ty: 8 }, seat: { tx: 12, ty: 4 } },
+  { execId: "cmo",  label: { en: "CMO", zh: "首席营销官" }, tx: 19, ty: 3, w: 3, h: 5,
+    door: { tx: 20, ty: 7 }, inside: { tx: 20, ty: 6 }, outside: { tx: 20, ty: 8 }, seat: { tx: 20, ty: 4 } },
+  // Bottom row (door faces up into the corridor). Identical.
+  { execId: "coo",  label: { en: "COO", zh: "首席运营官" }, tx: 1, ty: 9, w: 3, h: 5,
+    door: { tx: 2, ty: 9 }, inside: { tx: 2, ty: 10 }, outside: { tx: 2, ty: 8 }, seat: { tx: 2, ty: 12 } },
+  { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 7, ty: 9, w: 3, h: 5,
+    door: { tx: 8, ty: 9 }, inside: { tx: 8, ty: 10 }, outside: { tx: 8, ty: 8 }, seat: { tx: 8, ty: 12 } },
+  { execId: "cto",  label: { en: "VP Technology", zh: "技术副总裁" }, tx: 13, ty: 9, w: 3, h: 5,
+    door: { tx: 14, ty: 9 }, inside: { tx: 14, ty: 10 }, outside: { tx: 14, ty: 8 }, seat: { tx: 14, ty: 12 } },
+  { execId: "cpo",  label: { en: "VP Product", zh: "产品副总裁" }, tx: 19, ty: 9, w: 3, h: 5,
+    door: { tx: 20, ty: 9 }, inside: { tx: 20, ty: 10 }, outside: { tx: 20, ty: 8 }, seat: { tx: 20, ty: 12 } },
 ];
 
 export const LAYOUTS: Record<number, string[]> = {

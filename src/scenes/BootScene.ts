@@ -291,6 +291,23 @@ export default class BootScene extends Phaser.Scene {
       g.fillStyle(0x1f1611); g.fillRect(0, T - 3, T, 3);
     });
 
+    // Executive glass wall — the "surrounding" of a private office. Pale,
+    // frosted, semi-reflective panes with a slim frame.
+    this.tex("tile-glass", T, T, (g) => {
+      g.fillStyle(0x8fa6b4); g.fillRect(0, 0, T, T);       // frame
+      g.fillStyle(0xbcd4e0); g.fillRect(2, 2, T - 4, T - 4); // glass
+      g.fillStyle(0xd6e8f0); g.fillRect(2, 2, T - 4, 6);   // top sheen
+      g.fillStyle(0xcfe2ec, 0.7); g.fillRect(6, 8, 6, 18); g.fillRect(18, 6, 5, 20); // reflections
+      g.fillStyle(0xa8c0ce); g.fillRect(0, T - 2, T, 2);   // base
+    });
+
+    // Executive office interior floor — clean, simple black (glossy dark).
+    this.tex("tile-black", T, T, (g) => {
+      g.fillStyle(0x141418); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x1c1c22); g.fillRect(0, 0, 16, 16); g.fillRect(16, 16, 16, 16);
+      g.fillStyle(0x26262e); g.fillRect(4, 4, 2, 2); g.fillRect(22, 20, 2, 2); // faint sheen
+    });
+
     this.tex("shadow", 20, 8, (g) => {
       g.fillStyle(0x000000, 0.25); g.fillEllipse(10, 4, 20, 8);
     });
