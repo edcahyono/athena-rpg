@@ -1,6 +1,6 @@
 /** OfficeScene — one floor at a time; elevator restarts the scene with a new floor. */
 import Phaser from "phaser";
-import { TILE, BLOCKING, LAYOUTS, NPCS, NpcDef, PROP_LINES, spawnPoint, EXEC_OFFICES } from "../config/world";
+import { TILE, BLOCKING, LAYOUTS, NPCS, NpcDef, PROP_LINES, spawnPoint, EXEC_OFFICES, FILLER_COLORS } from "../config/world";
 import { api, state } from "../net/api";
 import { ui, updateHUD, updateObjectiveBanner, elevatorPanel, elevatorClose, elevatorOpen, questLogPanel, workspacePanel, menuPanel, toast, applyStaticLabels, welcomePanel, setRelabelHandler } from "../ui/ui";
 import { interact, interactProp } from "../game/interactions";
@@ -15,6 +15,8 @@ const TEX: Record<string, string> = {
   W: "tile-exec-wall", D: "tile-exec-desk", g: "tile-exec-carpet",
   // Matte-glass windows (n = standard grey wall, N = executive walnut)
   n: "tile-window", N: "tile-exec-window",
+  // Executive office door (press E to enter/exit)
+  X: "tile-exec-door",
 };
 
 // Walkable rug tiles render under the player (low depth) instead of at row depth.
@@ -28,7 +30,7 @@ const STANDING = new Set(["guard", "cleaner"]);
 const WANDER = new Set(["guard", "cleaner"]);
 const PATROLS: Record<string, [number, number][]> = {
   guard: [[4, 12], [20, 12]],                    // security paces the lobby
-  cleaner: [[2, 5], [21, 5], [21, 10], [2, 10]], // cleaner loops the office margins
+  cleaner: [[2, 10], [21, 10]], // cleaner paces the clear corridor below the cubicle rows
 };
 
 // Module-level so floor changes (scene restarts) don't re-show the panel.
@@ -43,7 +45,7 @@ export default class OfficeScene extends Phaser.Scene {
   private npcLabels: { def: NpcDef; name: Phaser.GameObjects.Text; role: Phaser.GameObjects.Text }[] = [];
   private wanderers: { def: NpcDef; sprite: Phaser.GameObjects.Sprite; shadow: Phaser.GameObjects.Image; name: Phaser.GameObjects.Text; role: Phaser.GameObjects.Text; path: { x: number; y: number }[]; idx: number; dir: string; pauseUntil: number }[] = [];
   private deskAnims: { img: Phaser.GameObjects.Image; phase: number }[] = [];
-  private execOffices: { execId: string; bounds: Phaser.Geom.Rectangle; cover: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text }[] = [];
+  private execOffices: { execId: string; bounds: Phaser.Geom.Rectangle; cover: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text; meta: (typeof EXEC_OFFICES)[number] }[] = [];
   private props: { char: string; x: number; y: number }[] = [];
   private elevators: { x: number; y: number }[] = [];
   private prompt!: Phaser.GameObjects.Text;
@@ -103,9 +105,9 @@ export default class OfficeScene extends Phaser.Scene {
     else if (state && state.client.floor === this.floor && state.client.x > 0 && state.client.y > 0) {
       startX = state.client.x; startY = state.client.y;
     }
-    // Arrived by elevator → step out right in front of the doors, not mid-office.
+    // Arrived by elevator → appear AT the doors; a scripted walk-out plays below.
     if ((this as any).viaElevator) {
-      startX = 6 * TILE + TILE / 2; startY = 3 * TILE + TILE / 2; this.dir = "down";
+      startX = 6 * TILE + TILE / 2; startY = 2 * TILE + TILE / 2; this.dir = "down";
     }
     this.player = this.physics.add.sprite(startX, startY, "player-down-0");
     this.player.setSize(16, 12).setOffset(2, 16).setCollideWorldBounds(true);
@@ -152,6 +154,35 @@ export default class OfficeScene extends Phaser.Scene {
       if (wander) {
         const path = (PATROLS[def.id] || [[def.tx, def.ty]]).map(([px, py]) => ({ x: px * TILE + TILE / 2, y: py * TILE + TILE / 2 }));
         this.wanderers.push({ def, sprite: s, shadow, name: nameText, role: roleText, path, idx: 0, dir: "down", pauseUntil: 0 });
+      }
+    }
+
+    // Decorative filler workers — non-interactive colleagues in neat, symmetric
+    // cubicle rows so the open floors feel like a real, busy office. Cells that
+    // would crowd a real NPC or furniture are skipped.
+    if ([10, 11, 13, 14].includes(this.floor)) {
+      const FILLER_ROWS = [3, 8], FILLER_COLS = [3, 6, 9, 12, 15, 18, 21];
+      let fi = this.floor; // vary the palette per floor
+      for (const fy of FILLER_ROWS) {
+        for (const fx of FILLER_COLS) {
+          const nearNpc = NPCS.some((n) => n.floor === this.floor && Math.hypot(n.tx - fx, n.ty - fy) < 2.6);
+          let nearFurniture = false;
+          for (let yy = fy - 1; yy <= fy + 2 && !nearFurniture; yy++)
+            for (let xx = fx - 1; xx <= fx + 1 && !nearFurniture; xx++)
+              if ((layout[yy]?.[xx] ?? "#") !== ".") nearFurniture = true;
+          if (nearNpc || nearFurniture) continue;
+          const color = FILLER_COLORS[fi++ % FILLER_COLORS.length];
+          const x = fx * TILE + TILE / 2, y = fy * TILE + TILE / 2;
+          this.add.image(x, y - 2, "tile-chair").setDepth(y - 1);
+          this.add.image(x, y + 10, "shadow").setDepth(y - 1);
+          this.add.sprite(x, y + 3, `char-${color}-down-0`).setDepth(y);
+          const dImg = this.add.image(x, y + TILE, "tile-work-0").setDepth(y + TILE + 4);
+          this.deskAnims.push({ img: dImg, phase: Math.floor(Math.random() * 400) });
+          const dBody = walls.create(x, y + TILE, "tile-work-0") as Phaser.Physics.Arcade.Sprite;
+          dBody.setVisible(false).setSize(34, 20).refreshBody();
+          const pBody = walls.create(x, y, "tile-chair") as Phaser.Physics.Arcade.Sprite;
+          pBody.setVisible(false).setSize(20, 20).refreshBody();
+        }
       }
     }
 
@@ -211,8 +242,13 @@ export default class OfficeScene extends Phaser.Scene {
 
     if (firstDay) this.runIntroCutscene();
 
-    // Arrived by elevator → slide the doors open on the freshly-built floor.
-    if ((this as any).viaElevator) elevatorOpen(this.floor);
+    // Arrived by elevator → slide the doors open, then visibly WALK OUT of them
+    // (scripted walk; input is ignored until the step-out completes).
+    if ((this as any).viaElevator) {
+      elevatorOpen(this.floor);
+      const outRow = this.floor === 16 ? 3 : 4; // boardroom table sits higher
+      this.walkTo(this.player.x, outRow * TILE + TILE / 2).then(() => this.player.setTexture("player-down-0"));
+    }
   }
 
   /** F15 executive offices: an opaque frosted-glass cover + door label over each
@@ -223,12 +259,14 @@ export default class OfficeScene extends Phaser.Scene {
       const px = o.tx * TILE, py = o.ty * TILE, pw = o.w * TILE, ph = o.h * TILE;
       const cover = this.add.rectangle(px + pw / 2, py + ph / 2, pw - 2, ph - 2, 0xcce0ec, 0.95)
         .setDepth(9000).setStrokeStyle(3, 0x8fb0c4);
+      // Door stays visible above the frost — it's the way in (press E).
+      this.add.image(o.door.tx * TILE + TILE / 2, o.door.ty * TILE + TILE / 2, "tile-exec-door").setDepth(9001);
       const label = this.add.text(px + pw / 2, py + ph - 10, L(o.label), {
         fontFamily: "Courier New", fontSize: "12px", fontStyle: "bold", color: "#1f3038",
         stroke: "#eaf4fa", strokeThickness: 3, align: "center", wordWrap: { width: pw - 6 },
       }).setOrigin(0.5, 1).setDepth(10002);
-      const bounds = new Phaser.Geom.Rectangle(px - 8, py - 8, pw + 16, ph + 20);
-      this.execOffices.push({ execId: o.execId, bounds, cover, label });
+      const bounds = new Phaser.Geom.Rectangle(px + 4, py + 4, pw - 8, ph - 8);
+      this.execOffices.push({ execId: o.execId, bounds, cover, label, meta: o });
     }
   }
 
@@ -290,6 +328,20 @@ export default class OfficeScene extends Phaser.Scene {
     }
     const prop = this.nearestProp();
     if (!prop) return;
+    // Executive office door: press E to step inside (revealing the office) or
+    // back out into the corridor.
+    if (prop.char === "X" && this.floor === 15) {
+      const dtx = Math.floor(prop.x / TILE), dty = Math.floor(prop.y / TILE);
+      const off = this.execOffices.find((o) => o.meta.door.tx === dtx && o.meta.door.ty === dty);
+      if (off) {
+        const inside = Phaser.Geom.Rectangle.Contains(off.bounds, this.player.x, this.player.y);
+        const t = inside ? off.meta.outside : off.meta.inside;
+        (this.player.body as Phaser.Physics.Arcade.Body).reset(t.tx * TILE + TILE / 2, t.ty * TILE + TILE / 2);
+        this.dir = inside ? "down" : "up";
+        this.player.setTexture(`player-${this.dir}-0`);
+      }
+      return;
+    }
     if (prop.char === "E") {
       const target = await elevatorPanel(this.floor);
       if (target !== null) {

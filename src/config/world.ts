@@ -10,7 +10,10 @@ import { PERSONAS, MID_PERSONAS } from "../../shared/personas.config.js";
 import type { BL } from "../i18n";
 
 export const TILE = 32;
-export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D", "n", "N"]);
+export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D", "n", "N", "X"]);
+
+// Palette for the decorative filler workers that fill the open floors.
+export const FILLER_COLORS = [0x76808f, 0x8f7680, 0x7f8f76, 0x76778f, 0x8f8676, 0x6f8087];
 
 const LOBBY = [
   "####nnnnnnnnnnnnnnnnn####",
@@ -31,16 +34,19 @@ const LOBBY = [
   "#########################",
 ];
 
+// Open floors: the old fixed 'd' desk clusters are gone — cubicles are now
+// placed procedurally (real NPCs + decorative filler workers) in neat rows,
+// so desks never overlap an NPC's own workstation.
 const OFFICE = [
   "####nnnnnnnnnnnnnnnnn####",
   "#p.....EE......EE......p#",
   "#.......................#",
-  "#..dd..dd....dd..dd.....#",
-  "#..dd..dd....dd..dd.....#",
   "#.......................#",
   "#.......................#",
-  "#..dd..dd....dd..dd..o..#",
-  "#..dd..dd....dd..dd.....#",
+  "#.......................#",
+  "#.......................#",
+  "#....................o..#",
+  "#.......................#",
   "#.......................#",
   "#.......................#",
   "#...tt........tt........#",
@@ -53,22 +59,26 @@ const OFFICE = [
 // Floor 15 — the executive floor. Seven individual, walled corner offices
 // (W = executive wall/glass partition, D = executive desk, g = plush carpet)
 // open onto a central corridor. Four along the top, three along the bottom.
+// Floor 15 — fully-enclosed private executive offices. Each office is sealed
+// (W walls, N glass backs) with a single door tile X: press E at the door to
+// enter/exit; the interior is frosted over until you're inside. The CEO's
+// office sits alone on the left, center — and is the biggest.
 const EXEC = [
   "###NNNNNNNNNNNNNNNNNNN###",
   "#p.....EE......EE......p#",
-  "#WNNNW.WNNNW.WNNNW.WNNNW#",
-  "#WDDDW.WDDDW.WDDDW.WDDDW#",
-  "#WgggW.WgggW.WgggW.WgggW#",
-  "#WgggW..................#",
-  "#.......................#",
-  "#.......................#",
-  "#.......................#",
-  "#.......................#",
-  "#.......................#",
-  "#...WgggW.WgggW.WgggW...#",
-  "#...WDDDW.WDDDW.WDDDW...#",
-  "#...WNNNW.WNNNW.WNNNW...#",
-  "#p.....................p#",
+  "#......WNNNW.WNNNW.WNNNW#",
+  "#......WDDDW.WDDDW.WDDDW#",
+  "#......WgggW.WgggW.WgggW#",
+  "#......WWXWW.WWXWW.WWXWW#",
+  "#WWWWWW.................#",
+  "#WNNNNW.................#",
+  "#WDDDgX.................#",
+  "#WggggW.................#",
+  "#WWWWWW.................#",
+  "#.....WWXWW.WWXWW.WWXWW.#",
+  "#.....WgggW.WgggW.WgggW.#",
+  "#.....WDDDW.WDDDW.WDDDW.#",
+  "#p....WWWWW.WWWWW.WWWWW.#",
   "#########################",
 ];
 
@@ -230,10 +240,10 @@ MID_PERSONAS.forEach((p: any, i: number) => {
   });
 });
 
-// Floor 15: the seven Nike C-suite personas, each standing in the front of
-// their own office (persona order: ceo, cfo, cmo, coo, chro, cto, cpo).
-// Four top offices (ty=4), three bottom offices (ty=11) — see the EXEC layout.
-const execSpots: [number, number][] = [[3, 4], [9, 4], [15, 4], [21, 4], [6, 11], [12, 11], [18, 11]];
+// Floor 15: the seven Nike C-suite personas, each seated INSIDE their sealed
+// office (persona order: ceo, cfo, cmo, coo, chro, cto, cpo) — see EXEC layout
+// + EXEC_OFFICES. CEO in the big left-center office.
+const execSpots: [number, number][] = [[3, 9], [9, 4], [15, 4], [21, 4], [8, 12], [14, 12], [20, 12]];
 PERSONAS.forEach((p: any, i: number) => {
   const [tx, ty] = execSpots[i % execSpots.length];
   NPCS.push({
@@ -254,18 +264,30 @@ NPCS.push({
   ],
 });
 
-// Floor 15 executive offices — opaque frosted-glass rooms. From the corridor you
-// see only frosted glass + a door label; walk in and the exec is revealed at
-// their desk. tx/ty/w/h are the office's tile bounds (walls + interior). The CEO
-// office is the biggest.
-export const EXEC_OFFICES: { execId: string; label: BL; tx: number; ty: number; w: number; h: number }[] = [
-  { execId: "ceo",  label: { en: "CEO — Chief Executive", zh: "首席执行官 · 办公室" }, tx: 1, ty: 2, w: 5, h: 4 },
-  { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 7, ty: 2, w: 5, h: 3 },
-  { execId: "cmo",  label: { en: "CMO", zh: "首席营销官" }, tx: 13, ty: 2, w: 5, h: 3 },
-  { execId: "coo",  label: { en: "COO", zh: "首席运营官" }, tx: 19, ty: 2, w: 5, h: 3 },
-  { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 4, ty: 11, w: 5, h: 3 },
-  { execId: "cto",  label: { en: "VP Technology", zh: "技术副总裁" }, tx: 10, ty: 11, w: 5, h: 3 },
-  { execId: "cpo",  label: { en: "VP Product", zh: "产品副总裁" }, tx: 16, ty: 11, w: 5, h: 3 },
+// Floor 15 executive offices — sealed, frosted private rooms. From the corridor
+// you see only frosted glass, the door, and a role label; press E at the door
+// to step inside (and again to leave). tx/ty/w/h are tile bounds (walls
+// included); door is the X tile; inside/outside are the teleport spots.
+// The CEO office (left, center) is the biggest.
+export interface ExecOffice {
+  execId: string; label: BL; tx: number; ty: number; w: number; h: number;
+  door: { tx: number; ty: number }; inside: { tx: number; ty: number }; outside: { tx: number; ty: number };
+}
+export const EXEC_OFFICES: ExecOffice[] = [
+  { execId: "ceo",  label: { en: "CEO — Chief Executive", zh: "首席执行官 · 办公室" }, tx: 1, ty: 6, w: 6, h: 5,
+    door: { tx: 6, ty: 8 }, inside: { tx: 5, ty: 8 }, outside: { tx: 7, ty: 8 } },
+  { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 7, ty: 2, w: 5, h: 4,
+    door: { tx: 9, ty: 5 }, inside: { tx: 8, ty: 4 }, outside: { tx: 9, ty: 6 } },
+  { execId: "cmo",  label: { en: "CMO", zh: "首席营销官" }, tx: 13, ty: 2, w: 5, h: 4,
+    door: { tx: 15, ty: 5 }, inside: { tx: 14, ty: 4 }, outside: { tx: 15, ty: 6 } },
+  { execId: "coo",  label: { en: "COO", zh: "首席运营官" }, tx: 19, ty: 2, w: 5, h: 4,
+    door: { tx: 21, ty: 5 }, inside: { tx: 20, ty: 4 }, outside: { tx: 21, ty: 6 } },
+  { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 6, ty: 11, w: 5, h: 4,
+    door: { tx: 8, ty: 11 }, inside: { tx: 7, ty: 12 }, outside: { tx: 8, ty: 10 } },
+  { execId: "cto",  label: { en: "VP Technology", zh: "技术副总裁" }, tx: 12, ty: 11, w: 5, h: 4,
+    door: { tx: 14, ty: 11 }, inside: { tx: 13, ty: 12 }, outside: { tx: 14, ty: 10 } },
+  { execId: "cpo",  label: { en: "VP Product", zh: "产品副总裁" }, tx: 18, ty: 11, w: 5, h: 4,
+    door: { tx: 20, ty: 11 }, inside: { tx: 19, ty: 12 }, outside: { tx: 20, ty: 10 } },
 ];
 
 export const LAYOUTS: Record<number, string[]> = {
@@ -283,6 +305,7 @@ export const PROP_LINES: Record<string, BL[]> = {
     { en: "You press a button. It prints 40 copies of someone's gym membership form.", zh: "你按了个键。它打出了40份不知道谁的健身房会员申请表。" },
   ],
   E: [],
+  X: [], // executive office door — handled specially (enter/exit teleport)
 };
 
 export function spawnPoint(): { tx: number; ty: number } {

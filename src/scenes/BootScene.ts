@@ -6,7 +6,7 @@
  * Final custom sprite art is a later pass; only this file needs to change.
  */
 import Phaser from "phaser";
-import { TILE, NPCS } from "../config/world";
+import { TILE, NPCS, FILLER_COLORS } from "../config/world";
 import {
   DIRS, drawCharacter, CharOpts, DEFAULT_PLAYER, HAIRSTYLES_MALE, HAIRSTYLES_FEMALE,
 } from "../game/charDraw";
@@ -42,6 +42,16 @@ export default class BootScene extends Phaser.Scene {
         }, npc.color);
         done.add(npc.color);
       }
+    }
+    // Decorative filler workers (non-interactive) that populate the open floors.
+    for (const c of FILLER_COLORS) {
+      if (done.has(c)) continue;
+      const gender = c % 2 === 0 ? "male" : "female";
+      const list = gender === "male" ? HAIRSTYLES_MALE : HAIRSTYLES_FEMALE;
+      this.makeCharacter(`char-${c}`, {
+        ...DEFAULT_PLAYER, gender, skin: c % 4, hair: c % 6, hairKey: list[c % list.length].key,
+      }, c);
+      done.add(c);
     }
     // Animated intro vignettes play only for a genuinely new player — never
     // again once seen (even if they quit before meeting Manager Lin).
@@ -219,25 +229,25 @@ export default class BootScene extends Phaser.Scene {
     // Big cubicle workstation (48x34, spans wider than a tile) with an open
     // laptop and two hands on the keyboard. Two frames animate the hands so the
     // worker looks like they're typing. Drawn IN FRONT of the seated NPC.
-    const workDesk = (g: Phaser.GameObjects.Graphics, hands: number) => {
+    // The worker sits behind (north of) this desk facing DOWN toward it, so we
+    // view the laptop from behind: the screen faces the worker, and we see the
+    // dark back of the lid with light spilling up toward them. No disembodied
+    // hands. The `f` frame flickers the screen glow so it reads as "working".
+    const workDesk = (g: Phaser.GameObjects.Graphics, f: number) => {
       g.fillStyle(OUTLINE); g.fillRect(0, 8, 48, 26);
       g.fillStyle(0x9a6b40); g.fillRect(1, 9, 46, 24);        // desk wood
-      g.fillStyle(0xb5834f); g.fillRect(1, 9, 46, 5);         // lit top edge
+      g.fillStyle(0xb5834f); g.fillRect(1, 9, 46, 4);         // lit top edge
       g.fillStyle(0x845a34); g.fillRect(1, 30, 46, 3);        // shaded front
-      g.fillStyle(OUTLINE); g.fillRect(15, 3, 18, 17);        // laptop screen frame
-      g.fillStyle(0x2c3242); g.fillRect(16, 4, 16, 13);
-      g.fillStyle(0x7ec8e3); g.fillRect(17, 5, 14, 11);       // glowing screen
-      g.fillStyle(0xd6f2ff); g.fillRect(18, 6, 5, 3);         // glare
-      g.fillStyle(0x3a3f4a); g.fillRect(14, 19, 20, 8);       // keyboard base
-      g.fillStyle(0x555b68); g.fillRect(15, 20, 18, 1);
-      g.fillStyle(0x2a2e38); for (let kx = 16; kx < 31; kx += 3) g.fillRect(kx, 22, 2, 2); // keys
-      g.fillStyle(0xf4f0e4); g.fillRect(2, 20, 8, 10);        // papers
-      g.fillStyle(0xc9c2ae); g.fillRect(3, 22, 6, 1); g.fillRect(3, 25, 6, 1);
-      g.fillStyle(OUTLINE); g.fillCircle(42, 24, 4);
-      g.fillStyle(0xc0563a); g.fillCircle(42, 24, 3);         // coffee mug
-      g.fillStyle(0xe8b48c);                                  // typing hands (alternate)
-      if (hands === 0) { g.fillRect(17, 24, 4, 3); g.fillRect(27, 25, 4, 3); }
-      else { g.fillRect(17, 25, 4, 3); g.fillRect(27, 24, 4, 3); }
+      g.fillStyle(0x7ec8e3, f ? 0.55 : 0.3); g.fillRect(15, 15, 18, 5); // screen glow spilling toward worker
+      g.fillStyle(0xd6f2ff, f ? 0.5 : 0.25); g.fillRect(19, 15, 10, 3); // glow flicker
+      g.fillStyle(OUTLINE); g.fillRect(15, 19, 18, 12);       // laptop lid, viewed from behind
+      g.fillStyle(0x3a4150); g.fillRect(16, 20, 16, 10);      // lid back
+      g.fillStyle(0x4a5364); g.fillRect(16, 20, 16, 2);       // lid top bevel
+      g.fillStyle(f ? 0xbff0ff : 0x6aa6c0); g.fillCircle(24, 25, 2); // status/typing light
+      g.fillStyle(0xf4f0e4); g.fillRect(3, 22, 7, 9);         // papers
+      g.fillStyle(0xc9c2ae); g.fillRect(4, 24, 5, 1); g.fillRect(4, 27, 5, 1);
+      g.fillStyle(OUTLINE); g.fillCircle(41, 25, 4);
+      g.fillStyle(0xc0563a); g.fillCircle(41, 25, 3);         // coffee mug
     };
     this.tex("tile-work-0", 48, 34, (g) => workDesk(g, 0));
     this.tex("tile-work-1", 48, 34, (g) => workDesk(g, 1));
@@ -267,6 +277,18 @@ export default class BootScene extends Phaser.Scene {
       g.fillStyle(0xe6d19a, 0.3); g.fillRect(6, 10, 7, 3); // warm frosted glare
       g.fillStyle(0x2c1f19); g.fillRect(15, 9, 2, 16); g.fillRect(5, 16, 22, 2); // mullions
       g.fillStyle(0x1f1611); g.fillRect(0, T - 4, T, 4);
+    });
+
+    // Executive office door — walnut with a gold plaque + handle. Drawn ABOVE
+    // the frosted cover so the entrance stays visible from the corridor.
+    this.tex("tile-exec-door", T, T, (g) => {
+      g.fillStyle(0x2c1f19); g.fillRect(0, 0, T, T); // frame
+      g.fillStyle(0x5a3d2b); g.fillRect(3, 2, 26, 28); // walnut door
+      g.fillStyle(0x6e4c36); g.fillRect(3, 2, 26, 4); // lit top
+      g.fillStyle(0xc9a24b); g.fillRect(8, 6, 16, 6); // gold plaque
+      g.fillStyle(0x2c1f19); g.fillRect(10, 8, 12, 2); // engraving
+      g.fillStyle(0xffd75e); g.fillCircle(24, 18, 2); // handle
+      g.fillStyle(0x1f1611); g.fillRect(0, T - 3, T, 3);
     });
 
     this.tex("shadow", 20, 8, (g) => {
