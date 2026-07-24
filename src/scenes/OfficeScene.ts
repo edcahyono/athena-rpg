@@ -459,6 +459,15 @@ export default class OfficeScene extends Phaser.Scene {
       if (lbl) { lbl.name.setVisible(inside); lbl.role.setVisible(inside); }
     }
 
+    // Declutter labels: the long role titles collide when workstations sit close
+    // together, so show each NPC's role line only when you're near them — names
+    // stay up for navigation. (Executive labels are handled by the office loop.)
+    for (const l of this.npcLabels) {
+      if (l.def.kind === "persona") continue;
+      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, l.name.x, l.name.y);
+      l.role.setVisible(d < 92);
+    }
+
     // interaction prompt
     const near = this.nearestNpc() || this.nearestProp();
     if (near && !ui.busy) {
