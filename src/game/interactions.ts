@@ -36,6 +36,18 @@ const markBriefed = (phase: string) => {
   try { localStorage.setItem(BRIEFED_KEY, JSON.stringify(b)); } catch { /* ignore */ }
 };
 
+// Hand the player the real case brief — triggers a browser download to their
+// computer (served from /public). Fired once, when onboarding completes.
+function downloadCaseBrief() {
+  try {
+    const a = document.createElement("a");
+    a.href = "/CCNAP-Nike-Case-Introduction.pdf";
+    a.download = "CCNAP - Nike Case Introduction.pdf";
+    document.body.appendChild(a); a.click(); a.remove();
+    toast(L(UI.briefToast));
+  } catch { /* download is best-effort */ }
+}
+
 export async function interactProp(char: string): Promise<void> {
   const lines = PROP_LINES[char];
   if (lines && lines.length) await showLines("…", [L(pick(lines))]);
@@ -113,6 +125,11 @@ async function supervisor(npc: NpcDef) {
     await showLines(name, [fmt(LIN_LINES.passRight, { n: t.credibility }), L(LIN_LINES.passGo)]);
     toast(fmt(UI.credToast, { n: t.credibility }));
     await api.event("metSupervisor");
+    // Hand over the case brief (downloads to their computer), then brief the
+    // first phase (Diagnose) right away so they know what to do next.
+    downloadCaseBrief();
+    await showLines(name, [L(UI.briefHandover), L(UI.linBriefDiagnose)]);
+    markBriefed("asis");
     return;
   }
   if (state.board.done && !state.flags.debriefDone) {
