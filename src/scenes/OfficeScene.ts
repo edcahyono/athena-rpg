@@ -126,6 +126,8 @@ export default class OfficeScene extends Phaser.Scene {
       const x = def.tx * TILE + TILE / 2, y = def.ty * TILE + TILE / 2;
       const wander = WANDER.has(def.id);
       const seated = !STANDING.has(def.id);
+      if (seated && def.kind !== "persona" && (this.floor === 10 || this.floor === 11))
+        this.add.image(x, y - 15, "tile-cubicle").setDepth(y - 3); // cubicle partition wall behind the worker
       if (seated) this.add.image(x, y - 2, "tile-chair").setDepth(y - 1); // chair behind the desk worker
       // Personal cubicle desk (with laptop) directly in front — the worker sits
       // behind it. Executives (F15) get their own office desks instead.
@@ -177,6 +179,7 @@ export default class OfficeScene extends Phaser.Scene {
           if (nearNpc || nearFurniture) continue;
           const color = FILLER_COLORS[fi++ % FILLER_COLORS.length];
           const x = fx * TILE + TILE / 2, y = fy * TILE + TILE / 2;
+          this.add.image(x, y - 15, "tile-cubicle").setDepth(y - 3); // cubicle partition wall
           this.add.image(x, y - 2, "tile-chair").setDepth(y - 1);
           this.add.image(x, y + 10, "shadow").setDepth(y - 1);
           this.add.sprite(x, y + 3, `char-${color}-down-0`).setDepth(y);

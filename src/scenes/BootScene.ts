@@ -252,6 +252,20 @@ export default class BootScene extends Phaser.Scene {
     this.tex("tile-work-0", 48, 34, (g) => workDesk(g, 0));
     this.tex("tile-work-1", 48, 34, (g) => workDesk(g, 1));
 
+    // Cubicle partition panel (48x22) drawn BEHIND a seated worker so the open
+    // floors read as a real cubicle farm — fabric divider with a top rail and a
+    // few pinned notes — instead of desks floating on bare carpet.
+    this.tex("tile-cubicle", 48, 22, (g) => {
+      g.fillStyle(OUTLINE); g.fillRect(0, 0, 48, 22);
+      g.fillStyle(0x6b7488); g.fillRect(1, 2, 46, 19);        // fabric panel
+      g.fillStyle(0x7c8698); g.fillRect(1, 2, 46, 3);         // top rail highlight
+      g.fillStyle(0x565e70); g.fillRect(1, 19, 46, 2);        // base shadow
+      g.fillStyle(0xf4f0e4); g.fillRect(7, 7, 8, 8);          // pinned notes
+      g.fillStyle(0xd8e6f0); g.fillRect(20, 6, 9, 7);
+      g.fillStyle(0xf0e2c0); g.fillRect(33, 8, 8, 8);
+      g.fillStyle(0xc94f3a); g.fillCircle(11, 7, 1); g.fillCircle(24, 6, 1); g.fillCircle(37, 8, 1); // pins
+    });
+
     // Matte-glass window (standard grey wall) — frosted panes, frame, faint skyline.
     this.tex("tile-window", T, T, (g) => {
       g.fillStyle(0x556077); g.fillRect(0, 0, T, T); // wall base (matches tile-wall)

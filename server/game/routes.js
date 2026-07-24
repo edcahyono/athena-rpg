@@ -349,7 +349,13 @@ router.post("/gatekeeper/chat", async (req, res) => {
     if (g.transcript.length > 40) g.transcript.splice(0, g.transcript.length - 40);
 
     const npc = gatekeeperNpcFromTrack(trackId);
-    const system = buildGatekeeperPrompt(track, npc, lang) + INJECTION_GUARD;
+    // Roster of the OTHER domains so this manager can route sideways instead of
+    // deflecting when asked about a function that isn't theirs.
+    const sidewaysRoster = Object.entries(TRACKS)
+      .filter(([tid, t]) => tid !== trackId && t.npcId && t.personaId)
+      .map(([tid, t]) => `  · ${LB(t.name, lang)} — ${LB(gatekeeperNpcFromTrack(tid).name, lang)} (their Deloitte manager), or the ${LB(PERSONA_MAP[t.personaId].title, lang)} upstairs`)
+      .join("\n");
+    const system = buildGatekeeperPrompt(track, npc, lang, sidewaysRoster) + INJECTION_GUARD;
     const messages = g.transcript.map((m) => ({
       role: m.role === "learner" ? "user" : "assistant",
       content: m.text,
