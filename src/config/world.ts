@@ -15,21 +15,24 @@ export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D
 // Palette for the decorative filler workers that fill the open floors.
 export const FILLER_COLORS = [0x76808f, 0x8f7680, 0x7f8f76, 0x76778f, 0x8f8676, 0x6f8087];
 
+// Elevator now sits LEFT-CENTER (col 1, rows 7-8) on every floor, mirroring the
+// real building where you step out of the lift into a corridor and the offices
+// extend to the right. The scripted walk-out (OfficeScene) steps RIGHT.
 const LOBBY = [
-  "####nnnnnnnnnnnnnnnnn####",
-  "#p.....EE......EE......p#",
+  "#########################",
+  "#p.....................p#",
   "#.......................#",
   "#.......................#",
   "#......rrrrrrrrr........#",
   "#.......................#",
   "#.......................#",
-  "#..tt.............tt....#",
-  "#..tt.....ccc.....tt....#",
-  "#.........ccc...........#",
-  "#.........ccc...........#",
-  "#..pp.............pp....#",
+  "#E......................#",
+  "#E......................#",
+  "#..........ccc..........#",
+  "#..tt......ccc.....tt...#",
+  "#..tt..............tt...#",
   "#.......................#",
-  "#.......k...............#",
+  "#......k................#",
   "#p.....................p#",
   "#########################",
 ];
@@ -38,20 +41,20 @@ const LOBBY = [
 // placed procedurally (real NPCs + decorative filler workers) in neat rows,
 // so desks never overlap an NPC's own workstation.
 const OFFICE = [
-  "####nnnnnnnnnnnnnnnnn####",
-  "#p.....EE......EE......p#",
+  "#########################",
+  "#p.....................p#",
   "#.......................#",
   "#.......................#",
   "#.......................#",
   "#.......................#",
   "#.......................#",
-  "#....................o..#",
+  "#E......................#",
+  "#E......................#",
   "#.......................#",
   "#.......................#",
   "#.......................#",
-  "#...tt........tt........#",
-  "#...tt........tt........#",
-  "#.......k...............#",
+  "#.......................#",
+  "#......k.........o......#",
   "#p.....................p#",
   "#########################",
 ];
@@ -67,38 +70,42 @@ const OFFICE = [
 // Each is a small room walled in GLASS (G) with a simple BLACK interior (b) and
 // a single door (X): press E at the door to step inside/out. Frosted over until
 // you enter. Three offices along the top, four along the bottom.
+// Floor 15 glass meeting-room suite (real building: Rooms 1501-1504). Seven
+// sealed private offices in GLASS (G) with BLACK interiors (b) and a single
+// door (X); shifted right so the LEFT-CENTER elevator (col 1, rows 7-8) opens
+// onto the central corridor (row 8). Three offices along the top, four below.
 const EXEC = [
-  "###NNNNNNNNNNNNNNNNNNN###",
-  "#p.....EE......EE......p#",
+  "#########################",
+  "#p.....................p#",
   "#.......................#",
-  "#.GGG......GGG.....GGG..#",
-  "#.GbG......GbG.....GbG..#",
-  "#.GbG......GbG.....GbG..#",
-  "#.GbG......GbG.....GbG..#",
-  "#.GXG......GXG.....GXG..#",
-  "#.......................#",
-  "#GXG...GXG...GXG...GXG..#",
-  "#GbG...GbG...GbG...GbG..#",
-  "#GbG...GbG...GbG...GbG..#",
-  "#GbG...GbG...GbG...GbG..#",
-  "#GGG...GGG...GGG...GGG..#",
+  "#...GGG......GGG.....GGG#",
+  "#...GbG......GbG.....GbG#",
+  "#...GbG......GbG.....GbG#",
+  "#...GbG......GbG.....GbG#",
+  "#E..GXG......GXG.....GXG#",
+  "#E......................#",
+  "#..GXG...GXG...GXG...GXG#",
+  "#..GbG...GbG...GbG...GbG#",
+  "#..GbG...GbG...GbG...GbG#",
+  "#..GbG...GbG...GbG...GbG#",
+  "#..GGG...GGG...GGG...GGG#",
   "#p.....................p#",
   "#########################",
 ];
 
 const BOARDROOM = [
-  "###NNNNNNNNNNNNNNNNNNN###",
-  "#p.....EE......EE......p#",
+  "#########################",
+  "#p.....................p#",
   "#.......................#",
   "#.......................#",
   "#.....ttttttttttttt.....#",
   "#.....ttttttttttttt.....#",
   "#.....ttttttttttttt.....#",
+  "#E......................#",
+  "#E......................#",
   "#.......................#",
   "#.......................#",
-  "#.......................#",
-  "#.......................#",
-  "#..pp...............pp..#",
+  "#...p...............p...#",
   "#.......................#",
   "#.......................#",
   "#p.....................p#",
@@ -143,7 +150,7 @@ export const NPCS: NpcDef[] = [
     lines: [
       { en: "Welcome to Deloitte! Badge, please… oh, you're the new analyst. Manager Lin is waiting for you.", zh: "欢迎来到德勤！请出示工卡……哦，你是新来的分析师吧。林经理正等着你呢。" },
       { en: "The elevators are behind me. Some floors need… seniority.", zh: "电梯在我身后。有些楼层嘛……得有点资历才进得去。" },
-      { en: "Coffee machine on 13 is broken again. Don't tell anyone I told you.", zh: "13层的咖啡机又坏了。别说是我告诉你的。" },
+      { en: "Coffee machine on 10 is broken again. Don't tell anyone I told you.", zh: "10层的咖啡机又坏了。别说是我告诉你的。" },
     ] },
   { id: "guard", name: { en: "Lao Zhang", zh: "老张" }, role: { en: "Security", zh: "保安" }, floor: 12, tx: 20, ty: 12, color: 0x445566, kind: "flavor",
     lines: [
@@ -157,14 +164,15 @@ export const NPCS: NpcDef[] = [
       { en: "I've been fetching coffee for three months. Living the dream.", zh: "我端了三个月咖啡了。梦想成真，就是这个味儿。" },
     ] },
 
-  // ---- Floor 10: IT ----
-  { id: "it-guy", name: { en: "Ah Qiang", zh: "阿强" }, role: { en: "IT Support · Deloitte Technology", zh: "IT支持 · 德勤科技" }, floor: 10, tx: 5, ty: 5, color: 0x3b5c8a, kind: "flavor",
+  // ---- Floor 10: Assurance & Advisory engagement floor — the seven Deloitte
+  // gatekeepers all sit here together, plus IT support and floor staff. ----
+  { id: "it-guy", name: { en: "Ah Qiang", zh: "阿强" }, role: { en: "IT Support · Deloitte Technology", zh: "IT支持 · 德勤科技" }, floor: 10, tx: 7, ty: 10, color: 0x3b5c8a, kind: "flavor",
     lines: [
       { en: "Have you tried turning it off and on again?", zh: "你试过重启吗？" },
       { en: "Someone upstairs asked me to 'install more RAM into the strategy'. I need a vacation.", zh: "楼上有人让我「给战略加根内存条」。我需要休假。" },
       { en: "The Wi-Fi password is on the sticky note. The one that says 'do not share'.", zh: "Wi-Fi密码在便利贴上。就是写着「严禁外传」的那张。" },
     ] },
-  { id: "it-aunty", name: { en: "Aunty Hong", zh: "红姨" }, role: { en: "Office Aunty", zh: "办公室阿姨" }, floor: 10, tx: 18, ty: 10, color: 0xa05a3b, kind: "flavor",
+  { id: "it-aunty", name: { en: "Aunty Hong", zh: "红姨" }, role: { en: "Office Aunty", zh: "办公室阿姨" }, floor: 10, tx: 10, ty: 10, color: 0xa05a3b, kind: "flavor",
     lines: [
       { en: "Aiyah, you look thin! Take a mooncake from the pantry.", zh: "哎呀，你怎么这么瘦！去茶水间拿块月饼吃。" },
       { en: "In my day, consultants wrote strategies on PAPER. Uphill. Both ways.", zh: "我们那个年代，咨询师都是用纸写战略的。还得爬楼送稿，来回都是上坡。" },
@@ -182,29 +190,31 @@ export const NPCS: NpcDef[] = [
       { en: "Shhh. If they can't find you, they can't staff you.", zh: "嘘。他们找不到你，就没法把你派到项目上。" },
     ] },
 
-  // ---- Floor 13: gatekeepers — Product, Marketing, Tech ----
-  { id: "gk-product", name: { en: "Chen Jing", zh: "陈静" }, role: { en: "Consultant · Consumer Products", zh: "顾问 · 消费品行业" }, floor: 13, tx: 5, ty: 6, color: 0x3b8a6e, kind: "task", taskId: "track-product", trackId: "product" },
-  { id: "gk-marketing", name: { en: "Marcus", zh: "马克" }, role: { en: "Manager · Customer & Marketing", zh: "经理 · 客户与营销" }, floor: 13, tx: 14, ty: 6, color: 0x8a5c3b, kind: "task", taskId: "track-marketing", trackId: "marketing" },
-  { id: "gk-tech", name: { en: "Ryan Xu", zh: "徐锐" }, role: { en: "Manager · Enterprise Technology & Performance", zh: "经理 · 企业技术与绩效" }, floor: 13, tx: 18, ty: 12, color: 0x3b6e9a, kind: "task", taskId: "track-tech", trackId: "tech" },
-  { id: "tnt-flavor", name: { en: "Wen", zh: "小文" }, role: { en: "Analyst · Consumer Industry", zh: "分析师 · 消费品行业" }, floor: 13, tx: 20, ty: 9, color: 0x999944, kind: "flavor",
+  // ---- Floor 10: the seven Deloitte gatekeepers (Product, Marketing, Tech,
+  // Strategy, Finance, Ops, HR) sit together across the engagement floor, in
+  // two neat desk rows. Pass a gatekeeper and the matching Nike exec on 15
+  // takes your meeting. ----
+  { id: "gk-product", name: { en: "Chen Jing", zh: "陈静" }, role: { en: "Consultant · Consumer Products", zh: "顾问 · 消费品行业" }, floor: 10, tx: 10, ty: 4, color: 0x3b8a6e, kind: "task", taskId: "track-product", trackId: "product" },
+  { id: "gk-marketing", name: { en: "Marcus", zh: "马克" }, role: { en: "Manager · Customer & Marketing", zh: "经理 · 客户与营销" }, floor: 10, tx: 13, ty: 4, color: 0x8a5c3b, kind: "task", taskId: "track-marketing", trackId: "marketing" },
+  { id: "gk-tech", name: { en: "Ryan Xu", zh: "徐锐" }, role: { en: "Manager · Enterprise Technology & Performance", zh: "经理 · 企业技术与绩效" }, floor: 10, tx: 16, ty: 4, color: 0x3b6e9a, kind: "task", taskId: "track-tech", trackId: "tech" },
+  { id: "tnt-flavor", name: { en: "Wen", zh: "小文" }, role: { en: "Analyst · Consumer Industry", zh: "分析师 · 消费品行业" }, floor: 10, tx: 13, ty: 10, color: 0x999944, kind: "flavor",
     lines: [
       { en: "Third all-nighter this week. The deck is 214 slides and the client wants 'something punchier'.", zh: "这周第三个通宵了。PPT已经214页，客户还想要「更有冲击力一点的」。" },
       { en: "Pick whichever track you like — there's no set order. That's the one nice thing about this place.", zh: "想走哪条线就走哪条——没有固定顺序。这地方唯一的好处就是这个。" },
     ] },
 
-  { id: "cleaner", name: { en: "Auntie Mei", zh: "梅姨" }, role: { en: "Cleaning Service", zh: "保洁" }, floor: 13, tx: 3, ty: 6, color: 0x9a5a7b, kind: "flavor",
+  { id: "cleaner", name: { en: "Auntie Mei", zh: "梅姨" }, role: { en: "Cleaning Service", zh: "保洁" }, floor: 10, tx: 3, ty: 12, color: 0x9a5a7b, kind: "flavor",
     lines: [
       { en: "Mind your feet — just mopped there. You consultants never look down.", zh: "看着点脚下——刚拖过。你们这些顾问从来不看地。" },
       { en: "I clean this floor every night. The things I could tell you about who works late…", zh: "这层我每天晚上都打扫。谁老加班，我可有的说……" },
       { en: "Aiyah, so many empty coffee cups. Strategy runs on caffeine, hm?", zh: "哎呀，这么多空咖啡杯。战略都是咖啡因撑起来的吧？" },
     ] },
 
-  // ---- Floor 14: gatekeepers — Strategy, Finance, Ops, HR ----
-  { id: "gk-strategy", name: { en: "Wu Jianguo", zh: "吴建国" }, role: { en: "Senior Manager · Strategy & Business Design", zh: "高级经理 · 战略与业务设计" }, floor: 14, tx: 6, ty: 6, color: 0x2f4f6f, kind: "task", taskId: "track-strategy", trackId: "strategy" },
-  { id: "gk-finance", name: { en: "Priya", zh: "普莉亚" }, role: { en: "Senior Consultant · Finance Transformation", zh: "高级顾问 · 财务转型" }, floor: 14, tx: 16, ty: 6, color: 0x6e3b8a, kind: "task", taskId: "track-finance", trackId: "finance" },
-  { id: "gk-ops", name: { en: "Sarah Deng", zh: "邓莎拉" }, role: { en: "Senior Manager · Core Business Operations", zh: "高级经理 · 核心业务运营" }, floor: 14, tx: 6, ty: 10, color: 0x6f2f4f, kind: "task", taskId: "track-ops", trackId: "ops" },
-  { id: "gk-hr", name: { en: "Coco Ye", zh: "叶可可" }, role: { en: "Manager · Human Capital", zh: "经理 · 人力资本" }, floor: 14, tx: 16, ty: 10, color: 0x7a5c8a, kind: "task", taskId: "track-hr", trackId: "hr" },
-  { id: "sm-ea", name: { en: "Joyce", zh: "乔伊丝" }, role: { en: "Team Assistant · Deloitte", zh: "团队助理 · 德勤" }, floor: 14, tx: 11, ty: 11, color: 0xb08a9a, kind: "flavor",
+  { id: "gk-strategy", name: { en: "Wu Jianguo", zh: "吴建国" }, role: { en: "Senior Manager · Strategy & Business Design", zh: "高级经理 · 战略与业务设计" }, floor: 10, tx: 4, ty: 4, color: 0x2f4f6f, kind: "task", taskId: "track-strategy", trackId: "strategy" },
+  { id: "gk-finance", name: { en: "Priya", zh: "普莉亚" }, role: { en: "Senior Consultant · Finance Transformation", zh: "高级顾问 · 财务转型" }, floor: 10, tx: 7, ty: 4, color: 0x6e3b8a, kind: "task", taskId: "track-finance", trackId: "finance" },
+  { id: "gk-ops", name: { en: "Sarah Deng", zh: "邓莎拉" }, role: { en: "Senior Manager · Core Business Operations", zh: "高级经理 · 核心业务运营" }, floor: 10, tx: 19, ty: 4, color: 0x6f2f4f, kind: "task", taskId: "track-ops", trackId: "ops" },
+  { id: "gk-hr", name: { en: "Coco Ye", zh: "叶可可" }, role: { en: "Manager · Human Capital", zh: "经理 · 人力资本" }, floor: 10, tx: 4, ty: 10, color: 0x7a5c8a, kind: "task", taskId: "track-hr", trackId: "hr" },
+  { id: "sm-ea", name: { en: "Joyce", zh: "乔伊丝" }, role: { en: "Team Assistant · Deloitte", zh: "团队助理 · 德勤" }, floor: 10, tx: 16, ty: 10, color: 0xb08a9a, kind: "flavor",
     lines: [
       { en: "Everyone here bills by the six-minute increment. Make it count.", zh: "这里每个人都是按六分钟一个计费单元收费的。别浪费。" },
       { en: "Pass a manager's check and the matching executive upstairs takes your meeting. Any order you like.", zh: "通过一位经理的考核，楼上对应的那位高管就会见你。顺序随你。" },
@@ -248,7 +258,7 @@ MID_PERSONAS.forEach((p: any, i: number) => {
 // office (persona order: ceo, cfo, cmo, coo, chro, cto, cpo) — see EXEC layout
 // + EXEC_OFFICES. CEO in the big left-center office.
 // Must match EXEC_OFFICES seats, in PERSONAS order (ceo,cfo,cmo,coo,chro,cto,cpo).
-const execSpots: [number, number][] = [[3, 4], [12, 4], [20, 4], [2, 12], [8, 12], [14, 12], [20, 12]];
+const execSpots: [number, number][] = [[5, 4], [14, 4], [22, 4], [4, 12], [10, 12], [16, 12], [22, 12]];
 PERSONAS.forEach((p: any, i: number) => {
   const [tx, ty] = execSpots[i % execSpots.length];
   NPCS.push({
@@ -280,26 +290,26 @@ export interface ExecOffice {
 }
 export interface ExecOfficeSeat { tx: number; ty: number }
 export const EXEC_OFFICES: (ExecOffice & { seat: ExecOfficeSeat })[] = [
-  // Top row (door faces down into the corridor). All 3×4, identical.
-  { execId: "ceo",  label: { en: "CEO", zh: "首席执行官" }, tx: 2, ty: 3, w: 3, h: 5,
-    door: { tx: 3, ty: 7 }, inside: { tx: 3, ty: 6 }, outside: { tx: 3, ty: 8 }, seat: { tx: 3, ty: 4 } },
-  { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 11, ty: 3, w: 3, h: 5,
-    door: { tx: 12, ty: 7 }, inside: { tx: 12, ty: 6 }, outside: { tx: 12, ty: 8 }, seat: { tx: 12, ty: 4 } },
-  { execId: "cmo",  label: { en: "CMO", zh: "首席营销官" }, tx: 19, ty: 3, w: 3, h: 5,
-    door: { tx: 20, ty: 7 }, inside: { tx: 20, ty: 6 }, outside: { tx: 20, ty: 8 }, seat: { tx: 20, ty: 4 } },
-  // Bottom row (door faces up into the corridor). Identical.
-  { execId: "coo",  label: { en: "COO", zh: "首席运营官" }, tx: 1, ty: 9, w: 3, h: 5,
-    door: { tx: 2, ty: 9 }, inside: { tx: 2, ty: 10 }, outside: { tx: 2, ty: 8 }, seat: { tx: 2, ty: 12 } },
-  { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 7, ty: 9, w: 3, h: 5,
-    door: { tx: 8, ty: 9 }, inside: { tx: 8, ty: 10 }, outside: { tx: 8, ty: 8 }, seat: { tx: 8, ty: 12 } },
-  { execId: "cto",  label: { en: "VP Technology", zh: "技术副总裁" }, tx: 13, ty: 9, w: 3, h: 5,
-    door: { tx: 14, ty: 9 }, inside: { tx: 14, ty: 10 }, outside: { tx: 14, ty: 8 }, seat: { tx: 14, ty: 12 } },
-  { execId: "cpo",  label: { en: "VP Product", zh: "产品副总裁" }, tx: 19, ty: 9, w: 3, h: 5,
-    door: { tx: 20, ty: 9 }, inside: { tx: 20, ty: 10 }, outside: { tx: 20, ty: 8 }, seat: { tx: 20, ty: 12 } },
+  // Top row (door faces down into the row-8 corridor). All 3×5, identical.
+  { execId: "ceo",  label: { en: "CEO", zh: "首席执行官" }, tx: 4, ty: 3, w: 3, h: 5,
+    door: { tx: 5, ty: 7 }, inside: { tx: 5, ty: 6 }, outside: { tx: 5, ty: 8 }, seat: { tx: 5, ty: 4 } },
+  { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 13, ty: 3, w: 3, h: 5,
+    door: { tx: 14, ty: 7 }, inside: { tx: 14, ty: 6 }, outside: { tx: 14, ty: 8 }, seat: { tx: 14, ty: 4 } },
+  { execId: "cmo",  label: { en: "CMO", zh: "首席营销官" }, tx: 21, ty: 3, w: 3, h: 5,
+    door: { tx: 22, ty: 7 }, inside: { tx: 22, ty: 6 }, outside: { tx: 22, ty: 8 }, seat: { tx: 22, ty: 4 } },
+  // Bottom row (door faces up into the row-8 corridor). Identical.
+  { execId: "coo",  label: { en: "COO", zh: "首席运营官" }, tx: 3, ty: 9, w: 3, h: 5,
+    door: { tx: 4, ty: 9 }, inside: { tx: 4, ty: 10 }, outside: { tx: 4, ty: 8 }, seat: { tx: 4, ty: 12 } },
+  { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 9, ty: 9, w: 3, h: 5,
+    door: { tx: 10, ty: 9 }, inside: { tx: 10, ty: 10 }, outside: { tx: 10, ty: 8 }, seat: { tx: 10, ty: 12 } },
+  { execId: "cto",  label: { en: "VP Technology", zh: "技术副总裁" }, tx: 15, ty: 9, w: 3, h: 5,
+    door: { tx: 16, ty: 9 }, inside: { tx: 16, ty: 10 }, outside: { tx: 16, ty: 8 }, seat: { tx: 16, ty: 12 } },
+  { execId: "cpo",  label: { en: "VP Product", zh: "产品副总裁" }, tx: 21, ty: 9, w: 3, h: 5,
+    door: { tx: 22, ty: 9 }, inside: { tx: 22, ty: 10 }, outside: { tx: 22, ty: 8 }, seat: { tx: 22, ty: 12 } },
 ];
 
 export const LAYOUTS: Record<number, string[]> = {
-  10: OFFICE, 11: OFFICE, 12: LOBBY, 13: OFFICE, 14: OFFICE, 15: EXEC, 16: BOARDROOM,
+  10: OFFICE, 11: OFFICE, 12: LOBBY, 15: EXEC, 16: BOARDROOM,
 };
 
 // Only these props respond to E — everything else is scenery.

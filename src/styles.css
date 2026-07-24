@@ -116,7 +116,7 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 #elevator-anim.closing .elev-floornum { opacity: 1; }
 
 #phaser { border: 3px solid #3a3a4a; border-top: none; }
-#phaser canvas { display: block; }
+#phaser canvas { display: block; image-rendering: pixelated; }
 
 #timerbar {
   position: absolute; top: 70px; left: 3px; right: 3px; z-index: 5;

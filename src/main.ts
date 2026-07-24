@@ -9,12 +9,15 @@ import { fmt, UI } from "./i18n";
 
 /* ---- fit the fixed 800px game column to the viewport (fullscreen-friendly) ---- */
 
-const BASE_W = 816, BASE_H = 650;
+const BASE_W = 816, BASE_H = 652;
 
+// Scale the whole game column up to fill the viewport edge-to-edge (contain —
+// keeps aspect, no clipping). No upper cap, so on large monitors it grows to
+// true fullscreen instead of sitting in a small cornered box.
 function fitScale() {
   const root = document.getElementById("game-root")!;
-  const s = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H, 2);
-  root.style.transform = `scale(${Math.max(0.5, s)})`;
+  const s = Math.max(0.3, Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H));
+  root.style.transform = `scale(${s})`;
 }
 
 export function toggleFullscreen() {

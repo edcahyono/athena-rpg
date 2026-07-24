@@ -32,7 +32,7 @@ const STANDING = new Set(["guard", "cleaner"]);
 const WANDER = new Set(["guard", "cleaner"]);
 const PATROLS: Record<string, [number, number][]> = {
   guard: [[4, 12], [20, 12]],                    // security paces the lobby
-  cleaner: [[2, 10], [21, 10]], // cleaner paces the clear corridor below the cubicle rows
+  cleaner: [[3, 12], [21, 12]], // cleaner paces the clear corridor below the cubicle rows
 };
 
 // Module-level so floor changes (scene restarts) don't re-show the panel.
@@ -107,9 +107,10 @@ export default class OfficeScene extends Phaser.Scene {
     else if (state && state.client.floor === this.floor && state.client.x > 0 && state.client.y > 0) {
       startX = state.client.x; startY = state.client.y;
     }
-    // Arrived by elevator → appear AT the doors; a scripted walk-out plays below.
+    // Arrived by elevator → appear AT the left-center doors; a scripted walk-out
+    // (below) steps RIGHT into the corridor.
     if ((this as any).viaElevator) {
-      startX = 6 * TILE + TILE / 2; startY = 2 * TILE + TILE / 2; this.dir = "down";
+      startX = 2 * TILE + TILE / 2; startY = 8 * TILE + TILE / 2; this.dir = "right";
     }
     this.player = this.physics.add.sprite(startX, startY, "player-down-0");
     this.player.setSize(16, 12).setOffset(2, 16).setCollideWorldBounds(true);
@@ -162,12 +163,12 @@ export default class OfficeScene extends Phaser.Scene {
     // Decorative filler workers — non-interactive colleagues in neat, symmetric
     // cubicle rows so the open floors feel like a real, busy office. Cells that
     // would crowd a real NPC or furniture are skipped.
-    if ([10, 11, 13, 14].includes(this.floor)) {
-      const FILLER_ROWS = [3, 8], FILLER_COLS = [3, 6, 9, 12, 15, 18, 21];
+    if ([10, 11].includes(this.floor)) {
+      const FILLER_ROWS = [2, 12], FILLER_COLS = [4, 7, 10, 13, 16, 19, 22];
       let fi = this.floor; // vary the palette per floor
       for (const fy of FILLER_ROWS) {
         for (const fx of FILLER_COLS) {
-          if ([6, 7, 14, 15].includes(fx)) continue; // keep the elevator exit lanes clear
+          if (fx <= 3 && fy >= 6 && fy <= 9) continue; // keep the left-center elevator exit clear
           const nearNpc = NPCS.some((n) => n.floor === this.floor && Math.hypot(n.tx - fx, n.ty - fy) < 2.6);
           let nearFurniture = false;
           for (let yy = fy - 1; yy <= fy + 2 && !nearFurniture; yy++)
@@ -249,8 +250,8 @@ export default class OfficeScene extends Phaser.Scene {
     // (scripted walk; input is ignored until the step-out completes).
     if ((this as any).viaElevator) {
       elevatorOpen(this.floor);
-      const outRow = this.floor === 16 ? 3 : 4; // boardroom table sits higher
-      this.walkTo(this.player.x, outRow * TILE + TILE / 2).then(() => this.player.setTexture("player-down-0"));
+      // Step RIGHT out of the left-center elevator into the corridor.
+      this.walkTo(5 * TILE + TILE / 2, this.player.y).then(() => this.player.setTexture("player-right-0"));
       // Safety: if the walk-out is ever obstructed, hand control back anyway so
       // the player can never get stuck stepping out of the elevator.
       this.time.delayedCall(1800, () => {
