@@ -31,8 +31,8 @@ const STANDING = new Set(["guard", "cleaner"]);
 // Ambient NPCs that stroll/clean along a fixed patrol route (tile coords).
 const WANDER = new Set(["guard", "cleaner"]);
 const PATROLS: Record<string, [number, number][]> = {
-  guard: [[4, 12], [20, 12]],                    // security paces the lobby
-  cleaner: [[3, 12], [21, 12]], // cleaner paces the clear corridor below the cubicle rows
+  guard: [[4, 12], [28, 12]],                    // security paces the lobby
+  cleaner: [[4, 12], [29, 12]], // cleaner paces the clear corridor below the cubicle rows
 };
 
 // Module-level so floor changes (scene restarts) don't re-show the panel.
@@ -164,7 +164,7 @@ export default class OfficeScene extends Phaser.Scene {
     // cubicle rows so the open floors feel like a real, busy office. Cells that
     // would crowd a real NPC or furniture are skipped.
     if ([10, 11].includes(this.floor)) {
-      const FILLER_ROWS = [2, 12], FILLER_COLS = [4, 7, 10, 13, 16, 19, 22];
+      const FILLER_ROWS = [2, 12], FILLER_COLS = [4, 7, 10, 13, 16, 19, 22, 25, 28];
       let fi = this.floor; // vary the palette per floor
       for (const fy of FILLER_ROWS) {
         for (const fx of FILLER_COLS) {

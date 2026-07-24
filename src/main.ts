@@ -9,7 +9,7 @@ import { fmt, UI } from "./i18n";
 
 /* ---- fit the fixed 800px game column to the viewport (fullscreen-friendly) ---- */
 
-const BASE_W = 816, BASE_H = 652;
+const BASE_W = 1072, BASE_H = 652;
 
 // Scale the whole game column up to fill the viewport edge-to-edge (contain —
 // keeps aspect, no clipping). No upper cap, so on large monitors it grows to
@@ -66,7 +66,7 @@ async function start() {
   (window as any).__game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: "phaser",
-    width: 800,
+    width: 1056,
     height: 512,
     pixelArt: true,
     backgroundColor: "#181820",

@@ -13,7 +13,7 @@ html, body {
 }
 body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
 #game-root {
-  width: 816px; height: 652px; position: relative; user-select: none;
+  width: 1072px; height: 652px; position: relative; user-select: none;
   transform-origin: center center;
 }
 
