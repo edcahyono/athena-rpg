@@ -163,7 +163,9 @@ async function supervisor(npc: NpcDef) {
       const res = await api.alignmentAsis(answer);
       if (res.delta) toast(fmt(UI.credToast, { n: res.delta }));
       if (res.result === "agreed" || res.result === "already") {
-        await showLines(name, [fmt(UI.asisAgreed, { n: res.delta || 25 })]);
+        // Gate cleared → advance to Benchmark and brief it right away.
+        await showLines(name, [fmt(UI.asisAgreed, { n: res.delta || 25 }), L(UI.linBriefBenchmark)]);
+        markBriefed("benchmark");
         return;
       }
       await showLines(name, [`${res.feedback}`, L(UI.asisRevise)]);
@@ -182,7 +184,9 @@ async function supervisor(npc: NpcDef) {
       const res = await api.alignmentBenchmark(answer);
       if (res.delta) toast(fmt(UI.credToast, { n: res.delta }));
       if (res.result === "agreed" || res.result === "already") {
-        await showLines(name, [fmt(UI.benchAgreed, { n: res.delta || 25 })]);
+        // Gate cleared → advance to To-Be (Design) and brief it right away.
+        await showLines(name, [fmt(UI.benchAgreed, { n: res.delta || 25 }), L(UI.linBriefDesign)]);
+        markBriefed("tobe");
         return;
       }
       await showLines(name, [`${res.feedback}`, L(UI.benchRevise)]);
@@ -199,7 +203,13 @@ async function supervisor(npc: NpcDef) {
     if (answer === null) return;
     const res = await api.interim(answer);
     if (res.delta) toast(fmt(UI.credToast, { n: res.delta }));
-    await showLines(name, [res.result === "fail" ? `${res.feedback} ${L(UI.interimRetry)}` : res.feedback]);
+    if (res.result === "fail") {
+      await showLines(name, [`${res.feedback} ${L(UI.interimRetry)}`]);
+    } else {
+      // Readout accepted → advance to the final Present phase and brief it.
+      await showLines(name, [res.feedback, L(UI.linBriefPresent)]);
+      markBriefed("pitch");
+    }
     return;
   }
 
