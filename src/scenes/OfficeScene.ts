@@ -82,6 +82,9 @@ export default class OfficeScene extends Phaser.Scene {
         const ch = row[tx];
         const x = tx * TILE + TILE / 2, y = ty * TILE + TILE / 2;
         this.add.image(x, y, "tile-floor").setDepth(0);
+        // Elevator lobby — a marble apron by the left-center lift, distinct from
+        // the carpeted workspace, matching the real building's stone lobby.
+        if (tx >= 1 && tx <= 4 && ty >= 5 && ty <= 10) this.add.image(x, y, "tile-marble").setDepth(0.5);
         if (TEX[ch]) {
           this.add.image(x, y, TEX[ch]).setDepth(RUG.has(ch) ? 1 : y);
           if (BLOCKING.has(ch)) {
@@ -98,6 +101,13 @@ export default class OfficeScene extends Phaser.Scene {
         }
       }
     });
+
+    // Floor-number plaque by the lift, styled like the building's directory
+    // screens ("10F"). Purely decorative.
+    this.add.rectangle(3 * TILE, 3 * TILE, 46, 24, 0x141c28).setDepth(9500).setStrokeStyle(2, 0x35506a);
+    this.add.text(3 * TILE, 3 * TILE, `${this.floor}F`, {
+      fontFamily: "Courier New", fontSize: "15px", fontStyle: "bold", color: "#5ec8e3",
+    }).setOrigin(0.5).setDepth(9501);
 
     // Player — new hires enter the lobby from the bottom; otherwise resume position.
     const sp = spawnPoint();

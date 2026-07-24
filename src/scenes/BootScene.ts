@@ -244,13 +244,26 @@ export default class BootScene extends Phaser.Scene {
       g.fillStyle(0x3a4150); g.fillRect(16, 20, 16, 10);      // lid back
       g.fillStyle(0x4a5364); g.fillRect(16, 20, 16, 2);       // lid top bevel
       g.fillStyle(f ? 0xbff0ff : 0x6aa6c0); g.fillCircle(24, 25, 2); // status/typing light
-      g.fillStyle(0xf4f0e4); g.fillRect(3, 22, 7, 9);         // papers
-      g.fillStyle(0xc9c2ae); g.fillRect(4, 24, 5, 1); g.fillRect(4, 27, 5, 1);
+      g.fillStyle(OUTLINE); g.fillRect(4, 24, 7, 7);          // small potted desk plant (was a
+      g.fillStyle(0x9a6b40); g.fillRect(5, 25, 5, 6);         // beige block that read as a locker)
+      g.fillStyle(0x3f8a4f); g.fillCircle(7, 24, 4);          // foliage
+      g.fillStyle(0x53a862); g.fillCircle(6, 23, 2); g.fillCircle(9, 24, 2);
       g.fillStyle(OUTLINE); g.fillCircle(41, 25, 4);
       g.fillStyle(0xc0563a); g.fillCircle(41, 25, 3);         // coffee mug
     };
     this.tex("tile-work-0", 48, 34, (g) => workDesk(g, 0));
     this.tex("tile-work-1", 48, 34, (g) => workDesk(g, 1));
+
+    // Polished marble floor for the elevator lobby (matches the real building —
+    // the lift opens onto a stone lobby, distinct from the carpeted workspace).
+    this.tex("tile-marble", T, T, (g) => {
+      g.fillStyle(0x6b5f57); g.fillRect(0, 0, T, T);          // warm stone base
+      g.fillStyle(0x776a61); g.fillRect(0, 0, T, T / 2);      // lighter upper band
+      g.fillStyle(0x5a4f47); g.fillRect(0, T - 5, T, 5);      // darker skirting
+      g.fillStyle(0x877a70); g.fillRect(3, 7, 12, 1); g.fillRect(16, 20, 12, 1); // faint veins
+      g.fillStyle(0x4f453e); g.fillRect(10, 14, 10, 1);
+      g.fillStyle(0xffffff, 0.07); g.fillRect(2, 2, 13, 3);   // polished sheen
+    });
 
     // Cubicle partition panel (48x22) drawn BEHIND a seated worker so the open
     // floors read as a real cubicle farm — fabric divider with a top rail and a
