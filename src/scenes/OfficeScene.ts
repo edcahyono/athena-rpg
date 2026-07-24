@@ -31,7 +31,7 @@ const STANDING = new Set(["guard", "cleaner"]);
 // Ambient NPCs that stroll/clean along a fixed patrol route (tile coords).
 const WANDER = new Set(["guard", "cleaner"]);
 const PATROLS: Record<string, [number, number][]> = {
-  guard: [[4, 12], [28, 12]],                    // security paces the lobby
+  guard: [[4, 12], [22, 12]],                    // security paces the lobby (stops short of the meeting rooms)
   cleaner: [[4, 12], [29, 12]], // cleaner paces the clear corridor below the cubicle rows
 };
 
@@ -136,8 +136,7 @@ export default class OfficeScene extends Phaser.Scene {
       const x = def.tx * TILE + TILE / 2, y = def.ty * TILE + TILE / 2;
       const wander = WANDER.has(def.id);
       const seated = !STANDING.has(def.id);
-      if (seated && def.kind !== "persona" && (this.floor === 10 || this.floor === 11))
-        this.add.image(x, y - 15, "tile-cubicle").setDepth(y - 3); // cubicle partition wall behind the worker
+      if (seated && def.kind !== "persona" && [10, 11, 12].includes(this.floor)) this.drawCubicle(x, y);
       if (seated) this.add.image(x, y - 2, "tile-chair").setDepth(y - 1); // chair behind the desk worker
       // Personal cubicle desk (with laptop) directly in front — the worker sits
       // behind it. Executives (F15) get their own office desks instead.
@@ -175,12 +174,12 @@ export default class OfficeScene extends Phaser.Scene {
     // Decorative filler workers — non-interactive colleagues in neat, symmetric
     // cubicle rows so the open floors feel like a real, busy office. Cells that
     // would crowd a real NPC or furniture are skipped.
-    if ([10, 11].includes(this.floor)) {
+    if ([10, 11, 12].includes(this.floor)) {
       const FILLER_ROWS = [2, 12], FILLER_COLS = [4, 7, 10, 13, 16, 19, 22, 25, 28];
       let fi = this.floor; // vary the palette per floor
       for (const fy of FILLER_ROWS) {
         for (const fx of FILLER_COLS) {
-          if (fx <= 3 && fy >= 6 && fy <= 9) continue; // keep the left-center elevator exit clear
+          if (fx <= 4 && fy >= 5 && fy <= 10) continue; // keep the marble lift lobby clear
           const nearNpc = NPCS.some((n) => n.floor === this.floor && Math.hypot(n.tx - fx, n.ty - fy) < 2.6);
           let nearFurniture = false;
           for (let yy = fy - 1; yy <= fy + 2 && !nearFurniture; yy++)
@@ -189,7 +188,7 @@ export default class OfficeScene extends Phaser.Scene {
           if (nearNpc || nearFurniture) continue;
           const color = FILLER_COLORS[fi++ % FILLER_COLORS.length];
           const x = fx * TILE + TILE / 2, y = fy * TILE + TILE / 2;
-          this.add.image(x, y - 15, "tile-cubicle").setDepth(y - 3); // cubicle partition wall
+          this.drawCubicle(x, y);
           this.add.image(x, y - 2, "tile-chair").setDepth(y - 1);
           this.add.image(x, y + 10, "shadow").setDepth(y - 1);
           this.add.sprite(x, y + 3, `char-${color}-down-0`).setDepth(y);
@@ -319,6 +318,14 @@ export default class OfficeScene extends Phaser.Scene {
   /** Physics-driven scripted walk (tweens don't move arcade-physics sprites). */
   private walkTo(x: number, y: number): Promise<void> {
     return new Promise((resolve) => { this.walkTarget = { x, y, resolve }; });
+  }
+
+  /** A 3-sided cubicle around a seated worker: fabric back panel + two side
+   *  dividers, so adjacent workstations read as separated cubicles. */
+  private drawCubicle(x: number, y: number) {
+    this.add.image(x, y - 15, "tile-cubicle").setDepth(y - 3);            // back panel
+    this.add.rectangle(x - 24, y + 4, 4, 52, 0x646d80).setDepth(y - 4);  // left divider
+    this.add.rectangle(x + 24, y + 4, 4, 52, 0x646d80).setDepth(y - 4);  // right divider
   }
 
   private nearestNpc(): { def: NpcDef; sprite: Phaser.GameObjects.Sprite } | null {

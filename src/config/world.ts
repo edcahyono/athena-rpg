@@ -18,22 +18,25 @@ export const FILLER_COLORS = [0x76808f, 0x8f7680, 0x7f8f76, 0x76778f, 0x8f8676, 
 // Elevator now sits LEFT-CENTER (col 1, rows 7-8) on every floor, mirroring the
 // real building where you step out of the lift into a corridor and the offices
 // extend to the right. The scripted walk-out (OfficeScene) steps RIGHT.
+// F12 reception: staff behind a counter, a small waiting area, a pantry, and
+// three sealed glass MEETING ROOMS (decorative — they fill the floor and echo
+// the real building's "Room" suites; you can't enter them).
 const LOBBY = [
   "#################################",
   "#p.............................p#",
-  "#...............................#",
-  "#...............................#",
-  "#..........rrrrrrrrrrr..........#",
-  "#...............................#",
-  "#...............................#",
+  "#...................GGGGGGGGGGGG#",
+  "#...................G....GG....G#",
+  "#.......rrrrrrrrrrr.G..t.GG..t.G#",
+  "#...................G....GG....G#",
+  "#...................GGGGGGGGGGGG#",
   "#E..............................#",
   "#E..............................#",
-  "#..............ccc..............#",
-  "#..tt..........ccc..........tt..#",
-  "#..tt.......................tt..#",
   "#...............................#",
-  "#.......k.......................#",
-  "#p.............................p#",
+  "#.........................GGGGGG#",
+  "#.........................G....G#",
+  "#.........................G..t.G#",
+  "#.......k.................G....G#",
+  "#p........................GGGGGG#",
   "#################################",
 ];
 
@@ -272,7 +275,7 @@ PERSONAS.forEach((p: any, i: number) => {
   });
 });
 NPCS.push({
-  id: "exec-ea", name: { en: "Vivian", zh: "薇薇安" }, role: { en: "Front Desk · Executive Suite", zh: "前台 · 高管区" }, floor: 15, tx: 4, ty: 10, color: 0x5a8a7a, kind: "flavor",
+  id: "exec-ea", name: { en: "Vivian", zh: "薇薇安" }, role: { en: "Front Desk · Executive Suite", zh: "前台 · 高管区" }, floor: 15, tx: 4, ty: 6, color: 0x5a8a7a, kind: "flavor",
   lines: [
     { en: "Each executive only sees analysts vouched for by their Deloitte counterpart downstairs. Calendars here are brutally tight.", zh: "每位高管只见楼下德勤对口经理担保过的分析师。这里的日程紧得不近人情。" },
     { en: "When a meeting slot is spent, it's spent. There's no 'do-over' at this level.", zh: "会面额度用掉就是用掉了。到了这个层级，没有「重来一次」。" },
