@@ -198,6 +198,10 @@ export default class OfficeScene extends Phaser.Scene {
       for (const fy of FILLER_ROWS) {
         for (const fx of FILLER_COLS) {
           if (fx <= 4 && fy >= 5 && fy <= 10) continue; // keep the marble lift lobby clear
+          // Never build a workstation on (or next to) the player's spawn — a
+          // desk body there traps the player and stalls the day-one walk-in.
+          const sp0 = spawnPoint();
+          if (Math.abs(fx - sp0.tx) <= 1 && fy >= sp0.ty - 2 && fy <= sp0.ty + 2) continue;
           const nearNpc = NPCS.some((n) => n.floor === this.floor && Math.hypot(n.tx - fx, n.ty - fy) < 2.6);
           let nearFurniture = false;
           for (let yy = fy - 1; yy <= fy + 2 && !nearFurniture; yy++)
@@ -333,9 +337,17 @@ export default class OfficeScene extends Phaser.Scene {
 
   private walkTarget: { x: number; y: number; resolve: () => void } | null = null;
 
-  /** Physics-driven scripted walk (tweens don't move arcade-physics sprites). */
-  private walkTo(x: number, y: number): Promise<void> {
-    return new Promise((resolve) => { this.walkTarget = { x, y, resolve }; });
+  /** Physics-driven scripted walk (tweens don't move arcade-physics sprites).
+   *  Always resolves: if the path is ever obstructed the walk is released after
+   *  `timeoutMs` so a scripted move can never permanently lock player input. */
+  private walkTo(x: number, y: number, timeoutMs = 4000): Promise<void> {
+    return new Promise((resolve) => {
+      const target = { x, y, resolve };
+      this.walkTarget = target;
+      this.time.delayedCall(timeoutMs, () => {
+        if (this.walkTarget === target) { this.walkTarget = null; resolve(); }
+      });
+    });
   }
 
   /** A 3-sided cubicle around a seated worker: fabric back panel + two side
