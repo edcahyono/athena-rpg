@@ -48,7 +48,7 @@ export default class OfficeScene extends Phaser.Scene {
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private npcs: { def: NpcDef; sprite: Phaser.GameObjects.Sprite }[] = [];
   private npcLabels: { def: NpcDef; name: Phaser.GameObjects.Text; role: Phaser.GameObjects.Text }[] = [];
-  private wanderers: { def: NpcDef; sprite: Phaser.GameObjects.Sprite; shadow: Phaser.GameObjects.Image; name: Phaser.GameObjects.Text; role: Phaser.GameObjects.Text; path: { x: number; y: number }[]; idx: number; dir: string; pauseUntil: number }[] = [];
+  private wanderers: { def: NpcDef; sprite: Phaser.GameObjects.Sprite; shadow: Phaser.GameObjects.Image; name: Phaser.GameObjects.Text; role: Phaser.GameObjects.Text; path: { x: number; y: number }[]; idx: number; dir: string; pauseUntil: number; mop?: Phaser.GameObjects.Image }[] = [];
   private deskAnims: { img: Phaser.GameObjects.Image; phase: number }[] = [];
   private execOffices: { execId: string; bounds: Phaser.Geom.Rectangle; cover: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text; meta: (typeof EXEC_OFFICES)[number] }[] = [];
   private props: { char: string; x: number; y: number }[] = [];
@@ -87,7 +87,7 @@ export default class OfficeScene extends Phaser.Scene {
         this.add.image(x, y, "tile-floor").setDepth(0);
         // Elevator lobby — a marble apron by the left-center lift, distinct from
         // the carpeted workspace, matching the real building's stone lobby.
-        if (tx >= 1 && tx <= 4 && ty >= 5 && ty <= 10) this.add.image(x, y, "tile-marble").setDepth(0.5);
+        if (tx >= 1 && tx <= 4 && ty >= 6 && ty <= 9) this.add.image(x, y, "tile-marble").setDepth(0.5);
         if (TEX[ch]) {
           // Boardroom: the long table is drawn as ONE polished slab below (a
           // tiled table sprite reads as a wall of cabinets), so skip the tiles.
@@ -181,7 +181,12 @@ export default class OfficeScene extends Phaser.Scene {
       this.npcLabels.push({ def, name: nameText, role: roleText });
       if (wander) {
         const path = (PATROLS[def.id] || [[def.tx, def.ty]]).map(([px, py]) => ({ x: px * TILE + TILE / 2, y: py * TILE + TILE / 2 }));
-        this.wanderers.push({ def, sprite: s, shadow, name: nameText, role: roleText, path, idx: 0, dir: "down", pauseUntil: 0 });
+        // Auntie Mei actually carries a mop; OfficeScene.update swings it and
+        // leaves a damp sheen on the tiles behind her.
+        const mop = def.id === "cleaner"
+          ? this.add.image(x + 9, y + 4, "prop-mop").setOrigin(0.5, 0.9).setDepth(y + 1)
+          : undefined;
+        this.wanderers.push({ def, sprite: s, shadow, name: nameText, role: roleText, path, idx: 0, dir: "down", pauseUntil: 0, mop });
       }
     }
 
@@ -196,11 +201,11 @@ export default class OfficeScene extends Phaser.Scene {
       let fi = this.floor; // vary the palette per floor
       for (const fy of FILLER_ROWS) {
         for (const fx of FILLER_COLS) {
-          if (fx <= 4 && fy >= 5 && fy <= 10) continue; // keep the marble lift lobby clear
+          if (fx <= 4 && fy >= 6 && fy <= 9) continue; // keep the marble lift lobby clear
           // Never build a workstation on (or next to) the player's spawn — a
           // desk body there traps the player and stalls the day-one walk-in.
           const sp0 = spawnPoint();
-          if (Math.abs(fx - sp0.tx) <= 1 && fy >= sp0.ty - 2 && fy <= sp0.ty + 2) continue;
+          if (Math.abs(fx - sp0.tx) <= 1 && Math.abs(fy - sp0.ty) <= 1) continue;
           // Only skip a cell a NAMED, SEATED npc actually occupies. Wanderers
           // roam the hallway and must not blank out cubicles, and a wide radius
           // used to wipe out the neighbouring stations on both sides.
@@ -328,15 +333,62 @@ export default class OfficeScene extends Phaser.Scene {
     ui.cutscene = true;
     try {
       const lin = NPCS.find((n) => n.id === "supervisor")!;
-      // Stop below her desk (ty+1 is now the desk itself), then greet her across it.
-      await this.walkTo(lin.tx * TILE + TILE / 2, (lin.ty + 3) * TILE + TILE / 2);
+      // You stop in the middle of the empty hallway; Manager Lin gets up from
+      // her cubicle and walks out to meet you there.
+      await this.walkTo(lin.tx * TILE + TILE / 2, 8 * TILE + TILE / 2);
       this.player.setTexture("player-up-0");
+      await this.walkNpcTo("supervisor", lin.tx, 6, "down", 1600);
       ui.cutscene = false;
       await interact(lin, this.floor);
+      // …then heads back to her desk once you're briefed.
+      await this.walkNpcTo("supervisor", lin.tx, lin.ty, "up", 1400);
     } finally {
       ui.cutscene = false;
       updateHUD(this.floor);
     }
+  }
+
+  /** Damp sheen left on the tiles behind the mop; fades out on its own. */
+  private lastWet = 0;
+  private addWetPatch(x: number, y: number, time: number) {
+    if (time - this.lastWet < 90) return;   // rate-limit so we don't flood the display list
+    this.lastWet = time;
+    const p = this.add.ellipse(x, y, 20, 9, 0xbfe4f2, 0.34).setDepth(0.6);
+    this.tweens.add({
+      targets: p, alpha: 0, scaleX: 1.5, scaleY: 1.5, duration: 1500,
+      ease: "Quad.easeOut", onComplete: () => p.destroy(),
+    });
+  }
+
+  /** Walk a named NPC's sprite (and its labels) to a tile, stepping the walk
+   *  cycle. NPC sprites aren't physics bodies, so a tween is safe here. */
+  private walkNpcTo(id: string, tx: number, ty: number, dir: "down" | "up" | "left" | "right", ms = 1500): Promise<void> {
+    const npc = this.npcs.find((n) => n.def.id === id);
+    const lab = this.npcLabels.find((n) => n.def.id === id);
+    if (!npc) return Promise.resolve();
+    const x = tx * TILE + TILE / 2, y = ty * TILE + TILE / 2;
+    return new Promise((resolve) => {
+      let frame = 0;
+      const stepper = this.time.addEvent({ delay: 150, loop: true, callback: () => {
+        frame ^= 1;
+        npc.sprite.setTexture(`char-${npc.def.color}-${dir}-${frame}`);
+      } });
+      this.tweens.add({
+        targets: npc.sprite, x, y, duration: ms, ease: "Linear",
+        onUpdate: () => {
+          npc.sprite.setDepth(npc.sprite.y);
+          if (lab) {
+            lab.name.setPosition(npc.sprite.x, npc.sprite.y - 30);
+            lab.role.setPosition(npc.sprite.x, npc.sprite.y - 19);
+          }
+        },
+        onComplete: () => {
+          stepper.remove();
+          npc.sprite.setTexture(`char-${npc.def.color}-${dir}-0`);
+          resolve();
+        },
+      });
+    });
   }
 
   private walkTarget: { x: number; y: number; resolve: () => void } | null = null;
@@ -545,6 +597,12 @@ export default class OfficeScene extends Phaser.Scene {
     for (const w of this.wanderers) {
       if (ui.busy || time < w.pauseUntil) {
         w.sprite.setTexture(`char-${w.def.color}-${w.dir}-0`);
+        // Paused at the end of a run: keep scrubbing the same patch of floor.
+        if (w.mop) {
+          w.mop.setRotation(Math.sin(time / 110) * 0.5);
+          w.mop.setPosition(w.sprite.x + Math.sin(time / 110) * 7, w.sprite.y + 6).setDepth(w.sprite.y + 1);
+          this.addWetPatch(w.mop.x, w.mop.y + 4, time);
+        }
         continue;
       }
       const t = w.path[w.idx];
@@ -563,6 +621,14 @@ export default class OfficeScene extends Phaser.Scene {
       w.shadow.setPosition(nx, ny + 10).setDepth(ny - 1);
       w.name.setPosition(nx, ny - 30);
       w.role.setPosition(nx, ny - 19);
+      if (w.mop) {
+        // Held out front in the direction of travel, sweeping side to side.
+        const off = w.dir === "left" ? -10 : w.dir === "right" ? 10 : 0;
+        w.mop.setRotation(Math.sin(time / 90) * 0.45)
+             .setPosition(nx + off + Math.sin(time / 90) * 6, ny + 6)
+             .setDepth(ny + 1);
+        this.addWetPatch(w.mop.x, w.mop.y + 4, time);
+      }
     }
   }
 }

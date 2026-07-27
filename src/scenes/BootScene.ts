@@ -128,6 +128,17 @@ export default class BootScene extends Phaser.Scene {
       g.fillStyle(0x66bb6a); g.fillRect(14, 5, 3, 3); g.fillRect(19, 11, 3, 2);
     });
 
+    // Cleaner's mop — a wooden handle with a frayed grey head. Drawn upright;
+    // OfficeScene rocks it back and forth while Auntie Mei is moving.
+    this.tex("prop-mop", 10, 26, (g) => {
+      g.fillStyle(OUTLINE); g.fillRect(4, 0, 3, 19);
+      g.fillStyle(0xa9793f); g.fillRect(4, 1, 2, 18);      // handle
+      g.fillStyle(OUTLINE); g.fillRect(1, 18, 8, 8);
+      g.fillStyle(0xd8dbe0); g.fillRect(2, 19, 6, 6);      // mop head
+      g.fillStyle(0xb3b8c0); g.fillRect(2, 23, 6, 2);      // damp underside
+      g.fillStyle(0xeef1f4); g.fillRect(3, 19, 1, 4); g.fillRect(6, 19, 1, 3);
+    });
+
     // Rug — Deloitte-green bordered rug.
     this.tex("tile-carpet", T, T, (g) => {
       g.fillStyle(0x24593c); g.fillRect(0, 0, T, T);
