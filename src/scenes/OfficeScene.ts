@@ -86,7 +86,10 @@ export default class OfficeScene extends Phaser.Scene {
         // the carpeted workspace, matching the real building's stone lobby.
         if (tx >= 1 && tx <= 4 && ty >= 5 && ty <= 10) this.add.image(x, y, "tile-marble").setDepth(0.5);
         if (TEX[ch]) {
-          this.add.image(x, y, TEX[ch]).setDepth(RUG.has(ch) ? 1 : y);
+          // Boardroom: the long table is drawn as ONE polished slab below (a
+          // tiled table sprite reads as a wall of cabinets), so skip the tiles.
+          const boardTable = this.floor === 16 && ch === "t";
+          if (!boardTable) this.add.image(x, y, TEX[ch]).setDepth(RUG.has(ch) ? 1 : y);
           if (BLOCKING.has(ch)) {
             const body = walls.create(x, y, TEX[ch]) as Phaser.Physics.Arcade.Sprite;
             body.setVisible(false).refreshBody();
@@ -101,6 +104,21 @@ export default class OfficeScene extends Phaser.Scene {
         }
       }
     });
+
+    // Boardroom: one long polished conference table (cols 8-24, rows 4-6) with
+    // executive chairs down both sides — replaces the tiled table sprites.
+    if (this.floor === 16) {
+      const bx = 8 * TILE, by = 4 * TILE, bw = 17 * TILE, bh = 3 * TILE;
+      this.add.rectangle(bx + bw / 2, by + bh / 2, bw, bh, 0x000000).setDepth(4);
+      this.add.rectangle(bx + bw / 2, by + bh / 2, bw - 6, bh - 6, 0x6b4a2f).setDepth(5);
+      this.add.rectangle(bx + bw / 2, by + 14, bw - 14, 8, 0x8a6440).setDepth(6); // lit top edge
+      this.add.rectangle(bx + bw / 2, by + bh - 10, bw - 14, 5, 0x53381f).setDepth(6); // shaded front
+      for (let i = 0; i < 7; i++) {
+        const cx = bx + 34 + i * ((bw - 60) / 6);
+        this.add.image(cx, by - 12, "tile-chair").setDepth(3);            // far-side chairs
+        this.add.image(cx, by + bh + 12, "tile-chair").setDepth(bh + by); // near-side chairs
+      }
+    }
 
     // Floor-number plaque by the lift, styled like the building's directory
     // screens ("10F"). Purely decorative.
