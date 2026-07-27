@@ -90,10 +90,16 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 }
 #tracker-title { color: #ffd75e; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; font-size: 10px; }
 #tracker-steps { display: flex; gap: 6px; flex-wrap: wrap; }
+/* Nudge that the chips are pressable — without it players never discover the
+   phase briefings hiding behind them. */
+#tracker-hint { color: #6d7688; font-size: 10px; letter-spacing: 0.5px; font-style: italic; }
 .tstep {
   padding: 2px 7px; border-radius: 3px; border: 2px solid #3a3a4a; white-space: nowrap;
-  color: #8a93a6; background: #181826; letter-spacing: 0.3px; cursor: default;
+  color: #8a93a6; background: #181826; letter-spacing: 0.3px; cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
+.tstep:hover { transform: translateY(-1px); box-shadow: 0 2px 0 rgba(0,0,0,0.5); border-color: #ffd75e; }
+.tstep .tinfo { opacity: 0.6; margin-left: 4px; font-size: 10px; }
 .tstep.done { color: #7ee787; border-color: #2a6e46; background: #14261a; }
 .tstep.current { color: #10101a; border-color: #ffd75e; background: #ffd75e; font-weight: bold; }
 .tstep.locked { opacity: 0.65; }
@@ -231,34 +237,47 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 #cutscene-text { font-size: 16px; line-height: 1.6; white-space: pre-wrap; }
 #cutscene .cs-hint { position: absolute; right: 12px; bottom: 6px; color: #666; font-size: 12px; animation: bob 0.7s infinite alternate; }
 
-/* ---- Language select + main menu (shared .ls-box styling) ---- */
+/* ---- Language select + main menu (shared .ls-box styling) ----
+   Both are body-level and viewport-fixed so the title fills the whole screen
+   rather than sitting inside the letterboxed play column. Deliberately
+   minimal: mark, wordmark, tagline, an any-key line, and text-only footer
+   links — no chunky buttons. */
 #langselect, #mainmenu {
-  position: absolute; inset: 0; z-index: 60; background: #0c0c14;
+  position: fixed; inset: 0; z-index: 60; background: #0c0c14;
   display: flex; align-items: center; justify-content: center;
-  background-image: radial-gradient(circle at 50% 38%, rgba(126,231,135,0.10), transparent 60%);
+  background-image: radial-gradient(circle at 50% 42%, rgba(126,231,135,0.10), transparent 62%);
 }
 .ls-box { text-align: center; }
 .ls-mark {
-  display: block; width: 108px; height: auto; margin: 0 auto 4px;
+  display: block; width: 96px; height: auto; margin: 0 auto 6px;
   image-rendering: pixelated;
   filter: drop-shadow(0 0 14px rgba(126,231,135,0.45));
 }
 .ls-word {
-  display: block; width: 300px; height: auto; margin: 0 auto 8px; image-rendering: pixelated;
+  display: block; width: 280px; height: auto; margin: 0 auto 10px; image-rendering: pixelated;
 }
-.ls-sub { color: #8a93a6; font-size: 13px; margin-bottom: 30px; letter-spacing: 2px; }
-.ls-box button {
-  display: block; width: 300px; margin: 12px auto; padding: 14px;
-  font-family: inherit; font-size: 18px; font-weight: bold; cursor: pointer;
-  background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 6px;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+.ls-sub { color: #8a93a6; font-size: 12px; letter-spacing: 3px; }
+
+/* The "press any key" line — slow breath, never a button. */
+.ls-anykey {
+  margin-top: 64px; color: #cfd8e6; font-size: 13px; letter-spacing: 3px;
+  text-transform: uppercase; animation: anykey 1.8s ease-in-out infinite;
 }
-.ls-box button:hover { background: #ffe9a8; transform: translateY(-2px); }
-.ls-box button.secondary {
-  width: 300px; padding: 10px; font-size: 15px;
-  background: #1a1a26; color: #cfd8e6; border-color: #3a3a4a; box-shadow: 0 3px 0 rgba(0,0,0,0.5);
+@keyframes anykey { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.25; } }
+
+/* Text-only controls: language toggle + fullscreen, tucked at the bottom. */
+.ls-langrow { margin-top: 56px; display: flex; gap: 10px; justify-content: center; align-items: center; }
+.ls-foot {
+  position: absolute; bottom: 26px; left: 0; right: 0;
+  display: flex; gap: 10px; justify-content: center; align-items: center;
 }
-.ls-box button.secondary:hover { background: #23233a; color: #ffe9a8; }
+.ls-sep { color: #3f4657; font-size: 12px; }
+button.ls-link {
+  background: none; border: none; padding: 2px 4px; cursor: pointer;
+  font-family: inherit; font-size: 12px; letter-spacing: 2px;
+  color: #6d7688; text-transform: uppercase;
+}
+button.ls-link:hover, button.ls-link:focus-visible { color: #7ee787; outline: none; }
 
 /* ---- Menu: primary action buttons (stacked, centered) + progress bars ---- */
 #panel .menu-actions {

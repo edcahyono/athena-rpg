@@ -85,6 +85,7 @@ function renderTracker() {
   }
   lastTrackerPhase = eng.phase;
   $("tracker-title").textContent = L(UI.trackerTitle);
+  $("tracker-hint").textContent = L(UI.trackerHint);
   const steps = $("tracker-steps");
   steps.innerHTML = "";
   for (const ph of PHASES) {
@@ -92,10 +93,14 @@ function renderTracker() {
     const current = eng.phase === ph.id && !done;
     const el = document.createElement("span");
     el.className = "tstep" + (done ? " done" : current ? " current" : " locked");
+    // Every phase chip opens a briefing for that phase — the ⓘ glyph and the
+    // hint beside the tracker title are what make that discoverable.
     el.textContent = `${done ? "✓" : current ? "▸" : "•"} ${L(ph.short)}`;
-    el.title = `${L(ph.name)} (${done ? L(UI.phaseDone) : current ? L(UI.phaseCurrent) : L(UI.phaseLocked)})\n${L(ph.deliverable)}`;
-    // Every phase chip is clickable and explains what that phase requires.
-    el.style.cursor = "pointer";
+    const info = document.createElement("span");
+    info.className = "tinfo";
+    info.textContent = "ⓘ";
+    el.appendChild(info);
+    el.title = `${L(ph.name)} (${done ? L(UI.phaseDone) : current ? L(UI.phaseCurrent) : L(UI.phaseLocked)})\n${L(UI.trackerHint)}`;
     el.onclick = () => { if (!ui.busy) phasePanel(ph.id); };
     steps.appendChild(el);
   }

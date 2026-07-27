@@ -17,7 +17,7 @@
       <button id="hud-fullscreen" title="Fullscreen (F)">⛶</button>
     </div>
     <div id="objective"><span id="obj-icon">🎯</span><span id="obj-label"></span><span id="obj-why"></span></div>
-    <div id="tracker" hidden><span id="tracker-title"></span><div id="tracker-steps"></div></div>
+    <div id="tracker" hidden><span id="tracker-title"></span><div id="tracker-steps"></div><span id="tracker-hint"></span></div>
     <div id="timerbar" hidden><span id="timer-label"></span><div id="timer-track"><div id="timer-fill"></div></div></div>
     <div id="phaser"></div>
 
@@ -45,29 +45,6 @@
       <div class="cs-hint">▼</div>
     </div>
 
-    <!-- First-run: language choice -->
-    <div id="langselect" hidden>
-      <div class="ls-box">
-        <img class="ls-mark" src="/brand/mark_green_transparent.png" alt="" />
-        <img class="ls-word" src="/brand/athena_green_glow_transparent.png" alt="ATHENA" />
-        <div class="ls-sub">Wisdom Wields Victory</div>
-        <button id="lang-en">ENGLISH</button>
-        <button id="lang-zh">中文（简体）</button>
-      </div>
-    </div>
-
-    <!-- Main menu / title screen (also the "quit to menu" landing) -->
-    <div id="mainmenu" hidden>
-      <div class="ls-box">
-        <img class="ls-mark" src="/brand/mark_green_transparent.png" alt="" />
-        <img class="ls-word" src="/brand/athena_green_glow_transparent.png" alt="ATHENA" />
-        <div class="ls-sub" id="mm-sub"></div>
-        <button id="mm-continue"></button>
-        <button id="mm-lang" class="secondary"></button>
-        <button id="mm-full" class="secondary"></button>
-      </div>
-    </div>
-
     <!-- First-run: character creator -->
     <div id="creator" hidden>
       <div class="cr-box">
@@ -84,6 +61,40 @@
       </div>
     </div>
   </div>
+
+  <!-- Title surfaces live OUTSIDE #game-root: that element is transform-scaled
+       to letterbox the 1072x652 play column, and anything inside it inherits
+       those black bars. As body children they fill the whole viewport. -->
+
+  <!-- First-run: language choice -->
+  <div id="langselect" hidden>
+    <div class="ls-box">
+      <img class="ls-mark" src="/brand/mark_green_transparent.png" alt="" />
+      <img class="ls-word" src="/brand/athena_green_glow_transparent.png" alt="ATHENA" />
+      <div class="ls-sub">Wisdom Wields Victory</div>
+      <div class="ls-langrow">
+        <button id="lang-en" class="ls-link">English</button>
+        <span class="ls-sep">/</span>
+        <button id="lang-zh" class="ls-link">中文</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main menu / title screen (also the "quit to menu" landing) -->
+  <div id="mainmenu" hidden>
+    <div class="ls-box">
+      <img class="ls-mark" src="/brand/mark_green_transparent.png" alt="" />
+      <img class="ls-word" src="/brand/athena_green_glow_transparent.png" alt="ATHENA" />
+      <div class="ls-sub" id="mm-sub"></div>
+      <div class="ls-anykey" id="mm-anykey"></div>
+    </div>
+    <div class="ls-foot">
+      <button id="mm-lang" class="ls-link"></button>
+      <span class="ls-sep">·</span>
+      <button id="mm-full" class="ls-link"></button>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

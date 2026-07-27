@@ -31,24 +31,48 @@ export function chooseLanguage(): Promise<void> {
 
 /**
  * Main menu / title screen — shown for returning players and as the
- * "quit to menu" landing. `returning` picks Continue vs Start wording.
- * Resolves when the player chooses to enter the game.
+ * "quit to menu" landing. `returning` picks Continue vs Begin wording.
+ *
+ * Deliberately minimal: no primary button at all — ANY key (or a click on
+ * empty space) enters the game. The only controls are two text links in the
+ * footer, and clicks on those are excluded from the any-key catch so that
+ * switching language doesn't also start the game.
  */
 export function mainMenu(returning: boolean): Promise<void> {
   return new Promise((resolve) => {
     const el = $("mainmenu");
     el.hidden = false;
-    const cont = $("mm-continue") as HTMLButtonElement;
     const langBtn = $("mm-lang") as HTMLButtonElement;
     const fullBtn = $("mm-full") as HTMLButtonElement;
     const applyLabels = () => {
       $("mm-sub").textContent = L(UI.mmSub);
-      cont.textContent = returning ? L(UI.mmContinue) : L(UI.mmStart);
-      langBtn.textContent = L(UI.language);
-      fullBtn.textContent = L(UI.fullscreen);
+      $("mm-anykey").textContent = L(returning ? UI.mmAnyKey : UI.mmAnyKeyNew);
+      // Just the language on offer, not a sentence about switching to it.
+      langBtn.textContent = lang === "en" ? "中文" : "English";
+      fullBtn.textContent = L(UI.mmFullHint);
     };
     applyLabels();
-    cont.onclick = () => { el.hidden = true; resolve(); };
+
+    const enter = () => {
+      window.removeEventListener("keydown", onKey);
+      el.removeEventListener("pointerdown", onPointer);
+      el.hidden = true;
+      resolve();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      // F is the advertised fullscreen key here, so it toggles rather than
+      // starting; a bare modifier press shouldn't count as "any key" either.
+      if (e.key === "f" || e.key === "F") { toggleFullscreen(); return; }
+      if (["Shift", "Control", "Alt", "Meta", "Tab", "CapsLock"].includes(e.key)) return;
+      enter();
+    };
+    const onPointer = (e: PointerEvent) => {
+      if ((e.target as HTMLElement).closest("button")) return; // footer links
+      enter();
+    };
+    window.addEventListener("keydown", onKey);
+    el.addEventListener("pointerdown", onPointer);
+
     // The game hasn't booted yet, so nothing else is rendered in the old
     // language — just swap the labels in place. No reload, no glitch frame.
     langBtn.onclick = () => { setLang(lang === "en" ? "zh" : "en"); applyLabels(); };

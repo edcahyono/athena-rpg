@@ -85,9 +85,6 @@ export default class OfficeScene extends Phaser.Scene {
         const ch = row[tx];
         const x = tx * TILE + TILE / 2, y = ty * TILE + TILE / 2;
         this.add.image(x, y, "tile-floor").setDepth(0);
-        // Elevator lobby — a marble apron by the left-center lift, distinct from
-        // the carpeted workspace, matching the real building's stone lobby.
-        if (tx >= 1 && tx <= 4 && ty >= 6 && ty <= 9) this.add.image(x, y, "tile-marble").setDepth(0.5);
         if (TEX[ch]) {
           // Boardroom: the long table is drawn as ONE polished slab below (a
           // tiled table sprite reads as a wall of cabinets), so skip the tiles.
@@ -333,18 +330,51 @@ export default class OfficeScene extends Phaser.Scene {
     ui.cutscene = true;
     try {
       const lin = NPCS.find((n) => n.id === "supervisor")!;
-      // You stop in the middle of the empty hallway; Manager Lin gets up from
-      // her cubicle and walks out to meet you there.
+      // You stop in the middle of the empty hallway; Manager Lin gets up and
+      // comes out to meet you there. She leaves the way a real person would:
+      // sideways through the cubicle doorway (drawCubicle leaves a gap in the
+      // right divider), down the aisle beside her station, then across to you —
+      // never straight through her own desk.
       await this.walkTo(lin.tx * TILE + TILE / 2, 8 * TILE + TILE / 2);
       this.player.setTexture("player-up-0");
-      await this.walkNpcTo("supervisor", lin.tx, 6, "down", 1600);
+      const aisle = lin.tx + 1; // the free column just outside her doorway
+      await this.walkNpcPath("supervisor", [
+        { tx: aisle, ty: lin.ty, dir: "right", ms: 520 },  // step out through the door
+        { tx: aisle, ty: 6, dir: "down", ms: 1100 },       // down the aisle
+        { tx: lin.tx, ty: 6, dir: "left", ms: 520 },       // across to meet you
+      ], "down");
       ui.cutscene = false;
       await interact(lin, this.floor);
-      // …then heads back to her desk once you're briefed.
-      await this.walkNpcTo("supervisor", lin.tx, lin.ty, "up", 1400);
+      // …then retraces her steps and settles back into her chair.
+      ui.cutscene = true;
+      await this.walkNpcPath("supervisor", [
+        { tx: aisle, ty: 6, dir: "right", ms: 520 },
+        { tx: aisle, ty: lin.ty, dir: "up", ms: 1100 },
+        { tx: lin.tx, ty: lin.ty, dir: "left", ms: 520 },
+      ], "down", 3); // +3px: seated NPCs sit slightly below their tile centre
     } finally {
       ui.cutscene = false;
       updateHUD(this.floor);
+    }
+  }
+
+  /** Walk an NPC through a series of tiles, turning at each corner. `endDir` is
+   *  the facing they hold once they stop; `endYOffset` re-seats them. */
+  private async walkNpcPath(
+    id: string,
+    steps: { tx: number; ty: number; dir: "down" | "up" | "left" | "right"; ms: number }[],
+    endDir: "down" | "up" | "left" | "right",
+    endYOffset = 0,
+  ) {
+    for (const s of steps) await this.walkNpcTo(id, s.tx, s.ty, s.dir, s.ms);
+    const npc = this.npcs.find((n) => n.def.id === id);
+    if (!npc) return;
+    npc.sprite.setTexture(`char-${npc.def.color}-${endDir}-0`);
+    npc.sprite.y += endYOffset;
+    const lab = this.npcLabels.find((n) => n.def.id === id);
+    if (lab) {
+      lab.name.setPosition(npc.sprite.x, npc.sprite.y - 30);
+      lab.role.setPosition(npc.sprite.x, npc.sprite.y - 19);
     }
   }
 
@@ -406,12 +436,20 @@ export default class OfficeScene extends Phaser.Scene {
     });
   }
 
-  /** A 3-sided cubicle around a seated worker: fabric back panel + two side
-   *  dividers, so adjacent workstations read as separated cubicles. */
+  /** A cubicle around a seated worker: fabric back panel, a solid left divider,
+   *  and a RIGHT divider broken by a gap at seat level — the doorway. Every
+   *  station opens the same way, so an occupant always has a visible way out
+   *  instead of appearing to phase through their own desk. */
   private drawCubicle(x: number, y: number) {
     this.add.image(x, y - 15, "tile-cubicle").setDepth(y - 3);            // back panel
     this.add.rectangle(x - 24, y + 4, 4, 52, 0x646d80).setDepth(y - 4);  // left divider
-    this.add.rectangle(x + 24, y + 4, 4, 52, 0x646d80).setDepth(y - 4);  // right divider
+    // Right divider in two pieces; the 20px gap between them is the entrance.
+    this.add.rectangle(x + 24, y - 14, 4, 16, 0x646d80).setDepth(y - 4);
+    this.add.rectangle(x + 24, y + 22, 4, 16, 0x646d80).setDepth(y - 4);
+    // Doorway jambs — a lighter capped edge either side of the opening so the
+    // gap reads as a deliberate door rather than a hole in the panel.
+    this.add.rectangle(x + 24, y - 6, 6, 3, 0x9aa4ba).setDepth(y - 4);
+    this.add.rectangle(x + 24, y + 14, 6, 3, 0x9aa4ba).setDepth(y - 4);
   }
 
   private nearestNpc(): { def: NpcDef; sprite: Phaser.GameObjects.Sprite } | null {
