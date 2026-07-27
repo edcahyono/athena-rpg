@@ -33,8 +33,9 @@ const STANDING = new Set(["guard", "cleaner"]);
 // Ambient NPCs that stroll/clean along a fixed patrol route (tile coords).
 const WANDER = new Set(["guard", "cleaner"]);
 const PATROLS: Record<string, [number, number][]> = {
-  guard: [[4, 12], [22, 12]],                    // security paces the lobby (stops short of the meeting rooms)
-  cleaner: [[4, 12], [29, 12]], // cleaner paces the clear corridor below the cubicle rows
+  // Both ambient staff pace the empty central hallway, never the cubicle bands.
+  guard: [[5, 9], [20, 9]],
+  cleaner: [[5, 9], [26, 9]],
 };
 
 // Module-level so floor changes (scene restarts) don't re-show the panel.
@@ -126,7 +127,7 @@ export default class OfficeScene extends Phaser.Scene {
     const sp = spawnPoint();
     const firstDay = state && !state.flags.metSupervisor && this.floor === 12;
     let startX = sp.tx * TILE + TILE / 2, startY = sp.ty * TILE + TILE / 2;
-    if (firstDay) startY = 13 * TILE + TILE / 2;
+    if (firstDay) startY = 9 * TILE + TILE / 2; // arrive in the central hallway
     else if (state && state.client.floor === this.floor && state.client.x > 0 && state.client.y > 0) {
       startX = state.client.x; startY = state.client.y;
     }
@@ -188,7 +189,10 @@ export default class OfficeScene extends Phaser.Scene {
     // cubicle rows so the open floors feel like a real, busy office. Cells that
     // would crowd a real NPC or furniture are skipped.
     if ([10, 11, 12].includes(this.floor)) {
-      const FILLER_ROWS = [2, 12], FILLER_COLS = [4, 7, 10, 13, 16, 19, 22, 25, 28];
+      // Same grid the named NPCs sit on: an upper and a lower cubicle band with
+      // an empty hallway between them. Cells taken by a named NPC are skipped
+      // below, so the two populations interlock without ever overlapping.
+      const FILLER_ROWS = [3, 11], FILLER_COLS = [4, 8, 12, 16, 20, 24, 28];
       let fi = this.floor; // vary the palette per floor
       for (const fy of FILLER_ROWS) {
         for (const fx of FILLER_COLS) {
@@ -197,7 +201,12 @@ export default class OfficeScene extends Phaser.Scene {
           // desk body there traps the player and stalls the day-one walk-in.
           const sp0 = spawnPoint();
           if (Math.abs(fx - sp0.tx) <= 1 && fy >= sp0.ty - 2 && fy <= sp0.ty + 2) continue;
-          const nearNpc = NPCS.some((n) => n.floor === this.floor && Math.hypot(n.tx - fx, n.ty - fy) < 2.6);
+          // Only skip a cell a NAMED, SEATED npc actually occupies. Wanderers
+          // roam the hallway and must not blank out cubicles, and a wide radius
+          // used to wipe out the neighbouring stations on both sides.
+          const nearNpc = NPCS.some((n) =>
+            n.floor === this.floor && !WANDER.has(n.id) &&
+            Math.abs(n.tx - fx) < 2 && Math.abs(n.ty - fy) < 2);
           let nearFurniture = false;
           for (let yy = fy - 1; yy <= fy + 2 && !nearFurniture; yy++)
             for (let xx = fx - 1; xx <= fx + 1 && !nearFurniture; xx++)
