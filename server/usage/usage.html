@@ -5,12 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ATHENA RPG — Usage & Cost</title>
 <style>
+/* Same self-hosted faces as the game, so every Athena surface matches. */
+@font-face{font-family:"Space Mono";font-style:normal;font-weight:400;font-display:swap;src:url("/fonts/space-mono-400.woff2") format("woff2")}
+@font-face{font-family:"Space Mono";font-style:normal;font-weight:700;font-display:swap;src:url("/fonts/space-mono-700.woff2") format("woff2")}
+@font-face{font-family:"Zpix";font-style:normal;font-weight:400;font-display:swap;src:url("/fonts/zpix.woff2") format("woff2")}
   :root { --ink:#202020; --paper:#f8f8f0; --accent:#2a6e46; }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   body {
     margin:0; background:#10101a; color:var(--paper);
-    font-family:"Courier New", ui-monospace, monospace;
+    font-family:"Space Mono","Zpix",ui-monospace,monospace;
     display:flex; align-items:flex-start; justify-content:center; min-height:100vh; padding:40px 16px;
   }
   .card {

@@ -72,6 +72,9 @@ function newSession(id) {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     credibility: 0,
+    // Admin/QA mode — every gate and grade auto-passes. Set only via
+    // POST /api/game/admin with the admin code, never by the client alone.
+    admin: false,
     flags: { metSupervisor: false, interimDone: false, boardDone: false, debriefDone: false },
     engagement: newEngagement(), // 5-phase consulting spine (shared/phases.js)
     workspace: newWorkspace(), // engagement binder + data packs (shared/workspace.js)
@@ -156,6 +159,7 @@ export function publicState(s) {
   return {
     id: s.id,
     updatedAt: s.updatedAt, // powers the "welcome back" panel after a break
+    admin: !!s.admin, // drives the ADMIN badge in the HUD
     credibility: s.credibility,
     flags: s.flags,
     engagement: syncEngagement(s),

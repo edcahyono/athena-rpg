@@ -11,6 +11,7 @@
     <div id="hud">
       <button id="hud-menu" title="Pause / Menu (M)">⏸</button>
       <span id="hud-floor">F12</span>
+      <span id="hud-admin" hidden>ADMIN</span>
       <div id="cred-bar"><div id="cred-fill"></div><span id="cred-label"></span></div>
       <button id="hud-notebook" title="Notebook (Q)">📓</button>
       <button id="hud-binder" title="Engagement binder (B)">📁</button>
@@ -92,6 +93,16 @@
       <button id="mm-lang" class="ls-link"></button>
       <span class="ls-sep">·</span>
       <button id="mm-full" class="ls-link"></button>
+    </div>
+    <!-- Admin / QA entry: bottom-right, code-gated. -->
+    <button id="mm-admin" class="ls-admin" title="Admin">
+      <img src="/brand/admin-avatar.png" alt="" draggable="false" />
+      <span id="mm-admin-label">ADMIN</span>
+    </button>
+    <div id="mm-admin-form" hidden>
+      <input id="mm-admin-code" type="password" autocomplete="off" spellcheck="false" placeholder="access code" />
+      <button id="mm-admin-go">ENTER</button>
+      <div id="mm-admin-err"></div>
     </div>
   </div>
 

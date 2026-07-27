@@ -4,13 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ATHENA · Coach Console</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet" />
 <style>
+/* Self-hosted, same faces as the game — no network font fetch. */
+@font-face{font-family:"Space Mono";font-style:normal;font-weight:400;font-display:swap;src:url("/fonts/space-mono-400.woff2") format("woff2")}
+@font-face{font-family:"Space Mono";font-style:normal;font-weight:700;font-display:swap;src:url("/fonts/space-mono-700.woff2") format("woff2")}
+@font-face{font-family:"Zpix";font-style:normal;font-weight:400;font-display:swap;src:url("/fonts/zpix.woff2") format("woff2")}
 :root{
-  --font-ui:"Syncopate",-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
-  --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --font-ui:"Space Mono","Zpix",ui-monospace,monospace;
+  --font-body:"Space Mono","Zpix",ui-monospace,monospace;
 }
 html[data-theme="light"]{--bg:#ffffff;--bg-soft:#f5f4f2;--ink:#111;--ink-soft:#555;--line:#e2e0dc;--line-strong:#111;--err:#8a1f1f;--ok:#1f6a2e;}
 html[data-theme="dark"]{--bg:#000000;--bg-soft:#161616;--ink:#f2f0ec;--ink-soft:#a8a49e;--line:#2c2c2c;--line-strong:#f2f0ec;--err:#e08585;--ok:#7fc98f;}

@@ -11,6 +11,7 @@ import {
   hairstylesFor, topTypesFor, bottomTypesFor, Dir, Gender,
 } from "../game/charDraw";
 import { PlayerProfile, loadProfile, saveProfile } from "../game/profile";
+import { api, state } from "../net/api";
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -53,6 +54,47 @@ export function mainMenu(returning: boolean): Promise<void> {
     };
     applyLabels();
 
+    /* -- admin / QA mode ------------------------------------------------- */
+    const adminBtn = $("mm-admin") as HTMLButtonElement;
+    const adminForm = $("mm-admin-form");
+    const adminCode = $("mm-admin-code") as HTMLInputElement;
+    const adminErr = $("mm-admin-err");
+    const closeAdmin = () => { adminForm.hidden = true; adminCode.value = ""; adminErr.textContent = ""; };
+    closeAdmin();
+    // Reflect a session that is already in admin mode (quit to menu and back).
+    const markOn = (on: boolean) => {
+      adminBtn.classList.toggle("on", on);
+      $("mm-admin-label").textContent = on ? "ADMIN ON" : "ADMIN";
+    };
+    markOn(!!state?.admin);
+
+    adminBtn.onclick = () => {
+      if (state?.admin) { // already on — clicking turns it back off
+        api.adminOff().then(() => markOn(false)).catch(() => {});
+        return;
+      }
+      adminForm.hidden = !adminForm.hidden;
+      if (!adminForm.hidden) adminCode.focus();
+    };
+    const submitCode = async () => {
+      adminErr.textContent = "";
+      try {
+        await api.admin(adminCode.value);
+        markOn(true);
+        closeAdmin();
+      } catch {
+        // The server checks the code — a wrong one never unlocks anything.
+        adminErr.textContent = "wrong code";
+        adminCode.select();
+      }
+    };
+    ($("mm-admin-go") as HTMLButtonElement).onclick = submitCode;
+    adminCode.onkeydown = (e) => {
+      e.stopPropagation(); // typing the code must not reach the any-key handler
+      if (e.key === "Enter") submitCode();
+      if (e.key === "Escape") closeAdmin();
+    };
+
     const enter = () => {
       window.removeEventListener("keydown", onKey);
       el.removeEventListener("pointerdown", onPointer);
@@ -64,10 +106,13 @@ export function mainMenu(returning: boolean): Promise<void> {
       // starting; a bare modifier press shouldn't count as "any key" either.
       if (e.key === "f" || e.key === "F") { toggleFullscreen(); return; }
       if (["Shift", "Control", "Alt", "Meta", "Tab", "CapsLock"].includes(e.key)) return;
+      if (!adminForm.hidden) return; // the code prompt is open — don't start
       enter();
     };
     const onPointer = (e: PointerEvent) => {
-      if ((e.target as HTMLElement).closest("button")) return; // footer links
+      const t = e.target as HTMLElement;
+      if (t.closest("button") || t.closest("#mm-admin-form")) return; // controls, not "any key"
+      if (!adminForm.hidden) { closeAdmin(); return; } // click-away dismisses it
       enter();
     };
     window.addEventListener("keydown", onKey);

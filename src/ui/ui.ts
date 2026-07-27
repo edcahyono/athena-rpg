@@ -60,6 +60,9 @@ export function applyStaticLabels() {
 export function updateHUD(floor: number) {
   $("hud-floor").textContent = `F${floor}`;
   if (!state) return;
+  // Admin/QA mode is loud on purpose — a bypassed run must never be mistaken
+  // for a real one when someone is watching over your shoulder.
+  ($("hud-admin") as HTMLElement).hidden = !state.admin;
   const pct = Math.min(100, Math.round((state.credibility / CRED_TARGET) * 100));
   ($("cred-fill") as HTMLElement).style.width = `${pct}%`;
   $("cred-label").textContent = `${L(UI.credibility)} ${state.credibility}`;

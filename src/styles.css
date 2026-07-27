@@ -1,8 +1,9 @@
 /* ---- Fonts ----
    All self-hosted from public/fonts so the game needs no network at runtime.
-   Space Mono drives the interface, Pixelify Sans the dialogue. Neither has
-   Chinese glyphs, so Zpix (a pixel font built for simplified Chinese) sits at
-   the end of both stacks and picks up every CJK codepoint. */
+   Space Mono drives both the interface and the dialogue — the case is full of
+   figures and its digits are unambiguous, where Pixelify Sans's 5 read as an S.
+   It has no Chinese glyphs, so Zpix (a pixel font built for simplified Chinese)
+   closes the stack and picks up every CJK codepoint. */
 @font-face {
   font-family: "Space Mono"; font-style: normal; font-weight: 400; font-display: swap;
   src: url("/fonts/space-mono-400.woff2") format("woff2");
@@ -10,10 +11,6 @@
 @font-face {
   font-family: "Space Mono"; font-style: normal; font-weight: 700; font-display: swap;
   src: url("/fonts/space-mono-700.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Pixelify Sans"; font-style: normal; font-weight: 400 700; font-display: swap;
-  src: url("/fonts/pixelify-sans.woff2") format("woff2");
 }
 @font-face {
   font-family: "Zpix"; font-style: normal; font-weight: 400; font-display: swap;
@@ -25,7 +22,7 @@
   --paper: #f8f8f0;
   --accent: #2a6e46; /* deloitte-ish green */
   --font-ui: "Space Mono", "Zpix", ui-monospace, monospace;
-  --font-dlg: "Pixelify Sans", "Zpix", ui-monospace, monospace;
+  --font-dlg: "Space Mono", "Zpix", ui-monospace, monospace;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -277,18 +274,18 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 }
 .ls-box { text-align: center; }
 .ls-mark {
-  display: block; width: 96px; height: auto; margin: 0 auto 6px;
+  display: block; width: 132px; height: auto; margin: 0 auto 8px;
   image-rendering: pixelated;
-  filter: drop-shadow(0 0 14px rgba(126,231,135,0.45));
+  filter: drop-shadow(0 0 18px rgba(126,231,135,0.45));
 }
 .ls-word {
-  display: block; width: 280px; height: auto; margin: 0 auto 10px; image-rendering: pixelated;
+  display: block; width: 400px; height: auto; margin: 0 auto 14px; image-rendering: pixelated;
 }
-.ls-sub { color: #8a93a6; font-size: 12px; letter-spacing: 3px; }
+.ls-sub { color: #8a93a6; font-size: 15px; letter-spacing: 4px; }
 
 /* The "press any key" line — slow breath, never a button. */
 .ls-anykey {
-  margin-top: 64px; color: #cfd8e6; font-size: 13px; letter-spacing: 3px;
+  margin-top: 72px; color: #cfd8e6; font-size: 17px; letter-spacing: 4px;
   text-transform: uppercase; animation: anykey 1.8s ease-in-out infinite;
 }
 @keyframes anykey { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.25; } }
@@ -306,6 +303,42 @@ button.ls-link {
   color: #6d7688; text-transform: uppercase;
 }
 button.ls-link:hover, button.ls-link:focus-visible { color: #7ee787; outline: none; }
+
+/* ---- Admin / QA entry (bottom-right of the title screen) ---- */
+.ls-admin {
+  position: absolute; right: 26px; bottom: 22px;
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: none; padding: 6px 8px; cursor: pointer;
+  font-family: inherit; font-size: 11px; letter-spacing: 2px; color: #4d5566;
+  opacity: 0.55; transition: opacity 0.15s ease, color 0.15s ease;
+}
+.ls-admin img { width: 30px; height: 30px; image-rendering: pixelated; display: block; }
+.ls-admin:hover, .ls-admin:focus-visible { opacity: 1; color: #7ee787; outline: none; }
+.ls-admin.on { opacity: 1; color: #7ee787; }
+
+#mm-admin-form {
+  position: absolute; right: 26px; bottom: 64px;
+  display: flex; flex-direction: column; gap: 6px; align-items: stretch;
+  background: #12121c; border: 1px solid #2a2a3a; border-radius: 6px; padding: 10px;
+}
+#mm-admin-code {
+  width: 190px; background: #0c0c14; border: 1px solid #2a2a3a; border-radius: 4px;
+  color: #cfd8e6; font-family: inherit; font-size: 12px; padding: 7px 9px; letter-spacing: 1px;
+}
+#mm-admin-code:focus { outline: none; border-color: #7ee787; }
+#mm-admin-go {
+  background: #1a1a26; color: #cfd8e6; border: 1px solid #3a3a4a; border-radius: 4px;
+  font-family: inherit; font-size: 11px; letter-spacing: 2px; padding: 6px; cursor: pointer;
+}
+#mm-admin-go:hover { border-color: #7ee787; color: #7ee787; }
+#mm-admin-err { color: #e08585; font-size: 10px; min-height: 12px; letter-spacing: 1px; }
+
+/* ADMIN badge in the in-game HUD — unmissable, so a QA run is never mistaken
+   for a real one. */
+#hud-admin {
+  background: #7ee787; color: #10101a; font-weight: bold; font-size: 10px;
+  letter-spacing: 2px; padding: 3px 7px; border-radius: 3px;
+}
 
 /* ---- Menu: primary action buttons (stacked, centered) + progress bars ---- */
 #panel .menu-actions {

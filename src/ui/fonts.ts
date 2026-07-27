@@ -1,11 +1,13 @@
 /**
  * Font stacks, shared by the DOM (via CSS custom properties in styles.css) and
- * by Phaser's canvas text. Space Mono carries the interface, Pixelify Sans the
- * dialogue; neither ships Chinese glyphs, so Zpix — a pixel font for simplified
- * Chinese — closes both stacks and supplies every CJK codepoint.
+ * by Phaser's canvas text. Space Mono carries both the interface and the
+ * dialogue: the case is full of figures (FY2025, 65.9亿, percentages) and its
+ * digits are unambiguous, where Pixelify Sans's 5 read as an S. Neither ships
+ * Chinese glyphs, so Zpix — a pixel font for simplified Chinese — closes the
+ * stack and supplies every CJK codepoint.
  */
 export const FONT_UI = '"Space Mono", "Zpix", ui-monospace, monospace';
-export const FONT_DLG = '"Pixelify Sans", "Zpix", ui-monospace, monospace';
+export const FONT_DLG = '"Space Mono", "Zpix", ui-monospace, monospace';
 
 /**
  * Canvas text does NOT re-render when a webfont finishes loading — Phaser
@@ -18,7 +20,6 @@ export async function loadFonts(timeoutMs = 3000): Promise<void> {
   if (!document.fonts?.load) return;
   const faces = [
     '400 16px "Space Mono"', '700 16px "Space Mono"',
-    '400 16px "Pixelify Sans"', '700 16px "Pixelify Sans"',
     '400 16px "Zpix"',
   ];
   // document.fonts.load only fetches what the sample text needs, and the

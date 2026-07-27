@@ -209,6 +209,7 @@ function grantWorkspacePack(s, personaId, lang) {
 
 /** Executive access requires passing that domain's gatekeeper check. */
 function requireTrackPassed(s, personaId, lang) {
+  if (s.admin) return; // admin mode: every executive is already unlocked
   const track = trackForPersona(personaId);
   if (!track) return;
   const t = s.tasks[track.taskId];
@@ -241,6 +242,40 @@ const closing = (lang) => {
 router.post("/session", (req, res) => {
   const s = getSession(req.body?.sessionId);
   res.json(publicState(s));
+});
+
+/**
+ * Admin / QA mode. The code is checked HERE, on the server — the client never
+ * decides. Once on, every gate and every grade auto-passes (see the `s.admin`
+ * branches through this file), so the whole flow can be walked end to end
+ * without answering anything correctly.
+ *
+ * The flag lives on the session, so it can be switched off again without a
+ * reload and never leaks into another player's game.
+ */
+const ADMIN_CODE = process.env.ADMIN_CODE || "THUxDeloitte";
+router.post("/admin", (req, res) => {
+  const s = getSession(req.body?.sessionId, false);
+  const { code, off } = req.body || {};
+  if (off) {
+    s.admin = false;
+    touch(s);
+    return res.json({ ...publicState(s), ok: true });
+  }
+  if (typeof code !== "string" || code !== ADMIN_CODE) return res.status(403).json({ error: "bad_code" });
+  s.admin = true;
+  // Open the world up front, rather than only as each check is re-attempted.
+  s.flags.metSupervisor = true;
+  for (const taskId of Object.keys(TASKS)) {
+    if (s.tasks[taskId]?.status !== "passed") s.tasks[taskId] = { status: "passed", delta: 0, admin: true };
+  }
+  for (const track of Object.values(TRACKS)) { // TRACKS is keyed by trackId, not an array
+    if (s.tasks[track.taskId]?.status !== "passed") s.tasks[track.taskId] = { status: "passed", delta: 0, admin: true };
+  }
+  addQuestEntry(s, "task", "[ADMIN] Admin mode enabled",
+    "Every gate and grade now auto-passes. QA tool — not part of the engagement.");
+  touch(s);
+  res.json({ ...publicState(s), ok: true });
 });
 
 // Wipe all progress for this session (client reloads into a fresh engagement).
@@ -297,7 +332,7 @@ router.post("/dialogue-check", (req, res) => {
   const task = TASKS[taskId];
   if (!task || task.type !== "choice") return res.status(400).json({ error: "Unknown check" });
   if (s.tasks[taskId]?.status === "passed") return res.json({ ...publicState(s), result: "already" });
-  const pass = Number(choice) === task.correct;
+  const pass = s.admin || Number(choice) === task.correct; // admin: any choice passes
   if (pass) {
     s.tasks[taskId] = { status: "passed", delta: task.credibility };
     addQuestEntry(s, "task", TT(lang, "Check passed: ", "考核通过：") + LB(task.title, lang), LB(task.prompt, lang));
@@ -486,7 +521,10 @@ router.post("/gatekeeper/grade", async (req, res) => {
       : "(no prior conversation)";
     const qa = quiz.map((q, i) => `Q${i + 1}: ${LB(q, "en")}\nA${i + 1}: ${answers[i]}`).join("\n\n");
 
-    const { grade, feedback } = await gradeQuizAnswers(convo, qa, lang);
+    // Admin mode short-circuits the grader: no model call, instant pass.
+    const { grade, feedback } = s.admin
+      ? { grade: "pass", feedback: TT(lang, "[ADMIN] Auto-passed.", "[管理员] 自动通过。") }
+      : await gradeQuizAnswers(convo, qa, lang);
 
     // STRICT gate: only PASS unlocks the executive and grants credibility.
     // PARTIAL and FAIL are both retryable — the learner keeps revising until
@@ -524,7 +562,7 @@ router.post("/interaction/start", (req, res) => {
   if (st.active && now() < st.active.expiresAt) {
     return res.json({ ...publicState(s), expiresAt: st.active.expiresAt }); // resume live session
   }
-  if (st.used >= GAME_CONFIG.csuite.maxInteractions) {
+  if (!s.admin && st.used >= GAME_CONFIG.csuite.maxInteractions) {
     return res.status(409).json({
       error: TT(lang, `${LB(persona.shortTitle, "en")}'s calendar is full — no meetings left.`, `${LB(persona.shortTitle, "zh")}的日程已满——没有剩余会面次数了。`),
     });
@@ -769,7 +807,7 @@ router.post("/board/review-deck", async (req, res) => {
     const { text } = req.body || {};
     const lang = langOf(req);
     const n = interviewedCount(s);
-    if (n < PERSONAS.length) {
+    if (!s.admin && n < PERSONAS.length) {
       return res.status(403).json({ error: TT(lang,
         `Present to the board once you've interviewed all seven executives — you're at ${n}/7.`,
         `访谈完七位高管后才能向董事会汇报——你目前完成了${n}/7。`) });
@@ -940,8 +978,10 @@ router.post("/board/defense/grade", async (req, res) => {
       messages: [{ role: "user", content: qa.slice(0, 8000) }],
     });
     const parsed = parseModelJson(out);
-    const defenseScore = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
-    const feedback = typeof parsed.feedback === "string" ? parsed.feedback.slice(0, 500) : TT(lang, "Noted.", "了解。");
+    const defenseScore = s.admin ? 100 : Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    const feedback = s.admin
+      ? TT(lang, "[ADMIN] Auto-passed.", "[管理员] 自动通过。")
+      : (typeof parsed.feedback === "string" ? parsed.feedback.slice(0, 500) : TT(lang, "Noted.", "了解。"));
     const deckScore = s.board.result?.deckScore ?? s.board.result?.score ?? 0;
     const finalScore = Math.round(deckScore * 0.6 + defenseScore * 0.4);
     s.board.defense.graded = true;
@@ -1066,10 +1106,10 @@ router.post("/alignment/asis", async (req, res) => {
     const a = s.engagement.alignments.asis;
     if (a.agreed)
       return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "The client already signed off on your as-is diagnosis.", "客户已经认可了你的现状诊断。") });
-    if (!s.flags.metSupervisor)
+    if (!s.admin && !s.flags.metSupervisor)
       return res.status(403).json({ error: TT(lang, "Get your mandate from Manager Lin first.", "请先向林经理领取任务。") });
     const n = interviewedCount(s);
-    if (n < ASIS_MIN_INTERVIEWS) {
+    if (!s.admin && n < ASIS_MIN_INTERVIEWS) {
       return res.status(403).json({ error: TT(lang,
         `Diagnose before you align — interview at least ${ASIS_MIN_INTERVIEWS} executives first (you're at ${n}).`,
         `先诊断再对齐——至少访谈${ASIS_MIN_INTERVIEWS}位高管（你目前${n}位）。`) });
@@ -1077,7 +1117,9 @@ router.post("/alignment/asis", async (req, res) => {
     if (typeof answer !== "string" || !answer.trim() || answer.length > 4000)
       return res.status(400).json({ error: "Answer must be 1–4000 characters" });
 
-    const { agreed, feedback } = await gradeAlignment({ kind: "asis", answer, evidence: alignmentEvidence(s, lang), lang });
+    const { agreed, feedback } = s.admin
+      ? { agreed: true, feedback: TT(lang, "[ADMIN] Auto-agreed.", "[管理员] 自动通过。") }
+      : await gradeAlignment({ kind: "asis", answer, evidence: alignmentEvidence(s, lang), lang });
     a.attempts += 1;
     a.lastFeedback = feedback;
     const delta = agreed ? 25 : 0;
@@ -1104,7 +1146,7 @@ router.post("/alignment/benchmark", async (req, res) => {
     const b = s.engagement.alignments.benchmark;
     if (b.agreed)
       return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "The client already agreed the benchmark priorities.", "客户已经认可了对标优先事项。") });
-    if (!s.engagement.alignments.asis.agreed) {
+    if (!s.admin && !s.engagement.alignments.asis.agreed) {
       return res.status(403).json({ error: TT(lang,
         "Benchmark after the as-is is agreed — settle the As-Is Alignment Meeting first.",
         "对标要在现状对齐之后——请先完成现状对齐会。") });
@@ -1112,7 +1154,9 @@ router.post("/alignment/benchmark", async (req, res) => {
     if (typeof answer !== "string" || !answer.trim() || answer.length > 4000)
       return res.status(400).json({ error: "Answer must be 1–4000 characters" });
 
-    const { agreed, feedback } = await gradeAlignment({ kind: "benchmark", answer, evidence: alignmentEvidence(s, lang), lang });
+    const { agreed, feedback } = s.admin
+      ? { agreed: true, feedback: TT(lang, "[ADMIN] Auto-agreed.", "[管理员] 自动通过。") }
+      : await gradeAlignment({ kind: "benchmark", answer, evidence: alignmentEvidence(s, lang), lang });
     b.attempts += 1;
     b.lastFeedback = feedback;
     const delta = agreed ? 25 : 0;
@@ -1145,13 +1189,13 @@ router.post("/interim", async (req, res) => {
     const lang = langOf(req);
     if (s.flags.interimDone)
       return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "You've already given your interim readout.", "你已经做过中期汇报了。") });
-    if (!s.engagement.alignments.benchmark.agreed) {
+    if (!s.admin && !s.engagement.alignments.benchmark.agreed) {
       return res.status(403).json({ error: TT(lang,
         "The interim readout comes after benchmarking is aligned — settle the Benchmark Alignment Meeting with Lin first.",
         "中期汇报要在对标对齐之后——请先和林经理完成对标对齐会。") });
     }
     const n = interviewedCount(s);
-    if (n < 3) {
+    if (!s.admin && n < 3) {
       return res.status(403).json({ error: TT(lang,
         `Come back after at least 3 executive interviews — you're at ${n}.`,
         `至少访谈3位高管后再来——你目前完成了${n}位。`) });
@@ -1172,7 +1216,10 @@ router.post("/interim", async (req, res) => {
       messages: [{ role: "user", content: answer }],
     });
     let grade = "partial", feedback = TT(lang, "Noted. Keep testing it.", "记下了。继续验证。");
-    {
+    if (s.admin) {
+      grade = "pass";
+      feedback = TT(lang, "[ADMIN] Auto-passed.", "[管理员] 自动通过。");
+    } else {
       const parsed = parseModelJson(out);
       if (["pass", "partial", "fail"].includes(parsed.grade)) grade = parsed.grade;
       if (typeof parsed.feedback === "string") feedback = parsed.feedback.slice(0, 500);

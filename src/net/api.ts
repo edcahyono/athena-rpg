@@ -23,6 +23,7 @@ export interface GameState {
   id: string;
   updatedAt: number;
   credibility: number;
+  admin?: boolean; // QA mode — every gate and grade auto-passes
   flags: { metSupervisor: boolean; interimDone: boolean; boardDone: boolean; debriefDone: boolean };
   engagement: {
     phase: string;
@@ -75,6 +76,9 @@ export const api = {
     return state;
   },
   reset: () => post("reset"),
+  // Admin/QA mode. The code is verified server-side; a wrong code rejects with 403.
+  admin: (code: string) => post("admin", { code }),
+  adminOff: () => post("admin", { off: true }),
   save(client: { floor: number; x: number; y: number }, notes?: string, profile?: Profile) {
     return post("save", { client, notes, profile }).catch(() => {});
   },
