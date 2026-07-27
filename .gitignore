@@ -3,3 +3,4 @@ dist/
 .env
 server/data/sessions.json
 .DS_Store
+server/data/qa/backups/

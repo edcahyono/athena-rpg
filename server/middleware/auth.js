@@ -18,3 +18,15 @@ export function requireAdminAuth(req, res, next) {
   }
   res.status(401).json({ error: "Unauthorized" });
 }
+
+/**
+ * Same credential list, different transport: the coach console has its own
+ * sign-in form and sends the pair as headers rather than HTTP Basic, which
+ * would trigger the browser's native auth dialog on every fetch.
+ */
+export function requireCoachAuth(req, res, next) {
+  const user = req.headers["x-coach-user"] || "";
+  const pass = req.headers["x-coach-pass"] || "";
+  if (user && admins().includes(`${user}:${pass}`)) return next();
+  res.status(401).json({ error: "coach_auth_required" });
+}

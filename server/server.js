@@ -16,7 +16,7 @@ const { default: gameRouter } = await import("./game/routes.js");
 const { loadStores } = await import("./rag/retriever.js");
 const { loadSessions } = await import("./game/sessionStore.js");
 const { getUsage } = await import("./anthropic.js");
-const { requireAdminAuth } = await import("./middleware/auth.js");
+const { requireAdminAuth, requireCoachAuth } = await import("./middleware/auth.js");
 
 const PORT = Number(process.env.PORT || 3002);
 
@@ -32,6 +32,19 @@ app.use("/api/game", gameRouter);
 // Page is public; the data endpoint requires COACH_ADMINS basic auth.
 app.get("/usage", (_req, res) => res.sendFile(path.join(__dirname, "usage", "usage.html")));
 app.get("/api/usage-data", requireAdminAuth, (_req, res) => res.json(getUsage()));
+
+// Coach console — content management for the RAG grounding corpus. Enabled
+// unless COACH_MODE=false; set that before handing the app to learners so the
+// editing surface is not exposed to them. Must be registered ABOVE the dist
+// catch-all below, which otherwise answers /coach with the game itself.
+const COACH_MODE = process.env.COACH_MODE !== "false";
+if (COACH_MODE) {
+  const { default: coachRouter } = await import("./coach/routes.js");
+  app.use("/api/coach", requireCoachAuth, coachRouter);
+  // The page itself is public; it shows a login screen and every API call is gated.
+  app.get("/coach", (_req, res) => res.sendFile(path.join(__dirname, "coach", "coach.html")));
+  console.log("[coach] console enabled at /coach (set COACH_MODE=false to disable for learners)");
+}
 
 // Serve the built game in production (same-origin).
 const dist = path.join(__dirname, "..", "dist");
