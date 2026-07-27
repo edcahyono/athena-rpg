@@ -6,6 +6,7 @@
  */
 import Phaser from "phaser";
 import { L, UI } from "../i18n";
+import { FONT_UI } from "../ui/fonts";
 
 const W = 800, H = 512;
 
@@ -154,7 +155,7 @@ export default class IntroScene extends Phaser.Scene {
     this.tweens.add({ targets: interviewer, y: 257, duration: 500, yoyo: true, repeat: -1, ease: "sine.inOut" });
     this.time.addEvent({
       delay: 1100, loop: true, callback: () => {
-        const q = this.add.text(340, 210, "?", { fontFamily: "Courier New", fontSize: "24px", color: "#20242e", fontStyle: "bold" });
+        const q = this.add.text(340, 210, "?", { fontFamily: FONT_UI, fontSize: "24px", color: "#20242e", fontStyle: "bold" });
         this.tweens.add({ targets: q, y: 180, alpha: 0, duration: 1000, onComplete: () => q.destroy() });
       },
     });
@@ -168,7 +169,7 @@ export default class IntroScene extends Phaser.Scene {
     const rounds = ["R1", "R2", "R3"];
     rounds.forEach((r, i) => {
       const card = this.add.rectangle(120 + i * 70, 420, 56, 40, 0xf4f0e4).setStrokeStyle(3, 0x20242e).setAlpha(0);
-      const label = this.add.text(120 + i * 70, 420, r, { fontFamily: "Courier New", fontSize: "16px", color: "#20242e", fontStyle: "bold" }).setOrigin(0.5).setAlpha(0);
+      const label = this.add.text(120 + i * 70, 420, r, { fontFamily: FONT_UI, fontSize: "16px", color: "#20242e", fontStyle: "bold" }).setOrigin(0.5).setAlpha(0);
       this.tweens.add({ targets: [card, label], alpha: 1, delay: 500 + i * 800, duration: 350 });
     });
   }
@@ -196,9 +197,9 @@ export default class IntroScene extends Phaser.Scene {
     const t1 = this.add.rectangle(-40, -20, 150, 8, 0xb8b0a0);
     const t2 = this.add.rectangle(-20, 2, 190, 8, 0xb8b0a0);
     const t3 = this.add.rectangle(-55, 24, 120, 8, 0xb8b0a0);
-    const offerTxt = this.add.text(0, -62, "OFFER", { fontFamily: "Courier New", fontSize: "20px", color: "#f8f4e8", fontStyle: "bold" }).setOrigin(0.5);
+    const offerTxt = this.add.text(0, -62, "OFFER", { fontFamily: FONT_UI, fontSize: "20px", color: "#f8f4e8", fontStyle: "bold" }).setOrigin(0.5);
     const seal = this.add.circle(85, 52, 26, 0x2a6e46).setStrokeStyle(3, 0x1a3626);
-    const check = this.add.text(85, 52, "✓", { fontFamily: "Courier New", fontSize: "28px", color: "#7ee787", fontStyle: "bold" }).setOrigin(0.5);
+    const check = this.add.text(85, 52, "✓", { fontFamily: FONT_UI, fontSize: "28px", color: "#7ee787", fontStyle: "bold" }).setOrigin(0.5);
     letter.add([paper, head, t1, t2, t3, offerTxt, seal, check]);
     letter.setScale(0);
     this.tweens.add({ targets: letter, scale: 1, duration: 500, ease: "back.out" });

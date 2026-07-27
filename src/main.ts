@@ -5,6 +5,7 @@ import OfficeScene from "./scenes/OfficeScene";
 import { api, state } from "./net/api";
 import { toast, setQuitHandler } from "./ui/ui";
 import { chooseLanguage, characterCreator, mainMenu } from "./ui/startScreen";
+import { loadFonts } from "./ui/fonts";
 import { fmt, UI } from "./i18n";
 
 /* ---- fit the fixed 800px game column to the viewport (fullscreen-friendly) ---- */
@@ -62,6 +63,10 @@ async function start() {
   if (!skipMenu && (quitting || returning)) {
     await mainMenu(returning);
   }
+
+  // Phaser rasterises canvas text once, so every in-world label must be built
+  // after the webfonts land or it stays in the fallback face for good.
+  await loadFonts();
 
   (window as any).__game = new Phaser.Game({
     type: Phaser.AUTO,

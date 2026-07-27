@@ -7,6 +7,7 @@ import { interact, interactProp } from "../game/interactions";
 import { computeObjective, Objective } from "../game/objective";
 import { L, fmt, UI } from "../i18n";
 import { toggleFullscreen } from "../main";
+import { FONT_UI } from "../ui/fonts";
 
 const TEX: Record<string, string> = {
   "#": "tile-wall", d: "tile-desk", t: "tile-table", p: "tile-plant",
@@ -169,11 +170,11 @@ export default class OfficeScene extends Phaser.Scene {
         body.setVisible(false).setSize(20, 20).refreshBody();
       }
       const nameText = this.add.text(x, y - 30, L(def.name), {
-        fontFamily: "Courier New", fontSize: "11px", fontStyle: "bold", color: "#ffffff",
+        fontFamily: FONT_UI, fontSize: "11px", fontStyle: "bold", color: "#ffffff",
         stroke: "#000000", strokeThickness: 3,
       }).setOrigin(0.5).setDepth(10000);
       const roleText = this.add.text(x, y - 19, L(def.role), {
-        fontFamily: "Courier New", fontSize: "9px", color: "#b8e4c8",
+        fontFamily: FONT_UI, fontSize: "9px", color: "#b8e4c8",
         stroke: "#000000", strokeThickness: 3,
       }).setOrigin(0.5).setDepth(10000);
       this.npcs.push({ def, sprite: s });
@@ -233,14 +234,14 @@ export default class OfficeScene extends Phaser.Scene {
     }
 
     this.prompt = this.add.text(0, 0, "[E]", {
-      fontFamily: "Courier New", fontSize: "12px", color: "#ffd75e",
+      fontFamily: FONT_UI, fontSize: "12px", color: "#ffd75e",
       stroke: "#000000", strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10001).setVisible(false);
 
     // Objective guide — arrow orbiting the player + distance readout.
     this.guideArrow = this.add.image(0, 0, "guide-arrow").setDepth(10002).setVisible(false);
     this.guideDist = this.add.text(0, 0, "", {
-      fontFamily: "Courier New", fontSize: "10px", color: "#ffd75e",
+      fontFamily: FONT_UI, fontSize: "10px", color: "#ffd75e",
       stroke: "#000000", strokeThickness: 3,
     }).setOrigin(0.5).setDepth(10002).setVisible(false);
 
@@ -313,7 +314,7 @@ export default class OfficeScene extends Phaser.Scene {
       // Door stays visible above the frost — it's the way in (press E).
       this.add.image(o.door.tx * TILE + TILE / 2, o.door.ty * TILE + TILE / 2, "tile-exec-door").setDepth(9001);
       const label = this.add.text(px + pw / 2, py + ph - 10, L(o.label), {
-        fontFamily: "Courier New", fontSize: "12px", fontStyle: "bold", color: "#1f3038",
+        fontFamily: FONT_UI, fontSize: "12px", fontStyle: "bold", color: "#1f3038",
         stroke: "#eaf4fa", strokeThickness: 3, align: "center", wordWrap: { width: pw - 6 },
       }).setOrigin(0.5, 1).setDepth(10002);
       // The exec's laptop desk, on the door side of their seat (drawn/animated
