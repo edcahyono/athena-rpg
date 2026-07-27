@@ -34,7 +34,9 @@ const STANDING = new Set(["guard", "cleaner"]);
 const WANDER = new Set(["guard", "cleaner"]);
 const PATROLS: Record<string, [number, number][]> = {
   // Both ambient staff pace the empty central hallway, never the cubicle bands.
-  guard: [[5, 9], [20, 9]],
+  // Right-hand stretch of the corridor only (col 23 is the file-room door, so
+  // the route stops at 22) — keeps him out of the central briefing space.
+  guard: [[16, 7], [22, 7]],
   cleaner: [[5, 9], [26, 9]],
 };
 
@@ -630,10 +632,11 @@ export default class OfficeScene extends Phaser.Scene {
   }
 
   /** Ambient strollers (security, cleaner) pace a fixed route, pausing at each
-   *  stop; frozen while a dialogue/panel is open so they don't wander off. */
+   *  stop; frozen while a dialogue/panel is open, or during a scripted scene so
+   *  nobody strolls through the middle of it. */
   private updateWanderers(time: number) {
     for (const w of this.wanderers) {
-      if (ui.busy || time < w.pauseUntil) {
+      if (ui.busy || ui.cutscene || time < w.pauseUntil) {
         w.sprite.setTexture(`char-${w.def.color}-${w.dir}-0`);
         // Paused at the end of a run: keep scrubbing the same patch of floor.
         if (w.mop) {

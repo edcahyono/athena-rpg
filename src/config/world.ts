@@ -157,7 +157,10 @@ export const NPCS: NpcDef[] = [
       { en: "The elevators are behind me. Some floors need… seniority.", zh: "电梯在我身后。有些楼层嘛……得有点资历才进得去。" },
       { en: "Coffee machine on 10 is broken again. Don't tell anyone I told you.", zh: "10层的咖啡机又坏了。别说是我告诉你的。" },
     ] },
-  { id: "guard", name: { en: "Lao Zhang", zh: "老张" }, role: { en: "Security", zh: "保安" }, floor: 12, tx: 12, ty: 9, color: 0x445566, kind: "flavor",
+  // Posted by the file room, well clear of the central hallway: his old spot
+  // (12,9) sat directly under the day-one briefing, so he ended up standing on
+  // top of the player and hiding their sprite.
+  { id: "guard", name: { en: "Lao Zhang", zh: "老张" }, role: { en: "Security", zh: "保安" }, floor: 12, tx: 20, ty: 7, color: 0x445566, kind: "flavor",
     lines: [
       { en: "I've guarded this lobby for 15 years. Seen a thousand analysts. You look… adequately terrified.", zh: "我在这个大堂守了15年，见过上千个分析师。你看起来……紧张得恰到好处。" },
       { en: "No, you can't take the executive elevator. Yes, everyone asks.", zh: "不行，高管电梯你不能坐。对，每个人都这么问。" },
