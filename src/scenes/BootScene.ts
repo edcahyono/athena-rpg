@@ -254,6 +254,34 @@ export default class BootScene extends Phaser.Scene {
     this.tex("tile-work-0", 48, 34, (g) => workDesk(g, 0));
     this.tex("tile-work-1", 48, 34, (g) => workDesk(g, 1));
 
+    // Filing-room bookshelf — a tall archive shelf packed with binders.
+    this.tex("tile-bookshelf", T, T, (g) => {
+      g.fillStyle(OUTLINE); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x6b4a2f); g.fillRect(1, 1, T - 2, T - 2);      // timber carcass
+      g.fillStyle(0x53381f); g.fillRect(1, 14, T - 2, 2);          // middle shelf
+      g.fillStyle(0x53381f); g.fillRect(1, T - 4, T - 2, 2);       // lower shelf
+      const binder = (x: number, y: number, c: number, h: number) => {
+        g.fillStyle(0x1a1208); g.fillRect(x, y, 4, h);
+        g.fillStyle(c); g.fillRect(x, y + 1, 3, h - 2);
+      };
+      binder(3, 4, 0xb4553f, 10); binder(8, 3, 0xd8c07a, 11); binder(13, 4, 0x4f7fa8, 10);
+      binder(18, 3, 0x8a5c9a, 11); binder(23, 4, 0x5f9a68, 10); binder(27, 5, 0xc0894a, 9);
+      binder(3, 18, 0x4f7fa8, 10); binder(8, 17, 0xb4553f, 11); binder(13, 18, 0xd8c07a, 10);
+      binder(18, 17, 0x5f9a68, 11); binder(23, 18, 0x8a5c9a, 10); binder(27, 19, 0xb4553f, 9);
+    });
+
+    // Filing-room door — glazed, badge-controlled, with a red LOCKED reader.
+    this.tex("tile-filing-door", T, T, (g) => {
+      g.fillStyle(OUTLINE); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x9fb6c4); g.fillRect(2, 1, T - 4, T - 2);       // frosted glass leaf
+      g.fillStyle(0xc3d6e0); g.fillRect(4, 3, T - 8, 10);          // upper pane sheen
+      g.fillStyle(0x7d94a4); g.fillRect(4, 16, T - 8, 12);         // lower pane
+      g.fillStyle(0x3d4b56); g.fillRect(T / 2 - 1, 2, 2, T - 4);   // centre stile
+      g.fillStyle(0x2b343d); g.fillRect(T - 9, 13, 3, 7);          // pull handle
+      g.fillStyle(0x1a1d24); g.fillRect(3, 12, 5, 8);              // badge reader
+      g.fillStyle(0xd8442f); g.fillCircle(5, 15, 1);               // red = locked
+    });
+
     // Polished marble floor for the elevator lobby (matches the real building —
     // the lift opens onto a stone lobby, distinct from the carpeted workspace).
     this.tex("tile-marble", T, T, (g) => {

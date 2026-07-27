@@ -247,6 +247,9 @@ export const UI = {
 
   // engagement tracker (HUD)
   trackerTitle: { en: "Engagement", zh: "项目进程" },
+  phaseWhatToDo: { en: "What this phase asks of you", zh: "这个阶段要求你做什么" },
+  phaseDeliverable: { en: "Deliverable", zh: "交付物" },
+  phaseGate: { en: "How it gets approved", zh: "如何通过" },
   phaseCurrent: { en: "in progress", zh: "进行中" },
   phaseDone: { en: "done", zh: "已完成" },
   phaseLocked: { en: "locked", zh: "未解锁" },

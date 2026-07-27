@@ -10,7 +10,7 @@ import { PERSONAS, MID_PERSONAS } from "../../shared/personas.config.js";
 import type { BL } from "../i18n";
 
 export const TILE = 32;
-export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D", "n", "N", "X", "G"]);
+export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D", "n", "N", "X", "G", "B", "F"]);
 
 // Palette for the decorative filler workers that fill the open floors.
 export const FILLER_COLORS = [0x76808f, 0x8f7680, 0x7f8f76, 0x76778f, 0x8f8676, 0x6f8087];
@@ -25,17 +25,17 @@ const LOBBY = [
   "#################################",
   "#p.............................p#",
   "#...................GGGGGGGGGGGG#",
-  "#...................G....GG....G#",
-  "#.......rrrrrrrrrrr.G..t.GG..t.G#",
-  "#...................G....GG....G#",
-  "#...................GGGGGGGGGGGG#",
+  "#...................GBBBBGBBBBBG#",
+  "#.......rrrrrrrrrrr.G....G.....G#",
+  "#...................GBBBBGBBBBBG#",
+  "#...................GGFGGGGFGGGG#",
   "#E..............................#",
   "#E..............................#",
   "#...............................#",
-  "#.........................GGGGGG#",
-  "#.........................G....G#",
-  "#.........................G..t.G#",
+  "#.........................GGFGGG#",
+  "#.........................GBBBBG#",
   "#.......k.................G....G#",
+  "#.........................GBBBBG#",
   "#p........................GGGGGG#",
   "#################################",
 ];
@@ -128,6 +128,8 @@ export interface NpcDef {
   personaId?: string;
   trackId?: string;
   lines?: BL[];
+  /** Initial facing for a seated/standing NPC (default "down"). */
+  facing?: "down" | "up" | "left" | "right";
 }
 
 const personaColors: Record<string, number> = {};
@@ -155,7 +157,7 @@ export const NPCS: NpcDef[] = [
       { en: "The elevators are behind me. Some floors need… seniority.", zh: "电梯在我身后。有些楼层嘛……得有点资历才进得去。" },
       { en: "Coffee machine on 10 is broken again. Don't tell anyone I told you.", zh: "10层的咖啡机又坏了。别说是我告诉你的。" },
     ] },
-  { id: "guard", name: { en: "Lao Zhang", zh: "老张" }, role: { en: "Security", zh: "保安" }, floor: 12, tx: 28, ty: 12, color: 0x445566, kind: "flavor",
+  { id: "guard", name: { en: "Lao Zhang", zh: "老张" }, role: { en: "Security", zh: "保安" }, floor: 12, tx: 22, ty: 12, color: 0x445566, kind: "flavor",
     lines: [
       { en: "I've guarded this lobby for 15 years. Seen a thousand analysts. You look… adequately terrified.", zh: "我在这个大堂守了15年，见过上千个分析师。你看起来……紧张得恰到好处。" },
       { en: "No, you can't take the executive elevator. Yes, everyone asks.", zh: "不行，高管电梯你不能坐。对，每个人都这么问。" },
@@ -275,7 +277,9 @@ PERSONAS.forEach((p: any, i: number) => {
   });
 });
 NPCS.push({
-  id: "exec-ea", name: { en: "Vivian", zh: "薇薇安" }, role: { en: "Front Desk · Executive Suite", zh: "前台 · 高管区" }, floor: 15, tx: 4, ty: 6, color: 0x5a8a7a, kind: "flavor",
+  // Executive-suite gatekeeper: sits at the front desk beside the lift, facing
+  // it, so she greets (and screens) everyone stepping off the elevator.
+  id: "exec-ea", name: { en: "Vivian", zh: "薇薇安" }, role: { en: "Front Desk · Executive Suite", zh: "前台 · 高管区" }, floor: 15, tx: 4, ty: 6, color: 0x5a8a7a, kind: "flavor", facing: "left",
   lines: [
     { en: "Each executive only sees analysts vouched for by their Deloitte counterpart downstairs. Calendars here are brutally tight.", zh: "每位高管只见楼下德勤对口经理担保过的分析师。这里的日程紧得不近人情。" },
     { en: "When a meeting slot is spent, it's spent. There's no 'do-over' at this level.", zh: "会面额度用掉就是用掉了。到了这个层级，没有「重来一次」。" },
@@ -327,6 +331,12 @@ export const PROP_LINES: Record<string, BL[]> = {
   ],
   E: [],
   X: [], // executive office door — handled specially (enter/exit teleport)
+  // Filing-room door — permanently locked; it exists to make the floor read
+  // like the real building (rooms you can see but never enter).
+  F: [
+    { en: "The badge reader blinks red. FILING ROOM — RESTRICTED. Your access level doesn't open this door.", zh: "刷卡器亮起红灯。档案室 — 限制进入。你的权限打不开这扇门。" },
+    { en: "You peer through the glass: rows of bookshelves and archive boxes. Client files. Definitely not for new analysts.", zh: "你透过玻璃望进去：一排排书架和档案箱。客户档案。绝对不是给新分析师看的。" },
+  ],
 };
 
 export function spawnPoint(): { tx: number; ty: number } {

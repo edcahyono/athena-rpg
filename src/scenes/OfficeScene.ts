@@ -19,6 +19,8 @@ const TEX: Record<string, string> = {
   X: "tile-exec-door",
   // Executive private office: G = glass wall, b = black interior floor
   G: "tile-glass", b: "tile-black",
+  // Filing room: B = bookshelf, F = locked badge-controlled door
+  B: "tile-bookshelf", F: "tile-filing-door",
 };
 
 // Walkable rug tiles render under the player (low depth) instead of at row depth.
@@ -120,13 +122,6 @@ export default class OfficeScene extends Phaser.Scene {
       }
     }
 
-    // Floor-number plaque by the lift, styled like the building's directory
-    // screens ("10F"). Purely decorative.
-    this.add.rectangle(3 * TILE, 3 * TILE, 46, 24, 0x141c28).setDepth(9500).setStrokeStyle(2, 0x35506a);
-    this.add.text(3 * TILE, 3 * TILE, `${this.floor}F`, {
-      fontFamily: "Courier New", fontSize: "15px", fontStyle: "bold", color: "#5ec8e3",
-    }).setOrigin(0.5).setDepth(9501);
-
     // Player — new hires enter the lobby from the bottom; otherwise resume position.
     const sp = spawnPoint();
     const firstDay = state && !state.flags.metSupervisor && this.floor === 12;
@@ -167,7 +162,7 @@ export default class OfficeScene extends Phaser.Scene {
         deskBody.setVisible(false).setSize(34, 20).refreshBody();
       }
       const shadow = this.add.image(x, y + 10, "shadow").setDepth(y - 1);
-      const s = this.add.sprite(x, y + (seated ? 3 : 0), `char-${def.color}-down-0`).setDepth(y);
+      const s = this.add.sprite(x, y + (seated ? 3 : 0), `char-${def.color}-${def.facing || "down"}-0`).setDepth(y);
       // Strollers move freely, so they get no static collider (won't block paths).
       if (!wander) {
         const body = walls.create(x, y, `char-${def.color}-down-0`) as Phaser.Physics.Arcade.Sprite;

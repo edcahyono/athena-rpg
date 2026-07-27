@@ -94,8 +94,34 @@ function renderTracker() {
     el.className = "tstep" + (done ? " done" : current ? " current" : " locked");
     el.textContent = `${done ? "✓" : current ? "▸" : "•"} ${L(ph.short)}`;
     el.title = `${L(ph.name)} (${done ? L(UI.phaseDone) : current ? L(UI.phaseCurrent) : L(UI.phaseLocked)})\n${L(ph.deliverable)}`;
+    // Every phase chip is clickable and explains what that phase requires.
+    el.style.cursor = "pointer";
+    el.onclick = () => { if (!ui.busy) phasePanel(ph.id); };
     steps.appendChild(el);
   }
+}
+
+/** Phase briefing — what this phase asks of you and how it gets approved. */
+export function phasePanel(phaseId: string) {
+  const ph = PHASES.find((p) => p.id === phaseId);
+  if (!ph) return;
+  const eng = state?.engagement;
+  const done = !!eng?.completed[ph.id];
+  const current = eng?.phase === ph.id && !done;
+  const status = done ? L(UI.phaseDone) : current ? L(UI.phaseCurrent) : L(UI.phaseLocked);
+  const badge = done ? "✓" : current ? "▸" : "•";
+  const p = openPanel(
+    `<h2>${badge} ${esc(L(ph.name))}</h2>
+     <p class="muted">${esc(status)}</p>
+     <h3 style="margin-top:12px">${esc(L(UI.phaseWhatToDo))}</h3>
+     <p style="line-height:1.55">${esc(L((ph as any).guidance) || L(ph.deliverable))}</p>
+     <h3 style="margin-top:12px">${esc(L(UI.phaseDeliverable))}</h3>
+     <p>${esc(L(ph.deliverable))}</p>
+     <h3 style="margin-top:12px">${esc(L(UI.phaseGate))}</h3>
+     <p>${esc(L(ph.gate))}</p>
+     <div class="row" style="margin-top:14px"><button id="ph-close">${esc(L(UI.close))}</button></div>`
+  );
+  (p.querySelector("#ph-close") as HTMLElement).onclick = () => closePanel();
 }
 
 export function toast(msg: string) {
