@@ -5,28 +5,16 @@ progress or half-applied.
 
 ---
 
-## 1. Start here: the invalid API key
+## 1. API key — RESOLVED 2026-07-28
 
-**`ANTHROPIC_API_KEY` in `.env` returns 401 — "API key is invalid."**
+The local `ANTHROPIC_API_KEY` was replaced and **auth is confirmed working**.
+`VOYAGE_API_KEY` was always fine (RAG boots in embeddings mode).
 
-```
-[review-work] Model call failed (401) {"type":"authentication_error","message":"API key is invalid."}
-```
+Still to do: **update the key in Render**, or production keeps running on the
+revoked one.
 
-This is almost certainly the rotation after the key appeared unmasked in a
-Render screenshot. The local `.env` still holds the old value.
-
-`VOYAGE_API_KEY` is fine — RAG boots in embeddings mode (`[rag] loaded 7 persona
-stores — retrieval mode: embeddings (Voyage)`). **Only the Anthropic key needs
-replacing.**
-
-Until it's fixed, **every LLM path is untestable locally**, which is most of
-what shipped this session. Fix this before anything else.
-
-```bash
-# edit .env, replace the ANTHROPIC_API_KEY value, then:
-pkill -f "node server/server.js"; node server/server.js
-```
+Note for future debugging: `node -e` does NOT load `.env`. Use
+`node --env-file=.env -e` or the probe falsely reports a missing key.
 
 ---
 
@@ -57,15 +45,22 @@ The old version generated questions from the chat you'd just had *and wrote a
 bullet summary into the notebook to answer from* — it handed over the answer
 key. Wrong answers now get an in-character explanation and a retry.
 
-**Unverified: live question generation.** The 503-on-failure branch is
-confirmed; the actual model call is not. Verify by walking any gatekeeper
-conversation and leaving:
+**VERIFIED 2026-07-28 — and one real bug found and fixed.** Generation was
+failing 100% of the time with a bogus 503: `max_tokens: 3000` truncated the
+large bilingual JSON mid-array, which parsed to `{}`. Same failure mode already
+recorded for the defense questions. Fixed by raising to 8000, tightening option
+length, and — because generation is genuinely flaky (it also sometimes returns
+2 questions instead of 5) — wrapping it in a **3-attempt retry**. All 7 tracks
+now return 5 questions; 2 retries fired across a 6-track run, so the loop earns
+its keep.
 
-- Are the 5 questions answerable from the domain, not from the chat?
-- Are distractors plausible, or are three of four obviously silly?
-- Does the `why` explanation actually teach on a wrong answer?
-
-Question quality is the entire value of this feature. Judge it before demoing.
+**Question quality: good, with a caveat.** The questions test real
+understanding (revenue quality vs headline growth, why GC net profit can't be
+cited, what an EBIT-fell-31%/revenue-fell-13% gap implies). Distractors were
+initially weak — several eliminable by absurdity alone — so the prompt now
+carries an explicit distractor rule. After it, roughly one weak option per
+question remains (the occasional "always", one stray fraud accusation).
+**Worth spot-checking a few before a demo**, but it is no longer guessable.
 
 Scoring: credibility scales 50–100% of the track's value by **first-attempt**
 accuracy. Unlimited retries, but the score reflects what you knew walking in.
@@ -136,10 +131,11 @@ canvas; `window.game` is not reliably exposed. DOM/HUD verification works fine
 
 | Item | Notes |
 |---|---|
-| **Replace `ANTHROPIC_API_KEY`** | Blocks all verification above. Do first. |
+| **Update the key in Render** | Local is fixed; production still has the revoked one. |
 | `DATA_DIR` for Render | `sessions.json` is on ephemeral disk — progress is lost on redeploy. |
 | `PLACEHOLDER` gatekeeper criteria | All seven `REVIEW_CRITERIA` entries are still placeholder text. |
-| Verify MCQ question quality | Needs the key. Highest-value check before any demo. |
+| Tighten MCQ distractors further | ~1 weak option per question survives the new rule. |
+| Verify readout grading + Lin upload | Now unblocked; still not exercised end to end. |
 | Eyeball the NPC greeting walk | Needs a human; two minutes on F10. |
 | `graderEval.js` retarget | Benchmarks a grader no longer in the product. |
 

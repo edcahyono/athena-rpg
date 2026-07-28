@@ -479,26 +479,48 @@ router.post("/gatekeeper/quiz", async (req, res) => {
       return res.status(409).json({ error: TT(lang, "You've already passed this check.", "你已经通过这项考核了。") });
 
     const g = s.gatekeepers[trackId];
+
+    // Generation is genuinely flaky: the model intermittently truncates the
+    // (large, bilingual) JSON mid-array, or returns fewer than the 5 questions
+    // it was asked for. Both are transient, so retry rather than failing the
+    // player's check — a 503 here reads to them as the game being broken.
     let mcqs = null;
-    try {
-      const out = await callAnthropic({
-        model: LIGHT_MODEL,
-        max_tokens: 3000,
-        system:
-          `You write domain checks for junior consultants on a Nike Greater China engagement.\n` +
-          `From the DOMAIN MATERIAL below, write exactly 5 multiple-choice questions testing genuine understanding — ` +
-          `causes, trade-offs, and what the numbers MEAN — not trivia recall. Exactly 4 options each, exactly one correct.\n` +
-          `Distractors must be plausible to someone who half-understands the material; no joke options, no giveaways.\n` +
-          `For each question write "why": 2-3 sentences the manager says to explain the correct answer to someone who got ` +
-          `it wrong — in character, teaching rather than scolding, so they can reason it out on the retry.\n` +
-          `Write BOTH English and Chinese for every question, option and explanation (same meaning).\n` +
-          `Reply with ONLY JSON: {"mcqs":[{"q":{"en":"","zh":""},"options":[{"en":"","zh":""},{"en":"","zh":""},{"en":"","zh":""},{"en":"","zh":""}],"correct":0,"why":{"en":"","zh":""}}]}`,
-        messages: [{ role: "user", content: `DOMAIN: ${LB(track.name, "en")}\n\nDOMAIN MATERIAL:\n${track.knowledge}` }],
-      });
-      const parsed = parseModelJson(out);
-      const list = Array.isArray(parsed.mcqs) ? parsed.mcqs : [];
-      mcqs = list.length === 5 && list.every(validMcq) ? list : null;
-    } catch { /* fall through to the error below */ }
+    for (let attempt = 0; attempt < 3 && !mcqs; attempt++) {
+      try {
+        const out = await callAnthropic({
+          model: LIGHT_MODEL,
+          // Five bilingual MCQs — question + 4 options + a teaching explanation,
+          // each in English AND Chinese — is a lot of output, and Chinese runs
+          // near one token per character. At 3000 this truncated every time.
+          max_tokens: 8000,
+          system:
+            `You write domain checks for junior consultants on a Nike Greater China engagement.\n` +
+            `From the DOMAIN MATERIAL below, write EXACTLY 5 multiple-choice questions (not 2, not 4 — five) testing genuine ` +
+            `understanding — causes, trade-offs, and what the numbers MEAN — not trivia recall. Exactly 4 options each, exactly one correct.\n` +
+            `DISTRACTOR RULE — this decides whether the check is worth anything. Every wrong option must be something a real ` +
+            `junior consultant might actually believe or write in a draft. Never absurd, never self-evidently false, never a ` +
+            `joke. Do not write options that can be eliminated on tone alone: avoid "always", "never", "only", "entirely", ` +
+            `accusations of fraud, and invented rules. A reader who has NOT studied the material should find all four options ` +
+            `credible; only someone who understands it should be able to pick the right one.\n` +
+            `Keep each option under 18 words. For each question write "why": TWO sentences the manager says to explain the ` +
+            `correct answer to someone who got it wrong — in character, teaching rather than scolding.\n` +
+            `Write BOTH English and Chinese for every question, option and explanation (same meaning).\n` +
+            `Reply with ONLY JSON, no prose before or after: {"mcqs":[{"q":{"en":"","zh":""},"options":[{"en":"","zh":""},{"en":"","zh":""},{"en":"","zh":""},{"en":"","zh":""}],"correct":0,"why":{"en":"","zh":""}}]}`,
+          messages: [{ role: "user", content: `DOMAIN: ${LB(track.name, "en")}\n\nDOMAIN MATERIAL:\n${track.knowledge}` }],
+        });
+        const parsed = parseModelJson(out);
+        const list = Array.isArray(parsed.mcqs) ? parsed.mcqs.filter(validMcq) : [];
+        // Over-generation is fine and common; take the first five.
+        if (list.length >= 5) mcqs = list.slice(0, 5);
+        else {
+          console.error(`[gatekeeper quiz] attempt ${attempt + 1} rejected:`, JSON.stringify({
+            chars: out.length, topLevelKeys: Object.keys(parsed), valid: list.length,
+          }));
+        }
+      } catch (e) {
+        console.error(`[gatekeeper quiz] attempt ${attempt + 1} threw:`, e.message);
+      }
+    }
 
     // No silent fallback to a canned quiz: a check the player can pass without
     // knowing the domain is worse than no check at all.
