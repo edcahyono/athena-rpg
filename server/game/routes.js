@@ -1350,6 +1350,9 @@ router.post("/review-work", async (req, res) => {
       if (typeof parsed.comments === "string" && parsed.comments.trim()) comments = parsed.comments.slice(0, 1000);
     }
 
+    // Handing a document to Manager Lin IS the review mission — any later
+    // submission just refreshes the document, it doesn't re-open the task.
+    if (reviewerId === "supervisor") s.flags.workDocDone = true;
     // Keep the latest submitted document: the alignment meetings read it as the
     // consultant's own synthesis, alongside their interview quotes.
     s.workDoc = {

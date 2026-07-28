@@ -75,7 +75,7 @@ function newSession(id) {
     // Admin/QA mode — every gate and grade auto-passes. Set only via
     // POST /api/game/admin with the admin code, never by the client alone.
     admin: false,
-    flags: { metSupervisor: false, interimDone: false, boardDone: false, debriefDone: false },
+    flags: { metSupervisor: false, interimDone: false, boardDone: false, debriefDone: false, workDocDone: false },
     engagement: newEngagement(), // 5-phase consulting spine (shared/phases.js)
     workspace: newWorkspace(), // engagement binder + data packs (shared/workspace.js)
     settings: { recipient: "board" }, // final-pitch recipient: "board" | "professorGuo" (Wave 3)
@@ -113,6 +113,7 @@ export function getSession(id, create = true) {
     for (const trackId of Object.keys(TRACKS)) s.gatekeepers[trackId] = { transcript: [], quiz: null, knownGaps: [] };
   }
   if (s.flags.interimDone === undefined) s.flags.interimDone = false;
+  if (s.flags.workDocDone === undefined) s.flags.workDocDone = false; // sessions saved before the Lin review mission existed
   // Migrate sessions persisted before the engagement-phase spine existed.
   if (!s.engagement) s.engagement = newEngagement();
   if (!s.workspace) s.workspace = newWorkspace();

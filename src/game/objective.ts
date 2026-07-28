@@ -38,6 +38,9 @@ export function computeObjective(state: GameState | undefined): Objective {
   // board, so it takes priority only here — otherwise it must not shadow
   // an unlocked executive the player could go see right now.
   if (interviewed >= 7) {
+    if (!state.flags.workDocDone) {
+      return { npcId: "supervisor", floor: 12, label: L(UI.workDocObjective), why: L(UI.workDocObjectiveWhy) };
+    }
     if (!state.flags.interimDone) {
       return { npcId: "supervisor", floor: 12, label: L(UI.interimObjective), why: fmt(UI.interimObjectiveWhy, { n: interviewed }) };
     }
@@ -70,6 +73,11 @@ export function computeObjective(state: GameState | undefined): Objective {
 
   // Between missions: nudge toward the interim readout once 3+ interviews are
   // in (it unlocks the board later), otherwise pick the next track.
+  // The working-document review comes before the interim readout: Lin asks for
+  // it first, and it's read as your synthesis when the alignments are graded.
+  if (!state.flags.workDocDone && interviewed >= 3) {
+    return { npcId: "supervisor", floor: 12, label: L(UI.workDocObjective), why: L(UI.workDocObjectiveWhy) };
+  }
   if (!state.flags.interimDone && interviewed >= 3) {
     return { npcId: "supervisor", floor: 12, label: L(UI.interimObjective), why: fmt(UI.interimObjectiveWhy, { n: interviewed }) };
   }

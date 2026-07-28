@@ -207,6 +207,13 @@ export const UI = {
   wsReadoutPh: { en: "Summarize what mattered from this interview…", zh: "总结这次访谈里真正重要的内容……" },
   wsReadoutSave: { en: "Grade my readout", zh: "为纪要评分" },
   gkTryAgain: { en: "Have another go at that one.", zh: "再试一次这道题。" },
+  // Lin's working-document review mission (F12).
+  linWorkDocPrompt: { en: "Before we take anything to the client — I want to see your working document. Whatever you've written so far: the diagnosis, the numbers you're leaning on, where you think this is going. Word, PDF, Markdown, I don't care. Have you got something for me?", zh: "在把任何东西拿给客户之前——我想看看你的工作文档。你目前写的任何内容：诊断、你依据的数据、你认为方向在哪里。Word、PDF、Markdown 都行。有东西给我看吗？" },
+  linWorkDocYes: { en: "Yes — here it is.", zh: "有，请过目。" },
+  linWorkDocLater: { en: "Not written up yet.", zh: "还没写好。" },
+  linWorkDocLaterLine: { en: "Then go and write it. You've done the interviews — the thinking doesn't count until it's on paper. Come back when you have a draft; I'll read it properly.", zh: "那就去写。访谈你已经做完了——想法没落到纸上就不算数。写出初稿再来找我，我会认真读。" },
+  workDocObjective: { en: "Show Manager Lin your working document (F12)", zh: "把你的工作文档给林经理看（12层）" },
+  workDocObjectiveWhy: { en: "Write it in any tool — she audits it, and it's read as your own synthesis when the client alignments are graded.", zh: "用任何工具写都行——她会审阅，并且在客户对齐评分时，这份文档会作为你自己的综合分析被参考。" },
   // C2 — written on the way out of the meeting, while it's still fresh.
   readoutTitle: { en: "Your readout", zh: "你的访谈纪要" },
   readoutPrompt: { en: "You're out of the room. Before anything else, write your readout of that meeting with the {exec} — what mattered, in your own words. It's graded against what was actually said: accuracy, signal, concision. (Skip if you'd rather not — you lose the credibility.)", zh: "你走出会议室。趁热先写下这次与{exec}会面的纪要——用你自己的话写清楚什么才是关键。评分依据是真实的对话内容：准确、抓重点、精炼。（也可以跳过——但会失去这部分信誉值。）" },

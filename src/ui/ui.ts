@@ -50,7 +50,6 @@ export function applyStaticLabels() {
   $("hud-fullscreen").textContent = "⛶";
   $("hud-fullscreen").title = L(UI.fullscreen);
   $("hud-notebook").title = L(UI.notebook);
-  const binder = document.getElementById("hud-binder"); if (binder) binder.title = L(UI.wsBtn);
   ($("dlg-input") as HTMLInputElement).placeholder = L(UI.askPh);
   $("dlg-send").textContent = L(UI.ask);
   $("dlg-leave").textContent = L(UI.leave);

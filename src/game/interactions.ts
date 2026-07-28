@@ -157,6 +157,17 @@ async function supervisor(npc: NpcDef) {
   const n = Object.values(state.personas).filter((p) => p.used > 0).length;
   const align = state.engagement.alignments;
 
+  // Working-document review. Sits BEFORE the alignment gates on purpose: the
+  // document you hand over here is read as your own synthesis when those gates
+  // are graded, so submitting it afterwards would be too late to count. You
+  // write it in whatever tool you like and Lin audits it against her standards.
+  if (!state.flags.workDocDone && n >= 3) {
+    const choice = await showChoice(name, L(UI.linWorkDocPrompt), [L(UI.linWorkDocYes), L(UI.linWorkDocLater)]);
+    if (choice !== 0) return await showLines(name, [L(UI.linWorkDocLaterLine)]);
+    await reviewWorkPanel("supervisor", name);
+    return;
+  }
+
   // Phase gate 1 — As-Is Alignment. After enough interviews to have a diagnosis,
   // the client must confirm the as-is before benchmarking can begin.
   if (!align.asis.agreed && n >= 3) {

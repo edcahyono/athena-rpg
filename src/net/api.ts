@@ -27,7 +27,7 @@ export interface GameState {
   updatedAt: number;
   credibility: number;
   admin?: boolean; // QA mode — every gate and grade auto-passes
-  flags: { metSupervisor: boolean; interimDone: boolean; boardDone: boolean; debriefDone: boolean };
+  flags: { metSupervisor: boolean; interimDone: boolean; boardDone: boolean; debriefDone: boolean; workDocDone: boolean };
   engagement: {
     phase: string;
     completed: Record<string, boolean>;

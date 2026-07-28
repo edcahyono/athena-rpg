@@ -2,7 +2,7 @@
 import Phaser from "phaser";
 import { TILE, BLOCKING, LAYOUTS, NPCS, NpcDef, PROP_LINES, spawnPoint, EXEC_OFFICES, FILLER_COLORS } from "../config/world";
 import { api, state } from "../net/api";
-import { ui, updateHUD, updateObjectiveBanner, elevatorPanel, elevatorClose, elevatorOpen, questLogPanel, reviewWorkPanel, menuPanel, toast, applyStaticLabels, welcomePanel, setRelabelHandler } from "../ui/ui";
+import { ui, updateHUD, updateObjectiveBanner, elevatorPanel, elevatorClose, elevatorOpen, questLogPanel, menuPanel, toast, applyStaticLabels, welcomePanel, setRelabelHandler } from "../ui/ui";
 import { interact, interactProp } from "../game/interactions";
 import { computeObjective, Objective } from "../game/objective";
 import { L, fmt, UI } from "../i18n";
@@ -271,12 +271,10 @@ export default class OfficeScene extends Phaser.Scene {
 
     this.input.keyboard!.on("keydown-E", () => this.tryInteract());
     this.input.keyboard!.on("keydown-Q", () => { if (!ui.busy) questLogPanel(); });
-    this.input.keyboard!.on("keydown-B", () => { if (!ui.busy) this.openWorkDoc(); });
     this.input.keyboard!.on("keydown-M", () => { if (!ui.busy) menuPanel(this.objective); });
     this.input.keyboard!.on("keydown-F", () => toggleFullscreen());
     document.getElementById("hud-menu")!.onclick = () => { if (!ui.busy) menuPanel(this.objective); };
     document.getElementById("hud-notebook")!.onclick = () => { if (!ui.busy) questLogPanel(); };
-    document.getElementById("hud-binder")!.onclick = () => { if (!ui.busy) this.openWorkDoc(); };
     document.getElementById("hud-fullscreen")!.onclick = () => toggleFullscreen();
 
     applyStaticLabels();
@@ -534,18 +532,6 @@ export default class OfficeScene extends Phaser.Scene {
    *  in beside them first. 72px is a bit over two tiles, matching the gap
    *  Manager Lin's day-one briefing puts between you. Named NPCs sit four tiles
    *  apart, so the reaches still never overlap. */
-  /**
-   * Hand your working document to Manager Lin (B / 📁). This replaced the
-   * structured binder: you write the strategy in whatever tool you like —
-   * PDF, DOCX, Markdown, plain text — and submit it for review. The document
-   * is kept, and the alignment meetings read it as your own synthesis
-   * alongside your interview quotes.
-   */
-  private openWorkDoc() {
-    const lin = NPCS.find((n) => n.id === "supervisor")!;
-    reviewWorkPanel("supervisor", `${L(lin.name)} · ${L(lin.role)}`);
-  }
-
   private nearestNpc(): { def: NpcDef; sprite: Phaser.GameObjects.Sprite } | null {
     let best: any = null, bestD = Infinity;
     for (const n of this.npcs) {
