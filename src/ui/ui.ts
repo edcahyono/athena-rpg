@@ -175,6 +175,10 @@ function openBox(name: string) {
   $("dlg-choices").hidden = true;
   $("dlg-input-row").hidden = true;
   $("dlg-hint").hidden = true;
+  // One shared input serves every conversation, and only submit() clears it —
+  // so a half-typed question the player abandoned (LEAVE, or the meeting timing
+  // out) used to reappear in the next person's box. Always start empty.
+  $<HTMLInputElement>("dlg-input").value = "";
 }
 
 export function closeDialogue() {
@@ -770,7 +774,7 @@ export function menuPanel(objective: { label: string; why: string }) {
       adminBtn.textContent = "🔓 ADMIN MODE: ON";
       adminRow.hidden = true;
       adminCode.value = "";
-      toast("Admin mode ON — every gate and grade auto-passes.");
+      toast("Admin mode ON — any answer passes. Progress and unlocks unchanged.");
       updateHUD(state.client?.floor ?? 12);
     } catch {
       adminErr.textContent = "wrong code";

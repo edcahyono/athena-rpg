@@ -87,14 +87,14 @@ const LIN_INTRO = {
     "Here's your engagement: Nike Greater China. Revenue down 13% last fiscal year, quality complaints since production moved to Southeast Asia, and Anta and Li-Ning eating share with the guochao wave.",
     "Your deliverable is an INDEPENDENT 5-year growth strategy. Not what the client tells you to write — what YOU conclude after interviewing them.",
     "How you get there is up to you. Our domain managers sit on Floor 10 — strategy, finance, marketing, operations, people, digital, product. Any order you like. Each one briefs you, checks you, and if you pass, the matching Nike executive on 15 takes your meeting.",
-    "Pick your first track from the mission board — press M. Executives' calendars are timed and limited, so prepare before you knock. Your notebook (Q) collects everything.",
+    "Pick your first track from the mission board — press M. Executives' calendars are timed and limited, so prepare before you knock.",
   ],
   zh: [
     "Athena！来得正好。欢迎加入中国咨询新人计划（CCNAP）。",
     "这是你的项目：耐克大中华区。上个财年收入下滑13%，生产转移到东南亚后质量投诉不断，安踏和李宁还借着国潮抢走份额。",
     "你的交付物是一份【独立的】五年增长战略。不是客户让你写什么就写什么——而是你访谈完他们之后，自己得出的结论。",
     "怎么走完全由你决定。我们的领域经理都在10层——战略、财务、营销、运营、人才、数字化、产品。顺序随你。每位经理会给你做简报、出考核，通过之后，15层对应的耐克高管才会见你。",
-    "按M打开任务板，选你的第一条线。高管的日程限时限次，敲门前先做好准备。你的笔记本（Q）会收集一切。",
+    "按M打开任务板，选你的第一条线。高管的日程限时限次，敲门前先做好准备。",
   ],
 };
 
@@ -122,13 +122,17 @@ async function supervisor(npc: NpcDef) {
       if (res.result === "pass") break;
       await showLines(name, [L(LIN_LINES.tryAgain)]);
     }
-    await showLines(name, [fmt(LIN_LINES.passRight, { n: t.credibility }), L(LIN_LINES.passGo)]);
+    await showLines(name, [fmt(LIN_LINES.passRight, { n: t.credibility })]);
     toast(fmt(UI.credToast, { n: t.credibility }));
     await api.event("metSupervisor");
+    // MOBILIZATION happens here, in dialogue. Its deliverable is the work plan,
+    // and the player writes it in the notebook — so hand over both tools and
+    // name the deliverable before any phase brief that assumes them.
+    await showLines(name, [L(UI.linToolsBrief), L(UI.linWorkPlan)]);
     // Hand over the case brief (downloads to their computer), then brief the
     // first phase (Diagnose) right away so they know what to do next.
     downloadCaseBrief();
-    await showLines(name, [L(UI.briefHandover), L(UI.linBriefDiagnose)]);
+    await showLines(name, [L(UI.briefHandover), L(UI.linBriefDiagnose), L(LIN_LINES.passGo)]);
     markBriefed("asis");
     return;
   }

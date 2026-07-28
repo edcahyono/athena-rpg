@@ -20,11 +20,11 @@ export const PHASES = [
     order: 0,
     name: { en: "Mobilization", zh: "项目启动" },
     short: { en: "Scope", zh: "立项" },
-    deliverable: { en: "Work plan + issue tree", zh: "工作计划 + 议题树" },
+    deliverable: { en: "Work plan (written in your notebook)", zh: "工作计划（写在笔记本里）" },
     gate: { en: "Manager Lin approves how you've framed the problem.", zh: "林经理认可你对问题的拆解方式。" },
     guidance: {
-      en: "Report to Manager Lin at reception (F12) and take the case brief. Your deliverable is an INDEPENDENT 5-year growth strategy for Nike Greater China — what you conclude after interviewing them, not what the client tells you to write. Then open the mission board (M) and pick any domain track; there is no set order.",
-      zh: "到12层前台向林经理报到，领取案例简报。你的交付物是一份【独立的】耐克大中华区五年增长战略——是你访谈之后自己的结论，而不是客户让你写的内容。然后按 M 打开任务板，任选一条领域线，顺序不限。",
+      en: "Report to Manager Lin at reception (F12) and take the case brief. Your deliverable is an INDEPENDENT 5-year growth strategy for Nike Greater China — what you conclude after interviewing them, not what the client tells you to write. Lin hands you your two tools: the notebook (Q), which auto-logs quotes and leads and has a free pad for your own thinking, and the binder (B), the formal record where findings must cite evidence. Write your work plan in the notebook — the domains you'll cover, the real question under the brief, and what you'd need to see to answer it. Then open the mission board (M) and pick any domain track; there is no set order.",
+      zh: "到12层前台向林经理报到，领取案例简报。你的交付物是一份【独立的】耐克大中华区五年增长战略——是你访谈之后自己的结论，而不是客户让你写的内容。林经理会交给你两样工具：笔记本（Q），自动记录引述与线索，并留有空白区域供你写自己的思考；工作簿（B），正式记录，其中每条发现都必须引用证据。把你的工作计划写进笔记本——你要覆盖哪些领域、简报底下真正的问题是什么、以及你需要看到什么才能回答它。然后按 M 打开任务板，任选一条领域线，顺序不限。",
     },
   },
   {

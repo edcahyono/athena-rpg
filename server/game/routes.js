@@ -209,7 +209,9 @@ function grantWorkspacePack(s, personaId, lang) {
 
 /** Executive access requires passing that domain's gatekeeper check. */
 function requireTrackPassed(s, personaId, lang) {
-  if (s.admin) return; // admin mode: every executive is already unlocked
+  // No admin exemption: in admin mode the gatekeeper's check passes on any
+  // answer, but you still have to go and take it before the executive will see
+  // you — the unlock order is part of the flow being tested.
   const track = trackForPersona(personaId);
   if (!track) return;
   const t = s.tasks[track.taskId];
@@ -245,10 +247,19 @@ router.post("/session", (req, res) => {
 });
 
 /**
- * Admin / QA mode. The code is checked HERE, on the server — the client never
- * decides. Once on, every gate and every grade auto-passes (see the `s.admin`
- * branches through this file), so the whole flow can be walked end to end
- * without answering anything correctly.
+ * Admin / QA mode — a GRADING bypass, not a progress skip. The code is checked
+ * HERE, on the server; the client never decides.
+ *
+ * Once on, every graded answer is accepted: the briefing check takes any
+ * choice, gatekeeper checks and both alignment meetings always agree, the
+ * interim readout always passes, and the deck/defence always score full marks.
+ *
+ * Everything else stays exactly as a real player experiences it. Admin does NOT
+ * pre-award credibility, pre-complete phases, or pre-unlock executives — you
+ * still walk the whole flow, still need the gatekeeper check before an
+ * executive will see you, still need three interviews before the as-is
+ * alignment, and still spend your three meetings per executive. Credibility is
+ * earned as you pass each check, so the bar reads like a real run.
  *
  * The flag lives on the session, so it can be switched off again without a
  * reload and never leaks into another player's game.
@@ -264,24 +275,12 @@ router.post("/admin", (req, res) => {
   }
   if (typeof code !== "string" || code !== ADMIN_CODE) return res.status(403).json({ error: "bad_code" });
   s.admin = true;
-  // Open the world up front, rather than only as each check is re-attempted.
-  s.flags.metSupervisor = true;
-  // Award what each check is actually worth, so the credibility bar and the
-  // HUD read like a real run rather than sitting at zero with everything open.
-  for (const [taskId, t] of Object.entries(TASKS)) {
-    if (s.tasks[taskId]?.status === "passed") continue;
-    const delta = t?.credibility || 0;
-    s.tasks[taskId] = { status: "passed", delta, admin: true };
-    if (delta) addCredibility(s, delta, "[ADMIN] " + LB(t.title, "en"));
-  }
-  for (const track of Object.values(TRACKS)) { // TRACKS is keyed by trackId, not an array
-    if (s.tasks[track.taskId]?.status === "passed") continue;
-    const delta = track.credibility || 0;
-    s.tasks[track.taskId] = { status: "passed", delta, admin: true };
-    if (delta) addCredibility(s, delta, "[ADMIN] " + LB(track.name, "en"));
-  }
+  // Deliberately grants nothing: no credibility, no completed tasks, no
+  // unlocked executives, no phase advancement. The engagement is walked in the
+  // normal order — admin only means the graders accept whatever you answer, so
+  // credibility and progress still accrue check by check, as in a real run.
   addQuestEntry(s, "task", "[ADMIN] Admin mode enabled",
-    "Every gate and grade now auto-passes. QA tool — not part of the engagement.");
+    "Checks and graded submissions now accept any answer. Progress, credibility and unlocks are unchanged — you still walk the full engagement. QA tool, not part of the engagement.");
   touch(s);
   res.json({ ...publicState(s), ok: true });
 });
@@ -570,7 +569,7 @@ router.post("/interaction/start", (req, res) => {
   if (st.active && now() < st.active.expiresAt) {
     return res.json({ ...publicState(s), expiresAt: st.active.expiresAt }); // resume live session
   }
-  if (!s.admin && st.used >= GAME_CONFIG.csuite.maxInteractions) {
+  if (st.used >= GAME_CONFIG.csuite.maxInteractions) {
     return res.status(409).json({
       error: TT(lang, `${LB(persona.shortTitle, "en")}'s calendar is full — no meetings left.`, `${LB(persona.shortTitle, "zh")}的日程已满——没有剩余会面次数了。`),
     });
@@ -815,7 +814,7 @@ router.post("/board/review-deck", async (req, res) => {
     const { text } = req.body || {};
     const lang = langOf(req);
     const n = interviewedCount(s);
-    if (!s.admin && n < PERSONAS.length) {
+    if (n < PERSONAS.length) {
       return res.status(403).json({ error: TT(lang,
         `Present to the board once you've interviewed all seven executives — you're at ${n}/7.`,
         `访谈完七位高管后才能向董事会汇报——你目前完成了${n}/7。`) });
@@ -823,7 +822,13 @@ router.post("/board/review-deck", async (req, res) => {
     if (typeof text !== "string" || !text.trim() || text.length > 40000)
       return res.status(400).json({ error: TT(lang, "Deck text must be 1–40,000 characters.", "汇报内容需为1–40,000字符。") });
 
-    const evals = await Promise.all(PERSONAS.map(async (p) => {
+    // Admin: the deck is a graded submission, so it accepts anything — and
+    // skipping seven live executive reviews makes a QA pass quick as well.
+    const evals = s.admin ? PERSONAS.map((p) => ({
+      personaId: p.id, name: LB(p.title, lang), short: LB(p.shortTitle, lang),
+      verdict: "strong", fulfilled: true,
+      comments: TT(lang, "[ADMIN] Auto-accepted.", "[管理员] 自动通过。"),
+    })) : await Promise.all(PERSONAS.map(async (p) => {
       const crit = REVIEW_CRITERIA[p.id]?.criteria || `Judge as the ${p.title.en}, from your functional priorities.`;
       const bench = BENCHMARKS[p.id] ? `\nYOUR BENCHMARKING FILE (verified figures — judge the deck against these):\n${BENCHMARKS[p.id]}\n` : "";
       try {
@@ -912,8 +917,10 @@ router.post("/workspace/summary", async (req, res) => {
       messages: [{ role: "user", content: summary.slice(0, 2000) }],
     });
     const parsed = parseModelJson(out);
-    const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
-    const feedback = typeof parsed.feedback === "string" ? parsed.feedback.slice(0, 400) : TT(lang, "Noted.", "了解。");
+    const score = s.admin ? 100 : Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    const feedback = s.admin
+      ? TT(lang, "[ADMIN] Auto-accepted.", "[管理员] 自动通过。")
+      : (typeof parsed.feedback === "string" ? parsed.feedback.slice(0, 400) : TT(lang, "Noted.", "了解。"));
     const rec = { personaId, playerSummary: summary.trim(), score, feedback };
     const i = s.workspace.interviews.findIndex((x) => x.personaId === personaId);
     if (i >= 0) s.workspace.interviews[i] = rec; else s.workspace.interviews.push(rec);
@@ -1114,10 +1121,10 @@ router.post("/alignment/asis", async (req, res) => {
     const a = s.engagement.alignments.asis;
     if (a.agreed)
       return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "The client already signed off on your as-is diagnosis.", "客户已经认可了你的现状诊断。") });
-    if (!s.admin && !s.flags.metSupervisor)
+    if (!s.flags.metSupervisor)
       return res.status(403).json({ error: TT(lang, "Get your mandate from Manager Lin first.", "请先向林经理领取任务。") });
     const n = interviewedCount(s);
-    if (!s.admin && n < ASIS_MIN_INTERVIEWS) {
+    if (n < ASIS_MIN_INTERVIEWS) {
       return res.status(403).json({ error: TT(lang,
         `Diagnose before you align — interview at least ${ASIS_MIN_INTERVIEWS} executives first (you're at ${n}).`,
         `先诊断再对齐——至少访谈${ASIS_MIN_INTERVIEWS}位高管（你目前${n}位）。`) });
@@ -1154,7 +1161,7 @@ router.post("/alignment/benchmark", async (req, res) => {
     const b = s.engagement.alignments.benchmark;
     if (b.agreed)
       return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "The client already agreed the benchmark priorities.", "客户已经认可了对标优先事项。") });
-    if (!s.admin && !s.engagement.alignments.asis.agreed) {
+    if (!s.engagement.alignments.asis.agreed) {
       return res.status(403).json({ error: TT(lang,
         "Benchmark after the as-is is agreed — settle the As-Is Alignment Meeting first.",
         "对标要在现状对齐之后——请先完成现状对齐会。") });
@@ -1197,13 +1204,13 @@ router.post("/interim", async (req, res) => {
     const lang = langOf(req);
     if (s.flags.interimDone)
       return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "You've already given your interim readout.", "你已经做过中期汇报了。") });
-    if (!s.admin && !s.engagement.alignments.benchmark.agreed) {
+    if (!s.engagement.alignments.benchmark.agreed) {
       return res.status(403).json({ error: TT(lang,
         "The interim readout comes after benchmarking is aligned — settle the Benchmark Alignment Meeting with Lin first.",
         "中期汇报要在对标对齐之后——请先和林经理完成对标对齐会。") });
     }
     const n = interviewedCount(s);
-    if (!s.admin && n < 3) {
+    if (n < 3) {
       return res.status(403).json({ error: TT(lang,
         `Come back after at least 3 executive interviews — you're at ${n}.`,
         `至少访谈3位高管后再来——你目前完成了${n}位。`) });
