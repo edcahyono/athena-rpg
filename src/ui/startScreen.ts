@@ -11,7 +11,6 @@ import {
   hairstylesFor, topTypesFor, bottomTypesFor, Dir, Gender,
 } from "../game/charDraw";
 import { PlayerProfile, loadProfile, saveProfile } from "../game/profile";
-import { api, state } from "../net/api";
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -54,53 +53,6 @@ export function mainMenu(returning: boolean): Promise<void> {
     };
     applyLabels();
 
-    /* -- admin / QA mode ------------------------------------------------- */
-    const adminBtn = $("mm-admin") as HTMLButtonElement;
-    const adminForm = $("mm-admin-form");
-    const adminCode = $("mm-admin-code") as HTMLInputElement;
-    const adminErr = $("mm-admin-err");
-    const closeAdmin = () => { adminForm.hidden = true; adminCode.value = ""; adminErr.textContent = ""; };
-    closeAdmin();
-    // Reflect a session that is already in admin mode (quit to menu and back).
-    const markOn = (on: boolean) => {
-      adminBtn.classList.toggle("on", on);
-      $("mm-admin-label").textContent = on ? "ADMIN ON" : "ADMIN";
-    };
-    markOn(!!state?.admin);
-
-    adminBtn.onclick = () => {
-      if (state?.admin) { // already on — clicking turns it back off
-        api.adminOff().then(() => markOn(false)).catch(() => {});
-        return;
-      }
-      adminForm.hidden = !adminForm.hidden;
-      if (!adminForm.hidden) adminCode.focus();
-    };
-    const submitCode = async () => {
-      adminErr.textContent = "";
-      try {
-        // Trim: a trailing space from pasting is not a wrong code.
-        await api.admin(adminCode.value.trim());
-        markOn(true);
-        closeAdmin();
-        enter(); // straight into the game (or back where you left off) in admin mode
-      } catch (err: any) {
-        // Only a 403 means the code was actually rejected. Everything else —
-        // most often a session the server no longer has after a restart — used
-        // to report itself as "wrong code" and send people hunting for a typo.
-        adminErr.textContent = err?.status === 403
-          ? "wrong code"
-          : "server lost the session — reload the page";
-        adminCode.select();
-      }
-    };
-    ($("mm-admin-go") as HTMLButtonElement).onclick = submitCode;
-    adminCode.onkeydown = (e) => {
-      e.stopPropagation(); // typing the code must not reach the any-key handler
-      if (e.key === "Enter") submitCode();
-      if (e.key === "Escape") closeAdmin();
-    };
-
     const enter = () => {
       window.removeEventListener("keydown", onKey);
       el.removeEventListener("pointerdown", onPointer);
@@ -112,17 +64,13 @@ export function mainMenu(returning: boolean): Promise<void> {
       // starting; a bare modifier press shouldn't count as "any key" either.
       if (e.key === "f" || e.key === "F") { toggleFullscreen(); return; }
       if (["Shift", "Control", "Alt", "Meta", "Tab", "CapsLock"].includes(e.key)) return;
-      if (!adminForm.hidden) return; // the code prompt is open — don't start
       enter();
     };
     const onPointer = (e: PointerEvent) => {
       const t = e.target as HTMLElement;
-      if (t.closest("button") || t.closest("#mm-admin-form")) return; // controls, not "any key"
-      if (!adminForm.hidden) { closeAdmin(); return; } // click-away dismisses it
-      // Only the centre logo block starts the game. This screen advertises
-      // "press any key", and treating the whole backdrop as a start button
-      // meant a click that merely missed the corner ADMIN control launched a
-      // run instead of opening the code prompt. Keys still start from anywhere.
+      if (t.closest("button")) return; // footer controls, not "any key"
+      // Only the centre logo block starts the game on click, so a stray click
+      // on the backdrop does nothing. Keys still start from anywhere.
       if (t.closest(".ls-box")) enter();
     };
     window.addEventListener("keydown", onKey);

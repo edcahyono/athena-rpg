@@ -304,39 +304,6 @@ button.ls-link {
 }
 button.ls-link:hover, button.ls-link:focus-visible { color: #7ee787; outline: none; }
 
-/* ---- Admin / QA entry (bottom-right of the title screen) ---- */
-.ls-admin {
-  position: absolute; right: 18px; bottom: 14px;
-  display: flex; align-items: center; gap: 10px;
-  /* Generous hit area: this used to be a small target in the corner, and a
-     near-miss fell through to the any-key handler and started the game. */
-  background: none; border: 2px solid transparent; border-radius: 10px;
-  padding: 14px 20px; cursor: pointer;
-  font-family: inherit; font-size: 13px; letter-spacing: 2px; color: #4d5566;
-  opacity: 0.6; transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-.ls-admin img { width: 40px; height: 40px; image-rendering: pixelated; display: block; }
-.ls-admin:hover { border-color: #2a2a3a; }
-.ls-admin:hover, .ls-admin:focus-visible { opacity: 1; color: #7ee787; outline: none; }
-.ls-admin.on { opacity: 1; color: #7ee787; }
-
-#mm-admin-form {
-  position: absolute; right: 26px; bottom: 64px;
-  display: flex; flex-direction: column; gap: 6px; align-items: stretch;
-  background: #12121c; border: 1px solid #2a2a3a; border-radius: 6px; padding: 10px;
-}
-#mm-admin-code {
-  width: 190px; background: #0c0c14; border: 1px solid #2a2a3a; border-radius: 4px;
-  color: #cfd8e6; font-family: inherit; font-size: 12px; padding: 7px 9px; letter-spacing: 1px;
-}
-#mm-admin-code:focus { outline: none; border-color: #7ee787; }
-#mm-admin-go {
-  background: #1a1a26; color: #cfd8e6; border: 1px solid #3a3a4a; border-radius: 4px;
-  font-family: inherit; font-size: 11px; letter-spacing: 2px; padding: 6px; cursor: pointer;
-}
-#mm-admin-go:hover { border-color: #7ee787; color: #7ee787; }
-#mm-admin-err { color: #e08585; font-size: 10px; min-height: 12px; letter-spacing: 1px; }
-
 /* ADMIN badge in the in-game HUD — unmissable, so a QA run is never mistaken
    for a real one. */
 #hud-admin {

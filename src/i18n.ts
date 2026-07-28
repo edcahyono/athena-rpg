@@ -206,6 +206,10 @@ export const UI = {
   wsReadoutHint: { en: "Write your own summary of each interview — graded against what was actually said (accuracy · signal · concision).", zh: "为每次访谈亲手写下你的纪要——按真实对话内容评分（准确 · 抓重点 · 精炼）。" },
   wsReadoutPh: { en: "Summarize what mattered from this interview…", zh: "总结这次访谈里真正重要的内容……" },
   wsReadoutSave: { en: "Grade my readout", zh: "为纪要评分" },
+  // C2 — written on the way out of the meeting, while it's still fresh.
+  readoutTitle: { en: "Your readout", zh: "你的访谈纪要" },
+  readoutPrompt: { en: "You're out of the room. Before anything else, write your readout of that meeting with the {exec} — what mattered, in your own words. It's graded against what was actually said: accuracy, signal, concision. (Skip if you'd rather not — you lose the credibility.)", zh: "你走出会议室。趁热先写下这次与{exec}会面的纪要——用你自己的话写清楚什么才是关键。评分依据是真实的对话内容：准确、抓重点、精炼。（也可以跳过——但会失去这部分信誉值。）" },
+  readoutScored: { en: "Readout graded — {n}/100.", zh: "纪要评分——{n}/100。" },
   wsReadoutScore: { en: "Readout: {n}/100", zh: "纪要：{n}/100" },
   wsNoInterviews: { en: "Interview an executive (F15) first — then write your readout here.", zh: "先访谈一位高管（15层）——再回这里写纪要。" },
   wsSkillsBtn: { en: "🎓 Skills you're building", zh: "🎓 你正在培养的技能" },
@@ -215,7 +219,7 @@ export const UI = {
   skillEvidence: { en: "Shown by", zh: "体现于" },
 
   // consultant workspace / engagement binder (Wave 2)
-  wsBtn: { en: "Engagement binder (B)", zh: "项目工作簿 (B)" },
+  wsBtn: { en: "Submit your working document to Manager Lin (B)", zh: "向林经理提交你的工作文档 (B)" },
   wsTitle: { en: "📁 Engagement Binder", zh: "📁 项目工作簿" },
   wsIntro: { en: "Your formal workspace. Stakeholders hand over data packs when you meet them — turn that evidence into pain points, synthesize findings (cite evidence), and derive recommendations (cite findings). The alignment gates read this binder.", zh: "你的正式工作区。见到干系人时他们会交给你数据包——把这些证据整理成痛点，综合出发现（引用证据），再推导出建议（引用发现）。对齐关卡会读取这个工作簿。" },
   wsCounts: { en: "{packs} packs · {pains} pain points · {finds} findings · {recs} recommendations · {bad} unsupported", zh: "{packs} 数据包 · {pains} 痛点 · {finds} 发现 · {recs} 建议 · {bad} 缺证据" },

@@ -380,11 +380,14 @@ async function personaNpc(npc: NpcDef) {
     chat?.finish(L(UI.outOfTime));
   });
 
+  let turns = 0; // did they actually interview, or just open the door and leave?
+
   chat = chatMode({
     name,
     greeting: resuming ? L(UI.resumeLine) : L(UI.meetGreeting),
     send: async (text) => {
       const res = await api.chat(pid, text);
+      turns += 1;
       return {
         entries: [{ name, text: res.text }],
         ended: !!res.ended,
@@ -394,6 +397,20 @@ async function personaNpc(npc: NpcDef) {
     onLeave: async () => {
       stopTimer();
       await api.endInteraction(pid).catch(() => {});
+      // C2 (summarize) is assessed here, walking out of the room, rather than
+      // in a panel the player has to remember to open later. The server grades
+      // it against the real transcript, so it can't be bluffed.
+      // Runs after chatMode's lifecycle — must self-handle its own errors.
+      if (!turns) return;
+      if ((state.workspace?.interviews || []).some((r: any) => r.personaId === pid)) return; // one per executive
+      try {
+        const summary = await taskPanel(L(UI.readoutTitle), fmt(UI.readoutPrompt, { exec: L(persona.shortTitle) }));
+        if (summary === null) return; // skipping is allowed — it just costs the credibility
+        const res: any = await api.workspaceSummary(pid, summary);
+        await showLines(name, [fmt(UI.readoutScored, { n: res.score }), res.feedback]);
+      } catch (err: any) {
+        toast(err?.message || "Couldn't save that readout.");
+      }
     },
   });
 }

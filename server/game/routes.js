@@ -16,7 +16,7 @@ import { buildGatekeeperPrompt } from "../../shared/gatekeeperPrompt.js";
 import { REVIEW_CRITERIA, GATEKEEPER_REVIEW } from "../../shared/reviewCriteria.js";
 import { BENCHMARKS } from "../../shared/benchmarks.js";
 import { ASIS_MIN_INTERVIEWS } from "../../shared/phases.js";
-import { grantPack, workspaceDigest, DATA_PACK_MAP, packForSource } from "../../shared/workspace.js";
+import { grantPack, DATA_PACK_MAP, packForSource } from "../../shared/workspace.js";
 import { retrieve } from "../rag/retriever.js";
 import { callAnthropic, CHAT_MODEL, LIGHT_MODEL, parseModelJson } from "../anthropic.js";
 import { gradeQuizAnswers } from "./grading.js";
@@ -201,9 +201,11 @@ function grantWorkspacePack(s, personaId, lang) {
   const granted = grantPack(s.workspace, personaId);
   if (granted) {
     const pack = DATA_PACK_MAP[granted];
+    // The pack's actual content goes in the notebook entry, not a pointer to a
+    // separate panel — the notebook (Q) is where the player reads it now.
     addQuestEntry(s, "datapack",
       TT(lang, `📁 Data pack received: ${LB(pack.title, "en")}`, `📁 收到数据包：${LB(pack.title, "zh")}`),
-      TT(lang, "Filed in your engagement binder — cite it when you log findings.", "已归入你的项目工作簿——记录发现时请引用它。"));
+      LB(pack.summary, lang));
   }
 }
 
@@ -1114,8 +1116,13 @@ async function gradeAlignment({ kind, answer, evidence, lang }) {
 function alignmentEvidence(s, lang) {
   const quotes = s.questLog.filter((e) => e.type === "quote").slice(-14)
     .map((e) => `${e.title}: ${e.body.slice(0, 160)}`).join("\n");
-  const binder = s.workspace ? workspaceDigest(s.workspace, lang) : "";
-  return binder ? `${quotes}\n\nFROM THE CONSULTANT'S BINDER:\n${binder}` : quotes;
+  // The player's own working document, once they've handed one to any reviewer.
+  // This is where their synthesis lives now — they write it in Word/Docs/Markdown
+  // and upload it, instead of assembling it in a structured binder panel.
+  const doc = s.workDoc?.text
+    ? `\n\nTHE CONSULTANT'S WORKING DOCUMENT (${s.workDoc.filename || "untitled"}):\n${s.workDoc.text.slice(0, 6000)}`
+    : "";
+  return quotes + doc;
 }
 
 router.post("/alignment/asis", async (req, res) => {
@@ -1328,6 +1335,13 @@ router.post("/review-work", async (req, res) => {
       if (typeof parsed.comments === "string" && parsed.comments.trim()) comments = parsed.comments.slice(0, 1000);
     }
 
+    // Keep the latest submitted document: the alignment meetings read it as the
+    // consultant's own synthesis, alongside their interview quotes.
+    s.workDoc = {
+      filename: String(filename || "untitled").slice(0, 100),
+      text: text.slice(0, 12000),
+      t: Date.now(),
+    };
     addQuestEntry(s, "review",
       TT(lang, `Work review (${verdict}) — ${reviewerName}`, `文档审阅（${verdict === "strong" ? "优秀" : verdict === "acceptable" ? "合格" : "待改进"}）— ${reviewerName}`),
       `${String(filename || "untitled").slice(0, 80)}\n${comments}`);

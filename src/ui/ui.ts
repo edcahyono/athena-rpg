@@ -7,7 +7,6 @@ import { state, api, sessionId } from "../net/api";
 import { GAME_CONFIG, unlockedFloor } from "../../shared/gameConfig.js";
 import { TRACKS } from "../../shared/gameContent.js";
 import { PHASES } from "../../shared/phases.js";
-import { workspaceView } from "../../shared/workspace.js";
 import { COMPETENCIES } from "../../shared/competencies.js";
 import { PERSONA_MAP } from "../../shared/personas.config.js";
 import { NPCS } from "../config/world";
@@ -868,103 +867,6 @@ export function competenciesPanel() {
   const p = openPanel(`<h2>${L(UI.skillsTitle)}</h2><p class="muted">${L(UI.skillsIntro)}</p>${rows}
     <div class="row"><button id="pclose">${L(UI.close)}</button></div>`);
   (p.querySelector("#pclose") as HTMLButtonElement).onclick = () => closePanel();
-}
-
-/**
- * The Engagement Binder (Wave 2) — the formal workspace. Data packs arrive
- * automatically; the player authors pain points → findings (cite evidence) →
- * recommendations (cite findings). Re-renders after every add/remove so the
- * unsupported / unreconciled flags update live. workspaceView (shared) computes
- * the flags and resolves bilingual pack text in the current language.
- */
-export function workspacePanel() {
-  const render = () => {
-    const v = workspaceView(state.workspace, lang);
-    const chip = (id: string, label: string) => `<label class="ws-chk"><input type="checkbox" value="${id}"> ${esc(label)}</label>`;
-    const packChips = v.dataPacks.map((p) => chip(p.id, p.title)).join("") || `<span class="muted">${L(UI.wsNoPacks)}</span>`;
-    const painChips = v.painPoints.map((p) => chip(p.id, p.statement.slice(0, 48))).join("") || `<span class="muted">${L(UI.wsEmpty)}</span>`;
-    const findChips = v.findings.map((f) => chip(f.id, f.statement.slice(0, 48))).join("") || `<span class="muted">${L(UI.wsEmpty)}</span>`;
-
-    const packCards = v.dataPacks.length
-      ? v.dataPacks.map((p) => `<div class="ws-pack"><b>${esc(p.title)}</b> <span class="ws-src">${esc((p.source || "").toUpperCase())}</span><p>${esc(p.summary)}</p></div>`).join("")
-      : `<p class="muted">${L(UI.wsNoPacks)}</p>`;
-    const warns = v.unreconciled.map((u) => `<p class="warnbox">${fmt(UI.wsUnreconciled, { a: esc(u.titles[0]), b: esc(u.titles[1]) })}</p>`).join("");
-    const row = (kind: string, x: any, badge = "") =>
-      `<div class="ws-item${badge && badge.includes("wsUnsupported") ? " ws-bad" : ""}"><span>${esc(x.statement)}${badge}</span><button class="ws-x" data-kind="${kind}" data-id="${x.id}">${L(UI.wsRemove)}</button></div>`;
-    const painList = v.painPoints.map((p) => row("painPoint", p)).join("") || `<p class="muted">${L(UI.wsEmpty)}</p>`;
-    const findList = v.findings.map((f) => row("finding", f,
-      f.unsupported ? ` <em class="ws-warn">${L(UI.wsUnsupported)}</em>` : ` <em class="ws-ok">${f.evidenceRefs.length} ${L(UI.wsEvidence)}</em>`)).join("") || `<p class="muted">${L(UI.wsEmpty)}</p>`;
-    const recList = v.recommendations.map((r) => row("recommendation", r,
-      r.unsupported ? ` <em class="ws-warn">${L(UI.wsUnsupported)}</em>` : "")).join("") || `<p class="muted">${L(UI.wsEmpty)}</p>`;
-
-    // C2 — interview readouts: one per executive actually interviewed.
-    const execIds = Object.keys(state.personas).filter((id) => state.personas[id].used > 0 && PERSONA_MAP[id] && (PERSONA_MAP as any)[id].tier !== "mid");
-    const roMap: Record<string, any> = Object.fromEntries((state.workspace.interviews || []).map((r) => [r.personaId, r]));
-    const readoutList = execIds.length ? execIds.map((id) => {
-      const ro = roMap[id];
-      return `<div class="ws-ro"><b>${esc(L((PERSONA_MAP as any)[id].shortTitle))}</b> ${ro ? `<em class="ws-ok">${fmt(UI.wsReadoutScore, { n: ro.score })}</em>` : ""}
-        <textarea id="ws-ro-${id}" class="ws-ta" placeholder="${L(UI.wsReadoutPh)}">${esc(ro?.playerSummary || "")}</textarea>
-        <button class="ws-add ws-ro-save" data-id="${id}">${L(UI.wsReadoutSave)}</button>${ro ? `<p class="ws-ro-fb">${esc(ro.feedback)}</p>` : ""}</div>`;
-    }).join("") : `<p class="muted">${L(UI.wsNoInterviews)}</p>`;
-
-    const p = openPanel(`<h2>${L(UI.wsTitle)}</h2>
-      <p class="muted">${L(UI.wsIntro)}</p>
-      <p class="ws-counts">${fmt(UI.wsCounts, { packs: v.counts.packs, pains: v.counts.painPoints, finds: v.counts.findings, recs: v.counts.recommendations, bad: v.counts.unsupported })} · <a id="ws-skills" class="ws-link">${L(UI.wsSkillsBtn)}</a></p>
-      ${warns}
-      <div class="ws-sec"><h3>${L(UI.wsReadouts)}</h3><p class="muted">${L(UI.wsReadoutHint)}</p>${readoutList}</div>
-      <div class="ws-sec"><h3>${L(UI.wsPacks)}</h3><div class="ws-packs">${packCards}</div></div>
-      <div class="ws-sec"><h3>${L(UI.wsPains)}</h3>${painList}
-        <textarea id="ws-pain-t" class="ws-ta" placeholder="${L(UI.wsPainPh)}"></textarea>
-        <div class="ws-chk-label">${L(UI.wsPickEvidencePack)}</div><div class="ws-chks" id="ws-pain-packs">${packChips}</div>
-        <button class="ws-add" id="ws-add-pain">${L(UI.wsAdd)}</button></div>
-      <div class="ws-sec"><h3>${L(UI.wsFindings)}</h3>${findList}
-        <textarea id="ws-find-t" class="ws-ta" placeholder="${L(UI.wsFindingPh)}"></textarea>
-        <div class="ws-chk-label">${L(UI.wsPickEvidencePack)}</div><div class="ws-chks" id="ws-find-packs">${packChips}</div>
-        <div class="ws-chk-label">${L(UI.wsPickEvidencePain)}</div><div class="ws-chks" id="ws-find-pains">${painChips}</div>
-        <button class="ws-add" id="ws-add-find">${L(UI.wsAdd)}</button></div>
-      <div class="ws-sec"><h3>${L(UI.wsRecs)}</h3>${recList}
-        <textarea id="ws-rec-t" class="ws-ta" placeholder="${L(UI.wsRecPh)}"></textarea>
-        <div class="ws-chk-label">${L(UI.wsPickFindings)}</div><div class="ws-chks" id="ws-rec-finds">${findChips}</div>
-        <button class="ws-add" id="ws-add-rec">${L(UI.wsAdd)}</button></div>
-      <div class="row"><button id="pclose">${L(UI.close)}</button></div>`);
-
-    const checked = (sel: string) => Array.from(p.querySelectorAll<HTMLInputElement>(`${sel} input:checked`)).map((c) => c.value);
-    const val = (id: string) => (p.querySelector(id) as HTMLTextAreaElement).value.trim();
-    p.querySelectorAll<HTMLElement>(".ws-x").forEach((b) => {
-      b.onclick = async () => { await api.workspaceRemove(b.dataset.kind!, b.dataset.id!); render(); };
-    });
-    (p.querySelector("#ws-add-pain") as HTMLButtonElement).onclick = async () => {
-      const t = val("#ws-pain-t"); if (!t) return toast(L(UI.writeSomething));
-      await api.workspaceAdd("painPoint", { statement: t, refs: checked("#ws-pain-packs") }); render();
-    };
-    (p.querySelector("#ws-add-find") as HTMLButtonElement).onclick = async () => {
-      const t = val("#ws-find-t"); if (!t) return toast(L(UI.writeSomething));
-      const refs = [...checked("#ws-find-packs"), ...checked("#ws-find-pains")];
-      if (!refs.length) return toast(L(UI.wsNeedEvidence));
-      await api.workspaceAdd("finding", { statement: t, refs }); render();
-    };
-    (p.querySelector("#ws-add-rec") as HTMLButtonElement).onclick = async () => {
-      const t = val("#ws-rec-t"); if (!t) return toast(L(UI.writeSomething));
-      const refs = checked("#ws-rec-finds");
-      if (!refs.length) return toast(L(UI.wsNeedFinding));
-      await api.workspaceAdd("recommendation", { statement: t, refs }); render();
-    };
-    (p.querySelector("#ws-skills") as HTMLElement).onclick = () => competenciesPanel();
-    p.querySelectorAll<HTMLElement>(".ws-ro-save").forEach((b) => {
-      b.onclick = async () => {
-        const id = b.dataset.id!;
-        const t = (p.querySelector(`#ws-ro-${id}`) as HTMLTextAreaElement).value.trim();
-        if (!t) return toast(L(UI.writeSomething));
-        try {
-          const r: any = await api.workspaceSummary(id, t);
-          toast(fmt(UI.wsReadoutScore, { n: r.score }));
-          render();
-        } catch (e: any) { toast(e.message); }
-      };
-    });
-    (p.querySelector("#pclose") as HTMLButtonElement).onclick = () => closePanel();
-  };
-  render();
 }
 
 function esc(s: string) {
