@@ -372,3 +372,14 @@ button.ls-link:hover, button.ls-link:focus-visible { color: #7ee787; outline: no
 }
 #creator-start { background: var(--accent); color: #fff; }
 .cr-actions button:hover { transform: translateY(-1px); box-shadow: 0 2px 0 rgba(0,0,0,0.4); }
+
+/* ---- Domain check: multiple-choice options ---- */
+.mcq-opts { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; }
+.mcq-opt {
+  text-align: left; background: #12121c; color: #cfd8e6;
+  border: 1px solid #2a2a3a; border-radius: 6px;
+  padding: 11px 13px; font-family: inherit; font-size: 13px; line-height: 1.45;
+  cursor: pointer; transition: border-color 0.12s ease, background 0.12s ease;
+}
+.mcq-opt b { color: #7ee787; margin-right: 9px; }
+.mcq-opt:hover, .mcq-opt:focus-visible { border-color: #7ee787; background: #161622; outline: none; }

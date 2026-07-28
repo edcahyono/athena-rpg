@@ -457,6 +457,33 @@ export function taskPanel(title: string, prompt: string, note?: string): Promise
  * revision start from the player's previous answers. Resolves with all answers
  * (in order) or null if they back out. Empty questions array → [].
  */
+/**
+ * One multiple-choice question of a domain check. Resolves with the chosen
+ * option index, or null if the player steps away — walking out is always
+ * allowed, since "go ask the manager more questions and come back" is the
+ * intended move when you don't know the answer. Progress is held server-side,
+ * so a half-finished check resumes where it left off.
+ */
+export function mcqPanel(
+  gatekeeperName: string, i: number, total: number, question: string, options: string[],
+): Promise<number | null> {
+  return new Promise((resolve) => {
+    const opts = options
+      .map((o, n) => `<button class="mcq-opt" data-n="${n}"><b>${"ABCD"[n]}</b> ${esc(o)}</button>`)
+      .join("");
+    const p = openPanel(`<h2>${fmt(UI.gkQuizTitle, { name: esc(gatekeeperName) })}</h2>
+      <p class="muted">${fmt(UI.gkQuestionOf, { i: i + 1, n: total })}</p>
+      <p><b>${esc(question)}</b></p>
+      <div class="mcq-opts">${opts}</div>
+      <div class="row"><button id="pcancel">${L(UI.notYet)}</button></div>`);
+    const done = (v: number | null) => { closePanel(); resolve(v); };
+    p.querySelectorAll<HTMLButtonElement>(".mcq-opt").forEach((b) => {
+      b.onclick = () => done(Number(b.dataset.n));
+    });
+    (p.querySelector("#pcancel") as HTMLButtonElement).onclick = () => done(null);
+  });
+}
+
 export function sequentialQuiz(
   gatekeeperName: string, questions: string[], summaryText: string, initial: string[] = [],
 ): Promise<string[] | null> {

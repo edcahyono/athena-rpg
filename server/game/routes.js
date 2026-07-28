@@ -19,7 +19,6 @@ import { ASIS_MIN_INTERVIEWS } from "../../shared/phases.js";
 import { grantPack, DATA_PACK_MAP, packForSource } from "../../shared/workspace.js";
 import { retrieve } from "../rag/retriever.js";
 import { callAnthropic, CHAT_MODEL, LIGHT_MODEL, parseModelJson } from "../anthropic.js";
-import { gradeQuizAnswers } from "./grading.js";
 import { extractText } from "./extract.js";
 import { INJECTION_GUARD } from "./guards.js";
 import {
@@ -448,6 +447,27 @@ router.post("/gatekeeper/chat", async (req, res) => {
  * The summary is written to the notebook (replacing any prior one for this
  * track) so the player has clean notes to answer from — not a raw transcript.
  */
+/** Shape check on model output — a malformed MCQ must never reach the player. */
+function validMcq(m) {
+  return m && m.q && m.q.en && m.q.zh
+    && Array.isArray(m.options) && m.options.length === 4
+    && m.options.every((o) => o && typeof o.en === "string" && typeof o.zh === "string" && o.en.trim() && o.zh.trim())
+    && Number.isInteger(m.correct) && m.correct >= 0 && m.correct < 4
+    && m.why && m.why.en && m.why.zh;
+}
+
+/**
+ * The domain check: 5 multiple-choice questions drawn from the TRACK'S OWN
+ * KNOWLEDGE BASE — the same material the manager teaches from in conversation.
+ *
+ * Deliberately NOT generated from the transcript. The previous version wrote
+ * the questions from the chat you had just had and saved a bullet summary into
+ * the notebook "so the player has clean notes to answer from", which made the
+ * check a reading-comprehension test of a conversation still on screen. Drawing
+ * from track.knowledge means the only way through is to actually learn the
+ * domain: ask the manager until you know it, then answer. Getting one wrong is
+ * not a dead end — the manager explains and you try that question again.
+ */
 router.post("/gatekeeper/quiz", async (req, res) => {
   try {
     const s = getSession(req.body?.sessionId, false);
@@ -455,110 +475,105 @@ router.post("/gatekeeper/quiz", async (req, res) => {
     const lang = langOf(req);
     const track = trackById(trackId);
     if (!track) return res.status(400).json({ error: "Unknown track" });
+    if (s.tasks[track.taskId]?.status === "passed")
+      return res.status(409).json({ error: TT(lang, "You've already passed this check.", "你已经通过这项考核了。") });
+
     const g = s.gatekeepers[trackId];
-
-    // No conversation → no "notes from our conversation". The quiz still runs
-    // (generated from domain background), but the summary/notebook entry only
-    // exists when there was an actual exchange to summarize.
-    const hasConvo = g.transcript.length > 0;
-    const convo = hasConvo
-      ? g.transcript.map((m) => `${m.role === "learner" ? "Learner" : "Manager"}: ${m.text}`).join("\n")
-      : "(The learner left without asking anything.)";
-
-    let questions, summary;
+    let mcqs = null;
     try {
       const out = await callAnthropic({
         model: LIGHT_MODEL,
-        max_tokens: 1200,
-        system: hasConvo
-          ? `A junior consultant just finished a conversation with a Deloitte domain manager about Nike Greater China. Based on the conversation below:\n` +
-            `1) Write a "summary" — 3-5 concise bullet points capturing the KEY FACTS the manager actually shared (numbers, causes, competitor moves). Each bullet on its own line starting with "• ".\n` +
-            `2) Write exactly 2 short quiz "questions" that test whether the learner absorbed those specific points (answerable in 1-3 sentences).\n` +
-            `Write BOTH English and Chinese versions of the summary and each question (same meaning). ` +
-            `Reply with ONLY JSON: {"summary":{"en":"• ...\\n• ...","zh":"• ...\\n• ..."},"questions":[{"en":"...","zh":"..."},{"en":"...","zh":"..."}]}`
-          : `A junior consultant is attempting a Deloitte domain manager's check WITHOUT having talked to them first. Write exactly 2 short quiz "questions" testing genuine understanding of this domain background (answerable in 1-3 sentences):\n${track.knowledge.slice(0, 600)}\n` +
-            `Write BOTH English and Chinese versions of each question (same meaning). ` +
-            `Reply with ONLY JSON: {"questions":[{"en":"...","zh":"..."},{"en":"...","zh":"..."}]}`,
-        messages: [{ role: "user", content: convo.slice(0, 3000) }],
+        max_tokens: 3000,
+        system:
+          `You write domain checks for junior consultants on a Nike Greater China engagement.\n` +
+          `From the DOMAIN MATERIAL below, write exactly 5 multiple-choice questions testing genuine understanding — ` +
+          `causes, trade-offs, and what the numbers MEAN — not trivia recall. Exactly 4 options each, exactly one correct.\n` +
+          `Distractors must be plausible to someone who half-understands the material; no joke options, no giveaways.\n` +
+          `For each question write "why": 2-3 sentences the manager says to explain the correct answer to someone who got ` +
+          `it wrong — in character, teaching rather than scolding, so they can reason it out on the retry.\n` +
+          `Write BOTH English and Chinese for every question, option and explanation (same meaning).\n` +
+          `Reply with ONLY JSON: {"mcqs":[{"q":{"en":"","zh":""},"options":[{"en":"","zh":""},{"en":"","zh":""},{"en":"","zh":""},{"en":"","zh":""}],"correct":0,"why":{"en":"","zh":""}}]}`,
+        messages: [{ role: "user", content: `DOMAIN: ${LB(track.name, "en")}\n\nDOMAIN MATERIAL:\n${track.knowledge}` }],
       });
       const parsed = parseModelJson(out);
-      questions = Array.isArray(parsed.questions) && parsed.questions.length === 2 ? parsed.questions : null;
-      summary = hasConvo && parsed.summary && (parsed.summary.en || parsed.summary.zh) ? parsed.summary : null;
-    } catch { /* fall through to fallback */ }
+      const list = Array.isArray(parsed.mcqs) ? parsed.mcqs : [];
+      mcqs = list.length === 5 && list.every(validMcq) ? list : null;
+    } catch { /* fall through to the error below */ }
 
-    if (!questions) {
-      questions = [
-        { en: `In your own words, summarize the main issue in the ${LB(track.name, "en")} domain for Nike Greater China.`,
-          zh: `用你自己的话总结一下耐克大中华区在${LB(track.name, "zh")}领域的主要问题。` },
-        { en: `Name one thing this domain's manager would NOT be able to answer, and who you'd ask instead.`,
-          zh: `说出一件这个领域的经理无法回答的事，以及你会去问谁。` },
-      ];
+    // No silent fallback to a canned quiz: a check the player can pass without
+    // knowing the domain is worse than no check at all.
+    if (!mcqs) {
+      return res.status(503).json({ error: TT(lang,
+        "The check couldn't be prepared right now — step away and try again in a moment.",
+        "暂时无法准备考核——请稍后再来。") });
     }
-    g.quiz = { questions, generatedAt: now() };
 
-    // Save/refresh the conversation summary in the notebook (dedup per track).
-    if (summary) {
-      const npc = gatekeeperNpcFromTrack(trackId);
-      s.questLog = s.questLog.filter((e) => !(e.type === "summary" && e._track === trackId));
-      s.questLog.push({
-        t: Date.now(), type: "summary", _track: trackId,
-        title: TT(lang, `Notes — your chat with ${LB(npc.name, "en")}`, `笔记 — 与${LB(npc.name, "zh")}的对话`),
-        body: LB(summary, lang).slice(0, 1200),
-      });
-      if (s.questLog.length > 400) s.questLog.splice(0, s.questLog.length - 400);
-    }
+    g.quiz = {
+      mcqs,
+      answered: new Array(mcqs.length).fill(false),
+      firstTry: new Array(mcqs.length).fill(null),
+      generatedAt: now(),
+    };
     touch(s);
-    res.json({ questions, summary: summary || null });
+    // The correct indices stay server-side — the client never receives the key.
+    res.json({ questions: mcqs.map((m) => ({ q: m.q, options: m.options })) });
   } catch (err) {
     console.error("[gatekeeper quiz]", err.message, err.detail || "");
     res.status(err.status || 500).json({ error: err.message });
   }
 });
 
-router.post("/gatekeeper/grade", async (req, res) => {
+/**
+ * One answer at a time. Wrong → the manager's explanation comes back and the
+ * question stays open for another attempt. The credibility award is set by
+ * FIRST-attempt accuracy, so retrying to mastery is always allowed but the
+ * score still reflects what the player actually knew walking in.
+ */
+router.post("/gatekeeper/answer", async (req, res) => {
   try {
     const s = getSession(req.body?.sessionId, false);
-    const { trackId, answers } = req.body || {};
+    const { trackId, index, choice } = req.body || {};
     const lang = langOf(req);
     const track = trackById(trackId);
     if (!track) return res.status(400).json({ error: "Unknown track" });
-    if (!Array.isArray(answers) || answers.length !== 2 || answers.some((a) => typeof a !== "string" || !a.trim() || a.length > 2000))
-      return res.status(400).json({ error: "Both answers are required (1–2000 characters each)." });
-    // Only a genuine PASS closes the check — so a passed track can't be re-graded.
+
+    const quiz = s.gatekeepers[trackId]?.quiz;
+    if (!quiz || !Array.isArray(quiz.mcqs) || !quiz.mcqs.length)
+      return res.status(409).json({ error: TT(lang, "No check in progress.", "当前没有进行中的考核。") });
+    if (!Number.isInteger(index) || index < 0 || index >= quiz.mcqs.length)
+      return res.status(400).json({ error: "Bad question index" });
+    if (!Number.isInteger(choice) || choice < 0 || choice > 3)
+      return res.status(400).json({ error: "Bad choice" });
     if (s.tasks[track.taskId]?.status === "passed")
-      return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "You already passed this check.", "你已经通过这项考核了。") });
+      return res.json({ ...publicState(s), correct: true, done: true, delta: 0, why: null, feedback: null });
 
-    const g = s.gatekeepers[trackId];
-    const quiz = g.quiz?.questions || [];
-    const convo = g.transcript.length
-      ? g.transcript.map((m) => `${m.role === "learner" ? "Learner" : "Manager"}: ${m.text}`).join("\n")
-      : "(no prior conversation)";
-    const qa = quiz.map((q, i) => `Q${i + 1}: ${LB(q, "en")}\nA${i + 1}: ${answers[i]}`).join("\n\n");
+    const m = quiz.mcqs[index];
+    const correct = !!s.admin || choice === m.correct;
+    if (quiz.firstTry[index] === null) quiz.firstTry[index] = correct;
+    if (correct) quiz.answered[index] = true;
 
-    // Admin mode short-circuits the grader: no model call, instant pass.
-    const { grade, feedback } = s.admin
-      ? { grade: "pass", feedback: TT(lang, "[ADMIN] Auto-passed.", "[管理员] 自动通过。") }
-      : await gradeQuizAnswers(convo, qa, lang);
-
-    // STRICT gate: only PASS unlocks the executive and grants credibility.
-    // PARTIAL and FAIL are both retryable — the learner keeps revising until
-    // they genuinely get the full picture, with feedback each time.
-    if (grade === "pass") {
-      s.tasks[track.taskId] = { status: "passed", delta: track.credibility, feedback };
-      addQuestEntry(s, "task", TT(lang, "Check passed: ", "考核通过：") + LB(track.name, lang),
-        qa.slice(0, 500) + "\n" + TT(lang, "Feedback: ", "反馈：") + feedback);
-      addCredibility(s, track.credibility, LB(track.name, lang));
+    const done = quiz.answered.every(Boolean);
+    let delta = 0, feedback = null;
+    if (done) {
+      const firstPass = quiz.firstTry.filter(Boolean).length;
+      // 50% floor: finishing at all proves mastery; first-attempt accuracy
+      // decides the rest, so the number still means something.
+      delta = Math.round(track.credibility * (0.5 + 0.5 * (firstPass / quiz.mcqs.length)));
+      feedback = TT(lang,
+        `${firstPass}/${quiz.mcqs.length} right first time.`,
+        `首次作答正确 ${firstPass}/${quiz.mcqs.length}。`);
+      s.tasks[track.taskId] = { status: "passed", delta, feedback };
+      addQuestEntry(s, "task", TT(lang, "Check passed: ", "考核通过：") + LB(track.name, lang), feedback);
+      addCredibility(s, delta, LB(track.name, lang));
       const execTitle = LB(PERSONA_MAP[track.personaId]?.title, lang);
       addQuestEntry(s, "unlock", TT(lang, `Executive unlocked: ${execTitle}`, `高管已解锁：${execTitle}`),
-        TT(lang, "Their office is on Floor 15. Meetings are timed and limited — prep first.", "TA的办公室在15层。会面限时限次——先做好准备。"));
-    } else {
-      // Not yet — keep it open (retryable), no credibility, executive stays locked.
-      s.tasks[track.taskId] = { status: "failed", delta: 0, feedback, grade };
+        TT(lang, "Their office is on Floor 15. Meetings are timed and limited — prep first.",
+          "TA的办公室在15层。会面限时限次——先做好准备。"));
     }
     touch(s);
-    res.json({ ...publicState(s), result: grade, feedback, delta: grade === "pass" ? track.credibility : 0 });
+    res.json({ ...publicState(s), correct, why: correct ? null : m.why, done, delta, feedback });
   } catch (err) {
-    console.error("[gatekeeper grade]", err.message, err.detail || "");
+    console.error("[gatekeeper answer]", err.message, err.detail || "");
     res.status(err.status || 500).json({ error: err.message });
   }
 });

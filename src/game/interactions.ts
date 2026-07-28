@@ -8,7 +8,7 @@ import { TASKS, TRACKS, trackForPersona } from "../../shared/gameContent.js";
 import { PERSONA_MAP } from "../../shared/personas.config.js";
 import { api, state } from "../net/api";
 import {
-  showLines, showChoice, chatMode, sequentialQuiz, prepPanel, taskPanel, reviewWorkPanel, boardDeckPanel, boardResultPanel, showLoading, toast,
+  showLines, showChoice, chatMode, sequentialQuiz, mcqPanel, prepPanel, taskPanel, reviewWorkPanel, boardDeckPanel, boardResultPanel, showLoading, toast,
   startTimer, stopTimer, updateHUD,
 } from "../ui/ui";
 import { L, fmt, UI, lang } from "../i18n";
@@ -283,48 +283,54 @@ async function taskNpc(npc: NpcDef) {
   });
 }
 
+/**
+ * The domain check: five multiple-choice questions drawn from the manager's own
+ * knowledge base, not from the conversation you just had. Answer wrong and the
+ * manager explains the reasoning, then you retry that same question — you can
+ * always walk out mid-check to go ask more and come back, and the server
+ * remembers which questions you've already cleared.
+ */
 async function runExitQuiz(trackId: string, gkName: string, track: any) {
-  // Generate the quiz + a bullet summary behind a blocking "…" line, then jump
-  // straight in — no walk-away gap. The summary is the player's reference notes.
   const loading = showLoading(gkName, L(UI.gkGeneratingQuiz));
-  let questions: any[], summary: any;
+  let questions: any[];
   try {
-    ({ questions, summary } = await api.gatekeeperQuiz(trackId));
+    ({ questions } = await api.gatekeeperQuiz(trackId));
+  } catch (e: any) {
+    return toast(e.message);
   } finally {
     loading.close();
   }
-  if (summary) toast(L(UI.gkSummarySaved));
-  const summaryText = summary ? L(summary) : "";
-  const qLabels = questions.map((q: any) => L(q));
+  if (!questions?.length) return;
 
-  // Answer → grade → (if not a clean PASS) feedback + revise, looping until the
-  // player genuinely gets the full picture or steps away. Only PASS unlocks.
-  let prev: string[] = [];
-  while (true) {
-    const answers = await sequentialQuiz(gkName, qLabels, summaryText, prev);
-    if (!answers) return; // stepped away — nothing consumed, can retake later
-    prev = answers;
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
+    const options = q.options.map((o: any) => L(o));
+    // Retry loop for THIS question — a wrong answer is a teaching moment, not
+    // a dead end, so the only ways out are getting it right or stepping away.
+    for (;;) {
+      const choice = await mcqPanel(gkName, i, questions.length, L(q.q), options);
+      if (choice === null) return; // stepped away — cleared questions are kept
 
-    const grading = showLoading(gkName, L(UI.gkGrading));
-    let res: any;
-    try {
-      res = await api.gatekeeperGrade(trackId, answers);
-    } finally {
-      grading.close();
+      let res: any;
+      try {
+        res = await api.gatekeeperAnswer(trackId, i, choice);
+      } catch (e: any) {
+        toast(e.message);
+        return;
+      }
+
+      if (res.correct) {
+        if (res.done) {
+          toast(fmt(UI.credToast, { n: res.delta }));
+          await showLines(gkName, [fmt(UI.gkCheckPassed, { feedback: res.feedback, n: res.delta })]);
+          const exec = NPCS.find((n) => n.id === `persona-${track.personaId}`)!;
+          toast(`🔓 ${L(exec.name)} — F15`);
+        }
+        break;
+      }
+      // Wrong — the manager walks through it, then the same question comes back.
+      await showLines(gkName, [L(res.why), L(UI.gkTryAgain)]);
     }
-
-    if (res.result === "pass") {
-      toast(fmt(UI.credToast, { n: res.delta }));
-      await showLines(gkName, [fmt(UI.gkCheckPassed, { feedback: res.feedback, n: res.delta })]);
-      const exec = NPCS.find((n) => n.id === `persona-${track.personaId}`)!;
-      toast(`🔓 ${L(exec.name)} — F15`);
-      return;
-    }
-
-    // Not passed — give the manager's feedback, then offer to revise right now.
-    await showLines(gkName, [res.feedback]);
-    const again = await showChoice(gkName, L(UI.gkRevisePrompt), [L(UI.gkReviseYes), L(UI.gkReviseLater)]);
-    if (again !== 0) return; // review notes and come back later
   }
 }
 

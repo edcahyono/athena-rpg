@@ -51,7 +51,7 @@ export const UI = {
   engagementDone: { en: "Engagement complete!", zh: "项目完成！" },
   engagementDoneWhy: { en: "Export your notebook (Q) and write your 5-year strategy — that's the real deliverable.", zh: "导出笔记（Q），去写你的五年战略——那才是真正的交付物。" },
   seeGatekeeper: { en: "See {name} (F{floor})", zh: "去见 {name}（{floor}层）" },
-  gatekeeperWhy: { en: "Ask {name} about the {track} domain — leave when ready and they'll quiz you on your conversation. Pass and {exec} takes your meeting.", zh: "向 {name} 请教{track}领域的问题——准备好后离开，TA会就你们的对话考核你。通过后 {exec} 才会见你。" },
+  gatekeeperWhy: { en: "Ask {name} about the {track} domain — leave when ready and they'll check you with 5 questions on the domain itself, not on what you just talked about. Pass and {exec} takes your meeting.", zh: "向 {name} 请教{track}领域的问题——准备好后离开，TA会用5道题考核你对这个领域本身的理解，而不是刚才聊过的内容。通过后 {exec} 才会见你。" },
   interviewExec: { en: "Interview {name} (F15)", zh: "访谈 {name}（15层）" },
   interviewExecWhy: { en: "Meetings are timed and limited — prep your questions first.", zh: "会面限时限次——先准备好问题再敲门。" },
   boardObjective: { en: "Make your final pitch in the Boardroom (F16)", zh: "去董事会会议室做最终汇报（16层）" },
@@ -206,6 +206,7 @@ export const UI = {
   wsReadoutHint: { en: "Write your own summary of each interview — graded against what was actually said (accuracy · signal · concision).", zh: "为每次访谈亲手写下你的纪要——按真实对话内容评分（准确 · 抓重点 · 精炼）。" },
   wsReadoutPh: { en: "Summarize what mattered from this interview…", zh: "总结这次访谈里真正重要的内容……" },
   wsReadoutSave: { en: "Grade my readout", zh: "为纪要评分" },
+  gkTryAgain: { en: "Have another go at that one.", zh: "再试一次这道题。" },
   // C2 — written on the way out of the meeting, while it's still fresh.
   readoutTitle: { en: "Your readout", zh: "你的访谈纪要" },
   readoutPrompt: { en: "You're out of the room. Before anything else, write your readout of that meeting with the {exec} — what mattered, in your own words. It's graded against what was actually said: accuracy, signal, concision. (Skip if you'd rather not — you lose the credibility.)", zh: "你走出会议室。趁热先写下这次与{exec}会面的纪要——用你自己的话写清楚什么才是关键。评分依据是真实的对话内容：准确、抓重点、精炼。（也可以跳过——但会失去这部分信誉值。）" },
