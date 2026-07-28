@@ -23,7 +23,7 @@ import { gradeQuizAnswers } from "./grading.js";
 import { extractText } from "./extract.js";
 import { INJECTION_GUARD } from "./guards.js";
 import {
-  getSession, touch, publicState, addQuestEntry, addCredibility, resetSession,
+  getSession, hasSession, touch, publicState, addQuestEntry, addCredibility, resetSession,
 } from "./sessionStore.js";
 
 const router = express.Router();
@@ -242,8 +242,13 @@ const closing = (lang) => {
 /* ------------------------------ session ------------------------------ */
 
 router.post("/session", (req, res) => {
+  // `resumed` lets the client tell "your save is here" from "the server has
+  // never heard of you". They are otherwise indistinguishable: a session lost
+  // to a restart is silently re-created empty under the same id, and the
+  // player just sees their progress gone with no explanation.
+  const resumed = hasSession(req.body?.sessionId);
   const s = getSession(req.body?.sessionId);
-  res.json(publicState(s));
+  res.json({ ...publicState(s), resumed });
 });
 
 /**

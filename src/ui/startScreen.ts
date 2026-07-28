@@ -79,13 +79,18 @@ export function mainMenu(returning: boolean): Promise<void> {
     const submitCode = async () => {
       adminErr.textContent = "";
       try {
-        await api.admin(adminCode.value);
+        // Trim: a trailing space from pasting is not a wrong code.
+        await api.admin(adminCode.value.trim());
         markOn(true);
         closeAdmin();
         enter(); // straight into the game (or back where you left off) in admin mode
-      } catch {
-        // The server checks the code — a wrong one never unlocks anything.
-        adminErr.textContent = "wrong code";
+      } catch (err: any) {
+        // Only a 403 means the code was actually rejected. Everything else —
+        // most often a session the server no longer has after a restart — used
+        // to report itself as "wrong code" and send people hunting for a typo.
+        adminErr.textContent = err?.status === 403
+          ? "wrong code"
+          : "server lost the session — reload the page";
         adminCode.select();
       }
     };
@@ -113,12 +118,12 @@ export function mainMenu(returning: boolean): Promise<void> {
     const onPointer = (e: PointerEvent) => {
       const t = e.target as HTMLElement;
       if (t.closest("button") || t.closest("#mm-admin-form")) return; // controls, not "any key"
-      // The admin control is small and lives in the corner; a click that just
-      // misses it used to fall through and start the game. Treat the whole
-      // bottom-right corner as "not the any-key surface".
-      if (e.clientY > window.innerHeight - 120 && e.clientX > window.innerWidth - 300) return;
       if (!adminForm.hidden) { closeAdmin(); return; } // click-away dismisses it
-      enter();
+      // Only the centre logo block starts the game. This screen advertises
+      // "press any key", and treating the whole backdrop as a start button
+      // meant a click that merely missed the corner ADMIN control launched a
+      // run instead of opening the code prompt. Keys still start from anywhere.
+      if (t.closest(".ls-box")) enter();
     };
     window.addEventListener("keydown", onKey);
     el.addEventListener("pointerdown", onPointer);

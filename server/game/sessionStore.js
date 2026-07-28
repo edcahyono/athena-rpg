@@ -91,6 +91,11 @@ function newSession(id) {
   };
 }
 
+/** Does this id already have a session? Read-only — never creates one. */
+export function hasSession(id) {
+  return typeof id === "string" && sessions.has(id);
+}
+
 export function getSession(id, create = true) {
   if (!id || typeof id !== "string" || id.length > 64) {
     throw Object.assign(new Error("Invalid sessionId"), { status: 400 });

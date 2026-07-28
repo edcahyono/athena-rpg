@@ -45,6 +45,12 @@ async function start() {
   try {
     await api.init(); // create/resume server-side session before the game boots
     api.save(state.client, undefined, profile); // echo profile to the session (cosmetic)
+    // A returning player whose session the server no longer has is handed a
+    // blank one under the same id — progress simply gone, with nothing said.
+    // Say it, so it reads as a server restart rather than the game eating a run.
+    if (state.resumed === false && localStorage.getItem("athena-seen-intro")) {
+      toast("Your saved progress wasn't on the server — it restarted. Starting a fresh engagement.");
+    }
   } catch (err: any) {
     document.getElementById("hud-floor")!.textContent = "⚠ server offline";
     toast(fmt(UI.serverOffline, { e: err.message }));

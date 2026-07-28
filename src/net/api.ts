@@ -20,6 +20,9 @@ import type { CharOpts } from "../game/charDraw";
 export type Profile = CharOpts;
 
 export interface GameState {
+  /** false when the server had no session for this id and made a fresh one —
+   *  i.e. a save was lost to a restart, not a genuinely new player. */
+  resumed?: boolean;
   id: string;
   updatedAt: number;
   credibility: number;

@@ -770,14 +770,16 @@ export function menuPanel(objective: { label: string; why: string }) {
   const submitAdmin = async () => {
     adminErr.textContent = "";
     try {
-      await api.admin(adminCode.value);
+      await api.admin(adminCode.value.trim()); // a pasted trailing space is not a wrong code
       adminBtn.textContent = "🔓 ADMIN MODE: ON";
       adminRow.hidden = true;
       adminCode.value = "";
       toast("Admin mode ON — any answer passes. Progress and unlocks unchanged.");
       updateHUD(state.client?.floor ?? 12);
-    } catch {
-      adminErr.textContent = "wrong code";
+    } catch (err: any) {
+      // Only 403 is a rejected code; anything else (usually a session the
+      // server no longer has) must not masquerade as a typo.
+      adminErr.textContent = err?.status === 403 ? "wrong code" : "session lost — reload";
       adminCode.select();
     }
   };
