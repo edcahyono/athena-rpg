@@ -175,7 +175,7 @@ export const TRACKS = {
     unknowns: [
       { topic: { en: "what's actually in the Nike China product pipeline for next year", zh: "耐克中国明年产品管线里实际有什么" }, execId: "cpo" },
       { topic: { en: "whether local-only SKUs designed just for China are being greenlit", zh: "是否有专为中国设计的本土专属SKU获批" }, execId: "cpo" },
-      { topic: { en: "the VP Product's personal view on whether the Southeast Asia quality fixes are working", zh: "产品副总裁本人对东南亚质量整改是否见效的真实判断" }, execId: "cpo" },
+      { topic: { en: "the CPO's personal view on whether the Southeast Asia quality fixes are working", zh: "首席产品官本人对东南亚质量整改是否见效的真实判断" }, execId: "cpo" },
     ],
     doneLine: { en: "Now you know the battlefield. Floor 15 — the VP loves anyone who talks about actual shoes.", zh: "现在你摸清战场了。15层——聊到具体的鞋，副总裁就会喜欢你。" },
     retryLine: { en: "Too vague — 'they're cheaper' is a price point, not a product story. Go back in and retake the check.", zh: "太空了——「他们更便宜」是个价格点，不是产品故事。再进去聊聊，然后重新接受考核。" },

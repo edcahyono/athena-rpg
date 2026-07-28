@@ -156,7 +156,9 @@ export default class OfficeScene extends Phaser.Scene {
       if (seated) this.add.image(x, y - 2, "tile-chair").setDepth(y - 1); // chair behind the desk worker
       // Personal cubicle desk (with laptop) directly in front — the worker sits
       // behind it. Executives (F15) get their own office desks instead.
-      const giveDesk = seated && def.kind !== "persona";
+      // Never put a desk on row 8: that is the lane the player walks along
+      // when stepping out of the lift, and a collider there strands them.
+      const giveDesk = seated && def.kind !== "persona" && def.ty + 1 !== 8;
       if (giveDesk) {
         const dyPix = y + TILE;
         const deskImg = this.add.image(x, dyPix, "tile-work-0").setDepth(dyPix + 4);

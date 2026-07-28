@@ -266,11 +266,19 @@ router.post("/admin", (req, res) => {
   s.admin = true;
   // Open the world up front, rather than only as each check is re-attempted.
   s.flags.metSupervisor = true;
-  for (const taskId of Object.keys(TASKS)) {
-    if (s.tasks[taskId]?.status !== "passed") s.tasks[taskId] = { status: "passed", delta: 0, admin: true };
+  // Award what each check is actually worth, so the credibility bar and the
+  // HUD read like a real run rather than sitting at zero with everything open.
+  for (const [taskId, t] of Object.entries(TASKS)) {
+    if (s.tasks[taskId]?.status === "passed") continue;
+    const delta = t?.credibility || 0;
+    s.tasks[taskId] = { status: "passed", delta, admin: true };
+    if (delta) addCredibility(s, delta, "[ADMIN] " + LB(t.title, "en"));
   }
   for (const track of Object.values(TRACKS)) { // TRACKS is keyed by trackId, not an array
-    if (s.tasks[track.taskId]?.status !== "passed") s.tasks[track.taskId] = { status: "passed", delta: 0, admin: true };
+    if (s.tasks[track.taskId]?.status === "passed") continue;
+    const delta = track.credibility || 0;
+    s.tasks[track.taskId] = { status: "passed", delta, admin: true };
+    if (delta) addCredibility(s, delta, "[ADMIN] " + LB(track.name, "en"));
   }
   addQuestEntry(s, "task", "[ADMIN] Admin mode enabled",
     "Every gate and grade now auto-passes. QA tool — not part of the engagement.");

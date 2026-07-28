@@ -60,7 +60,10 @@ async function start() {
   const skipMenu = sessionStorage.getItem("athena-skip-menu") === "1";
   sessionStorage.removeItem("athena-skip-menu");
   const returning = !!state?.flags?.metSupervisor || !!localStorage.getItem("athena-seen-intro");
-  if (!skipMenu && (quitting || returning)) {
+  // Always land on the title screen. It used to be skipped for first-time
+  // players, which also hid the admin entry from exactly the people setting up
+  // a QA run.
+  if (!skipMenu) {
     await mainMenu(returning);
   }
 

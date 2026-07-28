@@ -79,20 +79,20 @@ const OFFICE = [
 // onto the central corridor (row 8). Three offices along the top, four below.
 const EXEC = [
   "#################################",
-  "#.....GGG......GGG......GGG.....#",
-  "#.....GbG......GbG......GbG.....#",
-  "#.....GbG......GbG......GbG.....#",
-  "#.....GbG......GbG......GbG.....#",
-  "#.....GbG......GbG......GbG.....#",
-  "#.....GXG......GXG......GXG.....#",
+  "#.......GGGGG.GGGGG.GGGGG.GGGGG.#",
+  "#.......GbbbG.GbbbG.GbbbG.GbbbG.#",
+  "#.......GbbbG.GbbbG.GbbbG.GbbbG.#",
+  "#.......GbbbG.GbbbG.GbbbG.GbbbG.#",
+  "#.......GGXGG.GGXGG.GGXGG.GGXGG.#",
+  "#...............................#",
+  "#E..r...........................#",
   "#E..............................#",
-  "#E..............................#",
-  "#....GXG....GXG....GXG....GXG...#",
-  "#....GbG....GbG....GbG....GbG...#",
-  "#....GbG....GbG....GbG....GbG...#",
-  "#....GbG....GbG....GbG....GbG...#",
-  "#....GbG....GbG....GbG....GbG...#",
-  "#....GGG....GGG....GGG....GGG...#",
+  "#...............................#",
+  "#.......GGXGG...GGXGG...GGXGG...#",
+  "#.......GbbbG...GbbbG...GbbbG...#",
+  "#.......GbbbG...GbbbG...GbbbG...#",
+  "#.......GbbbG...GbbbG...GbbbG...#",
+  "#.......GGGGG...GGGGG...GGGGG...#",
   "#################################",
 ];
 
@@ -143,7 +143,7 @@ const PERSONA_NAMES: Record<string, BL> = {
   coo: { en: "Zhao Zhengping", zh: "赵正平" },
   chro: { en: "Shen Ruolin", zh: "沈若琳" },
   cto: { en: "Lin Zhiyao", zh: "林知遥" },
-  cpo: { en: "VP Product", zh: "产品副总裁" },
+  cpo: { en: "CPO", zh: "首席产品官" },
 };
 
 export const NPCS: NpcDef[] = [
@@ -267,7 +267,10 @@ MID_PERSONAS.forEach((p: any, i: number) => {
 // office (persona order: ceo, cfo, cmo, coo, chro, cto, cpo) — see EXEC layout
 // + EXEC_OFFICES. CEO in the big left-center office.
 // Must match EXEC_OFFICES seats, in PERSONAS order (ceo,cfo,cmo,coo,chro,cto,cpo).
-const execSpots: [number, number][] = [[7, 3], [16, 3], [25, 3], [6, 12], [13, 12], [20, 12], [27, 12]];
+// Seats must match EXEC_OFFICES below, in PERSONAS order
+// (ceo, cfo, cmo, coo, chro, cto, cpo) — otherwise executives stand outside
+// their own rooms.
+const execSpots: [number, number][] = [[10, 3], [16, 3], [22, 3], [28, 3], [10, 12], [18, 12], [26, 12]];
 PERSONAS.forEach((p: any, i: number) => {
   const [tx, ty] = execSpots[i % execSpots.length];
   NPCS.push({
@@ -283,7 +286,7 @@ PERSONAS.forEach((p: any, i: number) => {
 NPCS.push({
   // Executive-suite gatekeeper: sits at the front desk beside the lift, facing
   // it, so she greets (and screens) everyone stepping off the elevator.
-  id: "exec-ea", name: { en: "Vivian", zh: "薇薇安" }, role: { en: "Front Desk · Executive Suite", zh: "前台 · 高管区" }, floor: 15, tx: 3, ty: 6, color: 0x5a8a7a, kind: "flavor", facing: "left",
+  id: "exec-ea", name: { en: "Vivian", zh: "薇薇安" }, role: { en: "Front Desk · Executive Suite", zh: "前台 · 高管区" }, floor: 15, tx: 5, ty: 7, color: 0x5a8a7a, kind: "flavor", facing: "left",
   lines: [
     { en: "Each executive only sees analysts vouched for by their Deloitte counterpart downstairs. Calendars here are brutally tight.", zh: "每位高管只见楼下德勤对口经理担保过的分析师。这里的日程紧得不近人情。" },
     { en: "When a meeting slot is spent, it's spent. There's no 'do-over' at this level.", zh: "会面额度用掉就是用掉了。到了这个层级，没有「重来一次」。" },
@@ -301,22 +304,22 @@ export interface ExecOffice {
 }
 export interface ExecOfficeSeat { tx: number; ty: number }
 export const EXEC_OFFICES: (ExecOffice & { seat: ExecOfficeSeat })[] = [
-  // Top row (door faces down into the row-8 corridor). All 3×5, identical.
-  { execId: "ceo",  label: { en: "CEO", zh: "首席执行官" }, tx: 6, ty: 1, w: 3, h: 6,
-    door: { tx: 7, ty: 6 }, inside: { tx: 7, ty: 5 }, outside: { tx: 7, ty: 7 }, seat: { tx: 7, ty: 3 } },
-  { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 15, ty: 1, w: 3, h: 6,
-    door: { tx: 16, ty: 6 }, inside: { tx: 16, ty: 5 }, outside: { tx: 16, ty: 7 }, seat: { tx: 16, ty: 3 } },
-  { execId: "cmo",  label: { en: "CMO", zh: "首席营销官" }, tx: 24, ty: 1, w: 3, h: 6,
-    door: { tx: 25, ty: 6 }, inside: { tx: 25, ty: 5 }, outside: { tx: 25, ty: 7 }, seat: { tx: 25, ty: 3 } },
-  // Bottom row (door faces up into the row-8 corridor). Identical.
-  { execId: "coo",  label: { en: "COO", zh: "首席运营官" }, tx: 5, ty: 9, w: 3, h: 6,
-    door: { tx: 6, ty: 9 }, inside: { tx: 6, ty: 10 }, outside: { tx: 6, ty: 8 }, seat: { tx: 6, ty: 12 } },
-  { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 12, ty: 9, w: 3, h: 6,
-    door: { tx: 13, ty: 9 }, inside: { tx: 13, ty: 10 }, outside: { tx: 13, ty: 8 }, seat: { tx: 13, ty: 12 } },
-  { execId: "cto",  label: { en: "VP Technology", zh: "技术副总裁" }, tx: 19, ty: 9, w: 3, h: 6,
-    door: { tx: 20, ty: 9 }, inside: { tx: 20, ty: 10 }, outside: { tx: 20, ty: 8 }, seat: { tx: 20, ty: 12 } },
-  { execId: "cpo",  label: { en: "VP Product", zh: "产品副总裁" }, tx: 26, ty: 9, w: 3, h: 6,
-    door: { tx: 27, ty: 9 }, inside: { tx: 27, ty: 10 }, outside: { tx: 27, ty: 8 }, seat: { tx: 27, ty: 12 } },
+  // Square 5x5 rooms (3x3 interior). Four along the top, three below, all doors
+  // opening onto the central corridor.
+  { execId: "ceo",  label: { en: "CEO", zh: "首席执行官" }, tx: 8, ty: 1, w: 5, h: 5,
+    door: { tx: 10, ty: 5 }, inside: { tx: 10, ty: 4 }, outside: { tx: 10, ty: 6 }, seat: { tx: 10, ty: 3 } },
+  { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 14, ty: 1, w: 5, h: 5,
+    door: { tx: 16, ty: 5 }, inside: { tx: 16, ty: 4 }, outside: { tx: 16, ty: 6 }, seat: { tx: 16, ty: 3 } },
+  { execId: "cmo",  label: { en: "CMO", zh: "首席营销官" }, tx: 20, ty: 1, w: 5, h: 5,
+    door: { tx: 22, ty: 5 }, inside: { tx: 22, ty: 4 }, outside: { tx: 22, ty: 6 }, seat: { tx: 22, ty: 3 } },
+  { execId: "coo",  label: { en: "COO", zh: "首席运营官" }, tx: 26, ty: 1, w: 5, h: 5,
+    door: { tx: 28, ty: 5 }, inside: { tx: 28, ty: 4 }, outside: { tx: 28, ty: 6 }, seat: { tx: 28, ty: 3 } },
+  { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 8, ty: 10, w: 5, h: 5,
+    door: { tx: 10, ty: 10 }, inside: { tx: 10, ty: 11 }, outside: { tx: 10, ty: 9 }, seat: { tx: 10, ty: 12 } },
+  { execId: "cto",  label: { en: "CTO", zh: "首席技术官" }, tx: 16, ty: 10, w: 5, h: 5,
+    door: { tx: 18, ty: 10 }, inside: { tx: 18, ty: 11 }, outside: { tx: 18, ty: 9 }, seat: { tx: 18, ty: 12 } },
+  { execId: "cpo",  label: { en: "CPO", zh: "首席产品官" }, tx: 24, ty: 10, w: 5, h: 5,
+    door: { tx: 26, ty: 10 }, inside: { tx: 26, ty: 11 }, outside: { tx: 26, ty: 9 }, seat: { tx: 26, ty: 12 } },
 ];
 
 export const LAYOUTS: Record<number, string[]> = {
