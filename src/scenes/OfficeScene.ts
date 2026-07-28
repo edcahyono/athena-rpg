@@ -33,6 +33,18 @@ const STANDING = new Set(["guard", "cleaner"]);
 
 // Ambient NPCs that stroll/clean along a fixed patrol route (tile coords).
 const WANDER = new Set(["guard", "cleaner"]);
+
+/** How many tiles a greeting NPC stops short of you. 1 = right beside you;
+ *  raise it if conversations should happen at a more polite distance. */
+const MEET_GAP = 1;
+/** The row they cross the floor on to reach you. Row 8 is the central lane the
+ *  cubicle builder deliberately keeps free of desks, so it's the only one that
+ *  is walkable end to end. */
+const MEET_LANE = 8;
+/** Walk time for a leg, so crossing six tiles doesn't take the same 620ms as
+ *  crossing one — long walks were what made them look like they were marching
+ *  to a fixed mark rather than over to you. */
+const legMs = (tiles: number) => Phaser.Math.Clamp(Math.abs(tiles) * 155, 180, 1600);
 const PATROLS: Record<string, [number, number][]> = {
   // Both ambient staff pace the empty central hallway, never the cubicle bands.
   // Right-hand stretch of the corridor only (col 23 is the file-room door, so
@@ -342,21 +354,25 @@ export default class OfficeScene extends Phaser.Scene {
       // sideways through the cubicle doorway (drawCubicle leaves a gap in the
       // right divider), down the aisle beside her station, then across to you —
       // never straight through her own desk.
-      await this.walkTo(lin.tx * TILE + TILE / 2, 8 * TILE + TILE / 2);
+      await this.walkTo(lin.tx * TILE + TILE / 2, MEET_LANE * TILE + TILE / 2);
       this.player.setTexture("player-up-0");
       const aisle = lin.tx + 1; // the free column just outside her doorway
+      // She comes down the aisle and stops in it, level with you — one tile to
+      // your side, facing you. She used to stop two rows short in her own
+      // column, which read as walking to a mark rather than over to you.
       await this.walkNpcPath("supervisor", [
         { tx: aisle, ty: lin.ty, dir: "right", ms: 520 },  // step out through the door
-        { tx: aisle, ty: 6, dir: "down", ms: 1100 },       // down the aisle
-        { tx: lin.tx, ty: 6, dir: "left", ms: 520 },       // across to meet you
-      ], "down");
+        { tx: aisle, ty: MEET_LANE, dir: "down", ms: legMs(MEET_LANE - lin.ty) },
+      ], this.faceFrom(aisle, MEET_LANE));
+      // Day one counts as her greeting — without this she replays the whole
+      // walk-out the very next time you talk to her.
+      greeted.add("supervisor");
       ui.cutscene = false;
       await interact(lin, this.floor);
       // …then retraces her steps and settles back into her chair.
       ui.cutscene = true;
       await this.walkNpcPath("supervisor", [
-        { tx: aisle, ty: 6, dir: "right", ms: 520 },
-        { tx: aisle, ty: lin.ty, dir: "up", ms: 1100 },
+        { tx: aisle, ty: lin.ty, dir: "up", ms: legMs(MEET_LANE - lin.ty) },
         { tx: lin.tx, ty: lin.ty, dir: "left", ms: 520 },
       ], "down", 3); // +3px: seated NPCs sit slightly below their tile centre
     } finally {
@@ -417,22 +433,31 @@ export default class OfficeScene extends Phaser.Scene {
     ui.cutscene = true;
     try {
       const aisle = def.tx + 1;                                  // free column outside the doorway
-      const playerRow = Math.round((this.player.y - TILE / 2) / TILE);
-      // Stop short of the desk row (def.ty + 1) on the way out and back.
-      const meetRow = Phaser.Math.Clamp(playerRow, def.ty < 6 ? def.ty + 2 : 6, def.ty < 6 ? 9 : def.ty - 1);
-      const facing = meetRow > def.ty ? "down" : "up";
+      const cols = LAYOUTS[this.floor][0].length;
+      // They walk to WHERE YOU ARE, not to a fixed spot. Row 8 is the one lane
+      // kept clear of desks the whole way across (see the cubicle builder), so
+      // it's the only row they can cross the floor on without clipping through
+      // someone's desk collider — they meet you from there.
+      const playerCol = Math.round((this.player.x - TILE / 2) / TILE);
+      // Stop MEET_GAP tiles short, on the side they're coming from, so they end
+      // up standing beside you rather than on top of you.
+      const approach = aisle <= playerCol ? -1 : 1;
+      // Lower bound 2, not 1: column 1 of this row is the elevator, which has a
+      // collider they'd walk into.
+      const meetCol = Phaser.Math.Clamp(playerCol + approach * MEET_GAP, 2, cols - 2);
+      const down = MEET_LANE > def.ty;
       await this.walkNpcPath(def.id, [
         { tx: aisle, ty: def.ty, dir: "right", ms: 460 },        // step out through the door
-        { tx: aisle, ty: meetRow, dir: facing, ms: 620 },        // down/up the aisle
-        { tx: def.tx, ty: meetRow, dir: "left", ms: 460 },       // across to you
-      ], this.faceMe(npc.sprite));
+        { tx: aisle, ty: MEET_LANE, dir: down ? "down" : "up", ms: legMs(MEET_LANE - def.ty) },
+        { tx: meetCol, ty: MEET_LANE, dir: meetCol < aisle ? "left" : "right", ms: legMs(meetCol - aisle) },
+      ], this.faceFrom(meetCol, MEET_LANE));                     // face you from where they STOP
       ui.cutscene = false;
       await interact(def, this.floor);
-      // …then back through the doorway and into their chair.
+      // …then back along the lane, through the doorway and into their chair.
       ui.cutscene = true;
       await this.walkNpcPath(def.id, [
-        { tx: aisle, ty: meetRow, dir: "right", ms: 460 },
-        { tx: aisle, ty: def.ty, dir: facing === "down" ? "up" : "down", ms: 620 },
+        { tx: aisle, ty: MEET_LANE, dir: meetCol < aisle ? "right" : "left", ms: legMs(meetCol - aisle) },
+        { tx: aisle, ty: def.ty, dir: down ? "up" : "down", ms: legMs(MEET_LANE - def.ty) },
         { tx: def.tx, ty: def.ty, dir: "left", ms: 460 },
       ], def.facing || "down", 3);                               // +3px: seated offset
     } finally {
@@ -584,6 +609,13 @@ export default class OfficeScene extends Phaser.Scene {
       return;
     }
     await interactProp(prop.char);
+  }
+
+  /** Which way to face the player FROM a given tile — used to set a greeting
+   *  NPC's final facing from where they'll end up, not from the desk they
+   *  started at (which is why they used to finish facing the wrong way). */
+  private faceFrom(tx: number, ty: number): "down" | "up" | "left" | "right" {
+    return this.faceMe({ x: tx * TILE + TILE / 2, y: ty * TILE + TILE / 2 });
   }
 
   private faceMe(other: { x: number; y: number }): "down" | "up" | "left" | "right" {
