@@ -43,6 +43,8 @@ const PATROLS: Record<string, [number, number][]> = {
 
 // Module-level so floor changes (scene restarts) don't re-show the panel.
 let welcomeShown = false;
+// Cubicle workers only come out to greet you the first time, per page load.
+const greeted = new Set<string>();
 
 export default class OfficeScene extends Phaser.Scene {
   private floor = 12;
@@ -393,6 +395,51 @@ export default class OfficeScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Cubicle workers come out to meet you the first time you talk to them —
+   * the same beat as Manager Lin's day-one briefing, reused for every
+   * gatekeeper and floor colleague.
+   *
+   * The route mirrors drawCubicle(): out sideways through the gap in the right
+   * divider, then along the aisle to your row, so nobody ever walks through
+   * their own desk. Returns true if it handled the interaction.
+   */
+  private async greetFromCubicle(npc: { def: NpcDef; sprite: Phaser.GameObjects.Sprite }): Promise<boolean> {
+    const def = npc.def;
+    // Only seated cubicle workers on the open floors, once each per page load.
+    const cubicled = !STANDING.has(def.id) && def.kind !== "persona" && def.kind !== "board"
+      && [10, 11, 12].includes(this.floor);
+    if (!cubicled || greeted.has(def.id)) return false;
+    greeted.add(def.id);
+
+    ui.cutscene = true;
+    try {
+      const aisle = def.tx + 1;                                  // free column outside the doorway
+      const playerRow = Math.round((this.player.y - TILE / 2) / TILE);
+      // Stop short of the desk row (def.ty + 1) on the way out and back.
+      const meetRow = Phaser.Math.Clamp(playerRow, def.ty < 6 ? def.ty + 2 : 6, def.ty < 6 ? 9 : def.ty - 1);
+      const facing = meetRow > def.ty ? "down" : "up";
+      await this.walkNpcPath(def.id, [
+        { tx: aisle, ty: def.ty, dir: "right", ms: 460 },        // step out through the door
+        { tx: aisle, ty: meetRow, dir: facing, ms: 620 },        // down/up the aisle
+        { tx: def.tx, ty: meetRow, dir: "left", ms: 460 },       // across to you
+      ], this.faceMe(npc.sprite));
+      ui.cutscene = false;
+      await interact(def, this.floor);
+      // …then back through the doorway and into their chair.
+      ui.cutscene = true;
+      await this.walkNpcPath(def.id, [
+        { tx: aisle, ty: meetRow, dir: "right", ms: 460 },
+        { tx: aisle, ty: def.ty, dir: facing === "down" ? "up" : "down", ms: 620 },
+        { tx: def.tx, ty: def.ty, dir: "left", ms: 460 },
+      ], def.facing || "down", 3);                               // +3px: seated offset
+    } finally {
+      ui.cutscene = false;
+      updateHUD(this.floor);
+    }
+    return true;
+  }
+
   /** Walk a named NPC's sprite (and its labels) to a tile, stepping the walk
    *  cycle. NPC sprites aren't physics bodies, so a tween is safe here. */
   private walkNpcTo(id: string, tx: number, ty: number, dir: "down" | "up" | "left" | "right", ms = 1500): Promise<void> {
@@ -478,6 +525,10 @@ export default class OfficeScene extends Phaser.Scene {
     if (ui.busy || !state) return;
     const npc = this.nearestNpc();
     if (npc) {
+      // First time you approach a cubicle worker they get up and come out to
+      // meet you, the way Manager Lin does on day one — through the doorway in
+      // the divider, never through their own desk.
+      if (await this.greetFromCubicle(npc)) return;
       npc.sprite.setTexture(`char-${npc.def.color}-${this.faceMe(npc.sprite)}-0`);
       // Seated workers rise to greet you, then settle back when you leave.
       const standing = STANDING.has(npc.def.id);
@@ -516,7 +567,7 @@ export default class OfficeScene extends Phaser.Scene {
     await interactProp(prop.char);
   }
 
-  private faceMe(other: { x: number; y: number }): string {
+  private faceMe(other: { x: number; y: number }): "down" | "up" | "left" | "right" {
     const dx = this.player.x - other.x, dy = this.player.y - other.y;
     if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? "right" : "left";
     return dy > 0 ? "down" : "up";

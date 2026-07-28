@@ -734,6 +734,13 @@ export function menuPanel(objective: { label: string; why: string }) {
       <button id="plang">${L(UI.language)}</button>
       <button id="pquit" class="danger">${L(UI.quitToMenu)}</button>
       <button id="prestart" class="danger">${L(UI.restartEngagement)}</button>
+      <button id="padmin">${state.admin ? "🔓 ADMIN MODE: ON" : "🔒 Admin mode"}</button>
+    </div>
+    <div id="padmin-row" hidden style="display:flex;gap:6px;justify-content:center;margin:-8px 0 12px">
+      <input id="padmin-code" type="password" autocomplete="off" placeholder="access code"
+             style="width:200px;border:3px solid var(--ink);border-radius:4px;padding:5px 8px;font-family:inherit;font-size:13px" />
+      <button id="padmin-go">ENTER</button>
+      <span id="padmin-err" style="color:#a03030;font-size:12px;align-self:center"></span>
     </div>
     <h2>${L(UI.engagementStatus)}</h2>
     <div class="pbar"><div style="width:${pct}%"></div><span>${completed}/${totalSteps} · ${pct}%</span></div>
@@ -747,6 +754,45 @@ export function menuPanel(objective: { label: string; why: string }) {
 
   (p.querySelector("#pclose") as HTMLButtonElement).onclick = closePanel;
   (p.querySelector("#pquit") as HTMLButtonElement).onclick = () => { closePanel(); quitHandler(); };
+
+  // Admin / QA mode. Lives here as well as on the title screen, because a
+  // first-time player never sees the title screen — they go straight from the
+  // character creator into the opening cutscene, which left the code prompt
+  // unreachable for exactly the people who needed it.
+  const adminBtn = p.querySelector("#padmin") as HTMLButtonElement;
+  const adminRow = p.querySelector("#padmin-row") as HTMLElement;
+  const adminCode = p.querySelector("#padmin-code") as HTMLInputElement;
+  const adminErr = p.querySelector("#padmin-err") as HTMLElement;
+  const submitAdmin = async () => {
+    adminErr.textContent = "";
+    try {
+      await api.admin(adminCode.value);
+      adminBtn.textContent = "🔓 ADMIN MODE: ON";
+      adminRow.hidden = true;
+      adminCode.value = "";
+      toast("Admin mode ON — every gate and grade auto-passes.");
+      updateHUD(state.client?.floor ?? 12);
+    } catch {
+      adminErr.textContent = "wrong code";
+      adminCode.select();
+    }
+  };
+  adminBtn.onclick = async () => {
+    if (state.admin) {                       // already on → turn it off
+      await api.adminOff().catch(() => {});
+      adminBtn.textContent = "🔒 Admin mode";
+      toast("Admin mode OFF.");
+      updateHUD(state.client?.floor ?? 12);
+      return;
+    }
+    adminRow.hidden = !adminRow.hidden;
+    if (!adminRow.hidden) adminCode.focus();
+  };
+  (p.querySelector("#padmin-go") as HTMLButtonElement).onclick = submitAdmin;
+  adminCode.onkeydown = (e) => {
+    e.stopPropagation();
+    if (e.key === "Enter") submitAdmin();
+  };
   (p.querySelector("#prestart") as HTMLButtonElement).onclick = async () => {
     closePanel();
     const ok = await confirmPanel(L(UI.restartTitle), L(UI.restartMsg), L(UI.restartConfirm));
