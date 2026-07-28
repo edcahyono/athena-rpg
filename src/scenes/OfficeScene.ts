@@ -504,12 +504,17 @@ export default class OfficeScene extends Phaser.Scene {
     this.add.rectangle(x + 24, y + 14, 6, 3, 0x9aa4ba).setDepth(y - 4);
   }
 
+  /** Talking distance. 46px meant standing shoulder-to-shoulder, which reads
+   *  badly now that cubicle workers walk OUT to meet you — you had to squeeze
+   *  in beside them first. 72px is a bit over two tiles, matching the gap
+   *  Manager Lin's day-one briefing puts between you. Named NPCs sit four tiles
+   *  apart, so the reaches still never overlap. */
   private nearestNpc(): { def: NpcDef; sprite: Phaser.GameObjects.Sprite } | null {
-    let best: any = null, bestD = 46;
+    let best: any = null, bestD = Infinity;
     for (const n of this.npcs) {
       const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, n.sprite.x, n.sprite.y);
-      const reach = n.def.kind === "board" ? 80 : 46;
-      if (d < Math.max(bestD, reach) && d < reach) { best = n; bestD = d; }
+      const reach = n.def.kind === "board" ? 80 : 72;
+      if (d < reach && d < bestD) { best = n; bestD = d; }
     }
     return best;
   }

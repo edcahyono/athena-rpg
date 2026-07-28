@@ -82,6 +82,7 @@ export function mainMenu(returning: boolean): Promise<void> {
         await api.admin(adminCode.value);
         markOn(true);
         closeAdmin();
+        enter(); // straight into the game (or back where you left off) in admin mode
       } catch {
         // The server checks the code — a wrong one never unlocks anything.
         adminErr.textContent = "wrong code";
@@ -112,6 +113,10 @@ export function mainMenu(returning: boolean): Promise<void> {
     const onPointer = (e: PointerEvent) => {
       const t = e.target as HTMLElement;
       if (t.closest("button") || t.closest("#mm-admin-form")) return; // controls, not "any key"
+      // The admin control is small and lives in the corner; a click that just
+      // misses it used to fall through and start the game. Treat the whole
+      // bottom-right corner as "not the any-key surface".
+      if (e.clientY > window.innerHeight - 120 && e.clientX > window.innerWidth - 300) return;
       if (!adminForm.hidden) { closeAdmin(); return; } // click-away dismisses it
       enter();
     };

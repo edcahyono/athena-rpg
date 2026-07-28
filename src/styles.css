@@ -306,13 +306,17 @@ button.ls-link:hover, button.ls-link:focus-visible { color: #7ee787; outline: no
 
 /* ---- Admin / QA entry (bottom-right of the title screen) ---- */
 .ls-admin {
-  position: absolute; right: 26px; bottom: 22px;
-  display: flex; align-items: center; gap: 8px;
-  background: none; border: none; padding: 6px 8px; cursor: pointer;
-  font-family: inherit; font-size: 11px; letter-spacing: 2px; color: #4d5566;
-  opacity: 0.55; transition: opacity 0.15s ease, color 0.15s ease;
+  position: absolute; right: 18px; bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+  /* Generous hit area: this used to be a small target in the corner, and a
+     near-miss fell through to the any-key handler and started the game. */
+  background: none; border: 2px solid transparent; border-radius: 10px;
+  padding: 14px 20px; cursor: pointer;
+  font-family: inherit; font-size: 13px; letter-spacing: 2px; color: #4d5566;
+  opacity: 0.6; transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-.ls-admin img { width: 30px; height: 30px; image-rendering: pixelated; display: block; }
+.ls-admin img { width: 40px; height: 40px; image-rendering: pixelated; display: block; }
+.ls-admin:hover { border-color: #2a2a3a; }
 .ls-admin:hover, .ls-admin:focus-visible { opacity: 1; color: #7ee787; outline: none; }
 .ls-admin.on { opacity: 1; color: #7ee787; }
 
