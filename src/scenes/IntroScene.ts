@@ -8,7 +8,8 @@ import Phaser from "phaser";
 import { L, UI } from "../i18n";
 import { FONT_UI } from "../ui/fonts";
 
-const W = 800, H = 512;
+const W = 800, H = 512; // vignette design space; the canvas is wider, so the
+// composition is centred and every backdrop bleeds out to the canvas edges.
 
 export default class IntroScene extends Phaser.Scene {
   private sceneIndex = 0;
@@ -18,7 +19,15 @@ export default class IntroScene extends Phaser.Scene {
     super("intro");
   }
 
+  /** Horizontal bleed each side: the canvas (1056) is wider than the 800-wide
+   *  vignette design, which used to leave a black band down the right. */
+  private get pad() { return Math.max(0, (this.scale.width - W) / 2); }
+  private get bgX() { return -this.pad; }
+  private get bgW() { return W + this.pad * 2; }
+
   create() {
+    // Centre the 800-wide composition inside the wider canvas.
+    this.cameras.main.setScroll(-this.pad, 0);
     const band = document.getElementById("cutscene")!;
     band.hidden = false;
     (band.querySelector(".cs-hint") as HTMLElement).textContent = L(UI.csHint);
@@ -97,11 +106,11 @@ export default class IntroScene extends Phaser.Scene {
   private vNight() {
     this.caption("cs1");
     const g = this.g();
-    g.fillStyle(0x101a33); g.fillRect(0, 0, W, H); // night
-    g.fillStyle(0x1a2947); g.fillRect(0, H - 140, W, 140); // floor
+    g.fillStyle(0x101a33); g.fillRect(this.bgX, 0, this.bgW, H); // night
+    g.fillStyle(0x1a2947); g.fillRect(this.bgX, H - 140, this.bgW, 140); // floor
     // stars
     for (let s = 0; s < 60; s++) {
-      const star = this.add.rectangle(Math.random() * W, Math.random() * (H - 200), 2, 2, 0xd9e6ff).setAlpha(0.4 + Math.random() * 0.6);
+      const star = this.add.rectangle(this.bgX + Math.random() * this.bgW, Math.random() * (H - 200), 2, 2, 0xd9e6ff).setAlpha(0.4 + Math.random() * 0.6);
       this.tweens.add({ targets: star, alpha: 0.15, duration: 700 + Math.random() * 1500, yoyo: true, repeat: -1 });
     }
     // moon
@@ -138,9 +147,9 @@ export default class IntroScene extends Phaser.Scene {
   private vInterview() {
     this.caption("cs2");
     const g = this.g();
-    g.fillStyle(0xe8dcc2); g.fillRect(0, 0, W, H); // room
-    g.fillStyle(0x8fa8b8); g.fillRect(0, 0, W, 150); // wall band
-    g.fillStyle(0x6b8494); g.fillRect(0, 144, W, 6);
+    g.fillStyle(0xe8dcc2); g.fillRect(this.bgX, 0, this.bgW, H); // room
+    g.fillStyle(0x8fa8b8); g.fillRect(this.bgX, 0, this.bgW, 150); // wall band
+    g.fillStyle(0x6b8494); g.fillRect(this.bgX, 144, this.bgW, 6);
     // deloitte-ish plaque
     g.fillStyle(0x2a6e46); g.fillRect(330, 50, 140, 56);
     g.fillStyle(0x7ee787); g.fillRect(348, 74, 104, 10);
@@ -178,8 +187,8 @@ export default class IntroScene extends Phaser.Scene {
   private vOffer() {
     this.caption("cs3");
     const g = this.g();
-    g.fillStyle(0x1e4a34); g.fillRect(0, 0, W, H);
-    g.fillStyle(0x24593c); g.fillRect(0, H - 120, W, 120);
+    g.fillStyle(0x1e4a34); g.fillRect(this.bgX, 0, this.bgW, H);
+    g.fillStyle(0x24593c); g.fillRect(this.bgX, H - 120, this.bgW, 120);
     // radiating rays
     const rays = this.g();
     rays.fillStyle(0x2a6e46, 0.5);
@@ -208,7 +217,7 @@ export default class IntroScene extends Phaser.Scene {
     const colors = [0x7ee787, 0xffd75e, 0xff9d5e, 0x9fd8ef, 0xc06a8a];
     this.time.addEvent({
       delay: 120, loop: true, callback: () => {
-        const c = this.add.rectangle(Math.random() * W, -10, 6, 10, colors[Math.floor(Math.random() * colors.length)]);
+        const c = this.add.rectangle(this.bgX + Math.random() * this.bgW, -10, 6, 10, colors[Math.floor(Math.random() * colors.length)]);
         this.tweens.add({
           targets: c, y: H + 20, x: c.x + (Math.random() * 120 - 60), angle: Math.random() * 720 - 360,
           duration: 2400 + Math.random() * 1600, onComplete: () => c.destroy(),
@@ -226,8 +235,8 @@ export default class IntroScene extends Phaser.Scene {
     const g = this.g();
     // sunrise bands
     const bands = [0x2c3a5c, 0x6b5a7a, 0xb87a6a, 0xe8a06a, 0xf5c878];
-    bands.forEach((c, i) => { g.fillStyle(c); g.fillRect(0, i * 70, W, 70); });
-    g.fillStyle(0xf5c878); g.fillRect(0, 350, W, H - 350);
+    bands.forEach((c, i) => { g.fillStyle(c); g.fillRect(this.bgX, i * 70, this.bgW, 70); });
+    g.fillStyle(0xf5c878); g.fillRect(this.bgX, 350, this.bgW, H - 350);
     // sun rising
     const sun = this.add.circle(400, 360, 44, 0xffe08a);
     this.tweens.add({ targets: sun, y: 290, duration: 4000, ease: "sine.out" });
@@ -235,8 +244,8 @@ export default class IntroScene extends Phaser.Scene {
     this.tweens.add({ targets: halo, y: 290, scale: 1.2, alpha: 0.12, duration: 4000, ease: "sine.out" });
     // street
     const street = this.g().setDepth(3);
-    street.fillStyle(0x4a4a5c); street.fillRect(0, 430, W, H - 430);
-    street.fillStyle(0x8a8a9a); street.fillRect(0, 430, W, 4);
+    street.fillStyle(0x4a4a5c); street.fillRect(this.bgX, 430, this.bgW, H - 430);
+    street.fillStyle(0x8a8a9a); street.fillRect(this.bgX, 430, this.bgW, 4);
     // tower silhouette
     const tower = this.g().setDepth(2);
     tower.fillStyle(0x20242e); tower.fillRect(300, 90, 200, 344);
