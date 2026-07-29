@@ -1,6 +1,6 @@
 # Handover — session of 2026-07-28
 
-Everything below is committed and pushed to `main` (`681f207`). Nothing is in
+Everything below is committed and pushed to `main` (`91cd3b2`). Nothing is in
 progress or half-applied.
 
 ---
@@ -33,10 +33,10 @@ committing** — test runs write real entries there.
 
 ---
 
-## 3. What shipped unverified, and how to verify it
+## 3. What shipped, and what still needs verifying
 
-Four commits this session. All are `tsc`-clean, build-clean and load without
-console errors. What follows is what could **not** be checked.
+Five commits this session. All are `tsc`-clean, build-clean and load without
+console errors. Each section says what was and wasn't checked.
 
 ### `661033c` — gatekeeper checks are now 5 MCQs
 
