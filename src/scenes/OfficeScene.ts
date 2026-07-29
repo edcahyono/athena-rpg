@@ -419,9 +419,14 @@ export default class OfficeScene extends Phaser.Scene {
    */
   private blockedTiles(): Set<string> {
     const blocked = new Set<string>();
-    (this.physics.world.staticBodies as any).forEach((b: any) => {
+    // Phaser.Structs.Set has getArray()/each() — NOT forEach(). Calling
+    // forEach here threw, and because this runs before the try below the
+    // exception escaped all the way out of the input handler and killed every
+    // interaction on the floor.
+    const bodies: any[] = (this.physics.world.staticBodies as any)?.getArray?.() ?? [];
+    for (const b of bodies) {
       blocked.add(`${Math.round((b.center.x - TILE / 2) / TILE)},${Math.round((b.center.y - TILE / 2) / TILE)}`);
-    });
+    }
     return blocked;
   }
 
@@ -502,16 +507,25 @@ export default class OfficeScene extends Phaser.Scene {
     const home = { tx: def.tx, ty: def.ty };
     const here = tileOf(npc.sprite);
     const player = tileOf(this.player);
-    const blocked = this.blockedTiles();
 
-    // Stand on whichever tile beside the player is reachable in the fewest
-    // steps — which is naturally the side they're approaching from.
+    // Routing is a presentational flourish. If any of it fails, fall back to
+    // the plain talk-in-place path — being unable to walk over must never mean
+    // being unable to hold a conversation.
     let best: { tx: number; ty: number }[] | null = null;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const cand = { tx: player.tx + dx, ty: player.ty + dy };
-      if (blocked.has(`${cand.tx},${cand.ty}`)) continue;
-      const route = this.pathBetween(here, cand, blocked);
-      if (route && (!best || route.length < best.length)) best = route;
+    let blocked: Set<string>;
+    try {
+      blocked = this.blockedTiles();
+      // Stand on whichever tile beside the player is reachable in the fewest
+      // steps — which is naturally the side they're approaching from.
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const cand = { tx: player.tx + dx, ty: player.ty + dy };
+        if (blocked.has(`${cand.tx},${cand.ty}`)) continue;
+        const route = this.pathBetween(here, cand, blocked);
+        if (route && (!best || route.length < best.length)) best = route;
+      }
+    } catch (err) {
+      console.error("[escort] routing failed, talking in place:", err);
+      return false;
     }
     // Already beside them, or hemmed in with nowhere to stand: just turn round.
     if (!best || !best.length) {
