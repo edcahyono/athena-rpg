@@ -34,13 +34,10 @@ const STANDING = new Set(["guard", "cleaner"]);
 // Ambient NPCs that stroll/clean along a fixed patrol route (tile coords).
 const WANDER = new Set(["guard", "cleaner"]);
 
-/** How many tiles a greeting NPC stops short of you. 1 = right beside you;
- *  raise it if conversations should happen at a more polite distance. */
-const MEET_GAP = 1;
-/** The row they cross the floor on to reach you. Row 8 is the central lane the
- *  cubicle builder deliberately keeps free of desks, so it's the only one that
- *  is walkable end to end. */
+/** The row Manager Lin crosses on in the scripted day-one scene. */
 const MEET_LANE = 8;
+/** NPC walk speed, milliseconds per tile. */
+const TILE_MS = 150;
 /** Walk time for a leg, so crossing six tiles doesn't take the same 620ms as
  *  crossing one — long walks were what made them look like they were marching
  *  to a fixed mark rather than over to you. */
@@ -55,8 +52,6 @@ const PATROLS: Record<string, [number, number][]> = {
 
 // Module-level so floor changes (scene restarts) don't re-show the panel.
 let welcomeShown = false;
-// Cubicle workers only come out to greet you the first time, per page load.
-const greeted = new Set<string>();
 
 export default class OfficeScene extends Phaser.Scene {
   private floor = 12;
@@ -362,9 +357,6 @@ export default class OfficeScene extends Phaser.Scene {
         { tx: aisle, ty: lin.ty, dir: "right", ms: 520 },  // step out through the door
         { tx: aisle, ty: MEET_LANE, dir: "down", ms: legMs(MEET_LANE - lin.ty) },
       ], this.faceFrom(aisle, MEET_LANE));
-      // Day one counts as her greeting — without this she replays the whole
-      // walk-out the very next time you talk to her.
-      greeted.add("supervisor");
       ui.cutscene = false;
       await interact(lin, this.floor);
       // …then retraces her steps and settles back into her chair.
@@ -420,44 +412,124 @@ export default class OfficeScene extends Phaser.Scene {
    * divider, then along the aisle to your row, so nobody ever walks through
    * their own desk. Returns true if it handled the interaction.
    */
-  private async greetFromCubicle(npc: { def: NpcDef; sprite: Phaser.GameObjects.Sprite }): Promise<boolean> {
+  /**
+   * Every tile that can't be walked through — derived from the physics world's
+   * static bodies, so it covers walls, plants, elevators AND every desk without
+   * duplicating the map-building logic (and stays right if that logic changes).
+   */
+  private blockedTiles(): Set<string> {
+    const blocked = new Set<string>();
+    (this.physics.world.staticBodies as any).forEach((b: any) => {
+      blocked.add(`${Math.round((b.center.x - TILE / 2) / TILE)},${Math.round((b.center.y - TILE / 2) / TILE)}`);
+    });
+    return blocked;
+  }
+
+  /**
+   * Breadth-first route between two tiles, so an NPC walks AROUND the desks
+   * instead of clipping through them. Returns the tiles to step through
+   * (excluding the one they start on), or null if there's no way.
+   */
+  private pathBetween(
+    from: { tx: number; ty: number }, to: { tx: number; ty: number }, blocked: Set<string>,
+  ): { tx: number; ty: number }[] | null {
+    const layout = LAYOUTS[this.floor];
+    const H = layout.length, W = layout[0].length;
+    const key = (x: number, y: number) => `${x},${y}`;
+    const prev = new Map<string, string | null>();
+    const queue: { tx: number; ty: number }[] = [from];
+    prev.set(key(from.tx, from.ty), null);
+    while (queue.length) {
+      const cur = queue.shift()!;
+      if (cur.tx === to.tx && cur.ty === to.ty) break;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = cur.tx + dx, ny = cur.ty + dy, k = key(nx, ny);
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H || prev.has(k) || blocked.has(k)) continue;
+        prev.set(k, key(cur.tx, cur.ty));
+        queue.push({ tx: nx, ty: ny });
+      }
+    }
+    if (!prev.has(key(to.tx, to.ty))) return null;
+    const path: { tx: number; ty: number }[] = [];
+    for (let k: string | null = key(to.tx, to.ty); k; k = prev.get(k) ?? null) {
+      const [x, y] = k.split(",").map(Number);
+      path.unshift({ tx: x, ty: y });
+    }
+    return path.slice(1); // drop the tile they're already standing on
+  }
+
+  /** Turn a tile route into walk legs, merging straight runs so they stride
+   *  down a corridor instead of stuttering one tile at a time. */
+  private legsFor(from: { tx: number; ty: number }, path: { tx: number; ty: number }[]) {
+    const legs: { tx: number; ty: number; dir: "down" | "up" | "left" | "right"; ms: number }[] = [];
+    let prev = from;
+    for (const t of path) {
+      const dir: "down" | "up" | "left" | "right" =
+        t.tx > prev.tx ? "right" : t.tx < prev.tx ? "left" : t.ty > prev.ty ? "down" : "up";
+      const last = legs[legs.length - 1];
+      if (last && last.dir === dir) { last.tx = t.tx; last.ty = t.ty; last.ms += TILE_MS; }
+      else legs.push({ tx: t.tx, ty: t.ty, dir, ms: TILE_MS });
+      prev = t;
+    }
+    return legs;
+  }
+
+  /** Wait until no dialogue, panel or cutscene is open. The domain check runs
+   *  AFTER chatMode's lifecycle ends, so without this the manager wanders back
+   *  to their desk while the player is still being quizzed by them. */
+  private untilIdle(): Promise<void> {
+    return new Promise((resolve) => {
+      const tick = () => { if (!ui.busy) resolve(); else this.time.delayedCall(150, tick); };
+      tick();
+    });
+  }
+
+  /**
+   * The NPC gets up and comes to WHERE YOU ARE STANDING — every time you talk
+   * to them, not just the first. They route around the desks, stop on the tile
+   * next to you and turn to face you, so the conversation happens eye to eye
+   * however you approached. Afterwards they retrace their steps and sit down.
+   */
+  private async escortToPlayer(npc: { def: NpcDef; sprite: Phaser.GameObjects.Sprite }): Promise<boolean> {
     const def = npc.def;
-    // Only seated cubicle workers on the open floors, once each per page load.
     const cubicled = !STANDING.has(def.id) && def.kind !== "persona" && def.kind !== "board"
       && [10, 11, 12].includes(this.floor);
-    if (!cubicled || greeted.has(def.id)) return false;
-    greeted.add(def.id);
+    if (!cubicled) return false;
+
+    const tileOf = (o: { x: number; y: number }) => ({
+      tx: Math.round((o.x - TILE / 2) / TILE), ty: Math.round((o.y - TILE / 2) / TILE),
+    });
+    const home = { tx: def.tx, ty: def.ty };
+    const here = tileOf(npc.sprite);
+    const player = tileOf(this.player);
+    const blocked = this.blockedTiles();
+
+    // Stand on whichever tile beside the player is reachable in the fewest
+    // steps — which is naturally the side they're approaching from.
+    let best: { tx: number; ty: number }[] | null = null;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const cand = { tx: player.tx + dx, ty: player.ty + dy };
+      if (blocked.has(`${cand.tx},${cand.ty}`)) continue;
+      const route = this.pathBetween(here, cand, blocked);
+      if (route && (!best || route.length < best.length)) best = route;
+    }
+    // Already beside them, or hemmed in with nowhere to stand: just turn round.
+    if (!best || !best.length) {
+      npc.sprite.setTexture(`char-${def.color}-${this.faceMe(npc.sprite)}-0`);
+      return false;
+    }
 
     ui.cutscene = true;
     try {
-      const aisle = def.tx + 1;                                  // free column outside the doorway
-      const cols = LAYOUTS[this.floor][0].length;
-      // They walk to WHERE YOU ARE, not to a fixed spot. Row 8 is the one lane
-      // kept clear of desks the whole way across (see the cubicle builder), so
-      // it's the only row they can cross the floor on without clipping through
-      // someone's desk collider — they meet you from there.
-      const playerCol = Math.round((this.player.x - TILE / 2) / TILE);
-      // Stop MEET_GAP tiles short, on the side they're coming from, so they end
-      // up standing beside you rather than on top of you.
-      const approach = aisle <= playerCol ? -1 : 1;
-      // Lower bound 2, not 1: column 1 of this row is the elevator, which has a
-      // collider they'd walk into.
-      const meetCol = Phaser.Math.Clamp(playerCol + approach * MEET_GAP, 2, cols - 2);
-      const down = MEET_LANE > def.ty;
-      await this.walkNpcPath(def.id, [
-        { tx: aisle, ty: def.ty, dir: "right", ms: 460 },        // step out through the door
-        { tx: aisle, ty: MEET_LANE, dir: down ? "down" : "up", ms: legMs(MEET_LANE - def.ty) },
-        { tx: meetCol, ty: MEET_LANE, dir: meetCol < aisle ? "left" : "right", ms: legMs(meetCol - aisle) },
-      ], this.faceFrom(meetCol, MEET_LANE));                     // face you from where they STOP
+      const stop = best[best.length - 1];
+      await this.walkNpcPath(def.id, this.legsFor(here, best), this.faceFrom(stop.tx, stop.ty));
       ui.cutscene = false;
       await interact(def, this.floor);
-      // …then back along the lane, through the doorway and into their chair.
+      await this.untilIdle();   // don't head back mid-check
       ui.cutscene = true;
-      await this.walkNpcPath(def.id, [
-        { tx: aisle, ty: MEET_LANE, dir: meetCol < aisle ? "right" : "left", ms: legMs(meetCol - aisle) },
-        { tx: aisle, ty: def.ty, dir: down ? "up" : "down", ms: legMs(MEET_LANE - def.ty) },
-        { tx: def.tx, ty: def.ty, dir: "left", ms: 460 },
-      ], def.facing || "down", 3);                               // +3px: seated offset
+      const back = this.pathBetween(stop, home, blocked);
+      if (back?.length) await this.walkNpcPath(def.id, this.legsFor(stop, back), def.facing || "down", 3);
+      else npc.sprite.setTexture(`char-${def.color}-${def.facing || "down"}-0`);
     } finally {
       ui.cutscene = false;
       updateHUD(this.floor);
@@ -558,7 +630,7 @@ export default class OfficeScene extends Phaser.Scene {
       // First time you approach a cubicle worker they get up and come out to
       // meet you, the way Manager Lin does on day one — through the doorway in
       // the divider, never through their own desk.
-      if (await this.greetFromCubicle(npc)) return;
+      if (await this.escortToPlayer(npc)) return;
       npc.sprite.setTexture(`char-${npc.def.color}-${this.faceMe(npc.sprite)}-0`);
       // Seated workers rise to greet you, then settle back when you leave.
       const standing = STANDING.has(npc.def.id);
