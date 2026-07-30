@@ -10,11 +10,10 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { RAG_STORE_DIR } from "../paths.js";
 import { tokenize } from "./tokenize.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const STORE_DIR = path.join(__dirname, "store");
+const STORE_DIR = RAG_STORE_DIR;
 
 const TOP_N = Number(process.env.RAG_TOP_N || 3);
 const BM25_MIN_SCORE = Number(process.env.RAG_BM25_MIN_SCORE || 2.0);

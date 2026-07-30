@@ -9,16 +9,14 @@
  * survive server restarts without needing a database for v1.
  */
 import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { SESSIONS_FILE } from "../paths.js";
 import { PERSONAS, MID_PERSONAS } from "../../shared/personas.config.js";
 import { GAME_CONFIG } from "../../shared/gameConfig.js";
 import { TRACKS } from "../../shared/gameContent.js";
 import { newEngagement, syncEngagement } from "../../shared/phases.js";
 import { newWorkspace } from "../../shared/workspace.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FILE = path.join(__dirname, "..", "data", "sessions.json");
+const FILE = SESSIONS_FILE;
 
 const sessions = new Map();
 let saveTimer = null;

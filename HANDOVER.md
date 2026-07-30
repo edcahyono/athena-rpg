@@ -132,7 +132,7 @@ canvas; `window.game` is not reliably exposed. DOM/HUD verification works fine
 | Item | Notes |
 |---|---|
 | **Update the key in Render** | Local is fixed; production still has the revoked one. |
-| `DATA_DIR` for Render | `sessions.json` is on ephemeral disk — progress is lost on redeploy. |
+| **Set `DATA_DIR` + mount the disk in Render** | Code is done and verified; the dashboard side is not. See §8. |
 | `PLACEHOLDER` gatekeeper criteria | All seven `REVIEW_CRITERIA` entries are still placeholder text. |
 | Tighten MCQ distractors further | ~1 weak option per question survives the new rule. |
 | Verify readout grading + Lin upload | Now unblocked; still not exercised end to end. |
@@ -166,3 +166,43 @@ canvas; `window.game` is not reliably exposed. DOM/HUD verification works fine
    own.
 5. C2 was kept when the binder was removed, because it's one of the five
    competencies named in Alice's brief and the binder was its only mechanism.
+
+---
+
+## 8. Persistent storage on Render (`DATA_DIR`)
+
+Added 2026-07-30, after the Starter upgrade. `server/paths.js` is now the single
+place that resolves every path the server writes to at runtime.
+
+**Four things are written at runtime, not one.** The one that matters most is
+not sessions — it's the coach corpus. A coach adds content in production, hits
+re-ingest, and an ephemeral redeploy rolls it back with no error anywhere.
+
+| Path | Written by | Was lost on redeploy |
+|---|---|---|
+| `sessions.json` | game progress | all learner progress |
+| `qa/qa.source.json` | coach console | every coach edit |
+| `qa/backups/` | coach console | edit history |
+| `rag-store/*.json` | re-ingest | reverts to the git snapshot |
+
+### Render dashboard steps (not done yet)
+
+1. Add a disk: mount path `/var/data`, 1 GB is plenty (the corpus is ~350
+   chunks; embeddings dominate at a few MB).
+2. Add env var `DATA_DIR=/var/data`.
+3. Redeploy. Look for `[data] seeded …` in the logs on the first boot only.
+
+### Behaviour
+
+- **`DATA_DIR` unset → byte-for-byte the old behaviour.** Verified: repo paths,
+  7 stores, embeddings mode, 52 sessions restored, no `[data]` lines.
+- **Set and empty → seeds from the repo copies**, so a fresh deploy starts with
+  the committed corpus, not an empty knowledge base. Embeddings survive the copy.
+- **Set and populated → the disk wins.** Seeding only ever fills gaps, so a
+  later deploy will NOT overwrite a coach's edits. Verified by adding a chunk to
+  the disk copy and restarting: 350 chunks still there, not re-seeded to 349.
+- `sessions.json` is deliberately **not** seeded — the repo copy is local test
+  data, and production should not inherit it.
+
+`server/coach/routes.js` needed no change: it derives `BACKUP_DIR` from
+`path.dirname(SOURCE_PATH)`, so backups follow the move for free.

@@ -4,16 +4,15 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { QA_SOURCE_FILE, RAG_STORE_DIR } from "../paths.js";
 import { tokenize } from "./tokenize.js";
 import { PERSONAS } from "../../shared/personas.config.js";
 
 /** Shared corpus id — kept in step with retriever.js. */
 export const GENERAL_ID = "general";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const SOURCE_PATH = path.join(__dirname, "..", "data", "qa", "qa.source.json");
-const OUT_DIR = path.join(__dirname, "store");
+export const SOURCE_PATH = QA_SOURCE_FILE;
+const OUT_DIR = RAG_STORE_DIR;
 
 function chunkText(c) {
   return [c.question_zh, c.question_en, (c.keywords || []).join(" "), c.answer_zh, c.answer_en]

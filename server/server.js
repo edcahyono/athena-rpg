@@ -12,6 +12,7 @@ if (!process.env.ANTHROPIC_API_KEY) {
   console.warn("\n[WARN] ANTHROPIC_API_KEY is not set. Copy .env.example to .env and add your key.\n");
 }
 
+const { seedDataDir } = await import("./paths.js");
 const { default: gameRouter } = await import("./game/routes.js");
 const { loadStores } = await import("./rag/retriever.js");
 const { loadSessions } = await import("./game/sessionStore.js");
@@ -53,6 +54,9 @@ if (fs.existsSync(dist)) {
   app.get(/^\/(?!api).*/, (_req, res) => res.sendFile(path.join(dist, "index.html")));
 }
 
+// Must run BEFORE the loaders: on a fresh persistent disk it is what puts the
+// committed corpus there for loadStores() to find. No-op unless DATA_DIR is set.
+seedDataDir();
 loadStores();
 loadSessions();
 
