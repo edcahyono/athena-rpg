@@ -62,14 +62,26 @@ export async function runIngestion({ log = console.log } = {}) {
   }
 
   let embeddingsById = null;
+  let embeddingError = null;
   if (VOYAGE_KEY) {
     log(`Embedding ${chunks.length} chunks with ${VOYAGE_MODEL}...`);
-    embeddingsById = {};
-    const BATCH = 32;
-    for (let i = 0; i < chunks.length; i += BATCH) {
-      const batch = chunks.slice(i, i + BATCH);
-      const vecs = await embedBatch(batch.map(chunkText), VOYAGE_KEY, VOYAGE_MODEL);
-      batch.forEach((c, j) => (embeddingsById[c.id] = vecs[j]));
+    try {
+      embeddingsById = {};
+      const BATCH = 32;
+      for (let i = 0; i < chunks.length; i += BATCH) {
+        const batch = chunks.slice(i, i + BATCH);
+        const vecs = await embedBatch(batch.map(chunkText), VOYAGE_KEY, VOYAGE_MODEL);
+        batch.forEach((c, j) => (embeddingsById[c.id] = vecs[j]));
+      }
+    } catch (err) {
+      // Degrade, don't die. This used to throw straight out of runIngestion,
+      // so a coach clicking "Apply to personas" behind a VPN got a hard failure
+      // and kept serving their previous content with no idea why. BM25 is a
+      // fully working retrieval mode — build that and say so loudly.
+      embeddingError = err.cause?.code || err.message;
+      embeddingsById = null;
+      log(`WARNING: embedding failed (${embeddingError}) — building BM25-only index instead.`);
+      log("WARNING: retrieval will use keyword matching until you re-run this with the embedding service reachable.");
     }
   } else {
     log("VOYAGE_API_KEY not set — building BM25-only index (fully functional fallback).");
@@ -113,5 +125,5 @@ export async function runIngestion({ log = console.log } = {}) {
     }, null, 2)
   );
   log("Ingestion complete → " + OUT_DIR);
-  return { counts, totalChunks: chunks.length };
+  return { counts, totalChunks: chunks.length, embedded: !!embeddingsById, embeddingError };
 }
