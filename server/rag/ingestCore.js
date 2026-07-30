@@ -6,6 +6,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { tokenize } from "./tokenize.js";
+import { PERSONAS } from "../../shared/personas.config.js";
+
+/** Shared corpus id — kept in step with retriever.js. */
+export const GENERAL_ID = "general";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const SOURCE_PATH = path.join(__dirname, "..", "data", "qa", "qa.source.json");
@@ -37,6 +41,24 @@ export async function runIngestion({ log = console.log } = {}) {
   const byPersona = {};
   for (const c of chunks) {
     for (const pid of c.personas) (byPersona[pid] ||= []).push(c);
+  }
+
+  // Fold the shared corpus into EVERY persona's index. Keeping it in its own
+  // store and merging at query time reads cleaner, but BM25 statistics are not
+  // comparable across separate indexes: a small general store gets a near-zero
+  // idf and can never outscore a large specialist one, so shared content simply
+  // never surfaced. One index per persona gives correct relevance for free.
+  //
+  // This does NOT weaken isolation — a persona's index still contains only
+  // their own material plus the shared corpus, never another persona's.
+  const generalChunks = byPersona[GENERAL_ID] || [];
+  if (generalChunks.length) {
+    for (const p of PERSONAS) (byPersona[p.id] ||= []); // reach personas with no own content yet
+    for (const pid of Object.keys(byPersona)) {
+      if (pid === GENERAL_ID) continue;
+      const own = new Set(byPersona[pid].map((c) => c.id));
+      byPersona[pid] = [...byPersona[pid], ...generalChunks.filter((c) => !own.has(c.id))];
+    }
   }
 
   let embeddingsById = null;
@@ -72,7 +94,7 @@ export async function runIngestion({ log = console.log } = {}) {
     });
     const df = {};
     for (const d of docs) for (const t of Object.keys(d.tf)) df[t] = (df[t] || 0) + 1;
-    const avgLen = docs.reduce((s, d) => s + d.len, 0) / docs.length;
+    const avgLen = docs.length ? docs.reduce((s, d) => s + d.len, 0) / docs.length : 0;
     fs.writeFileSync(
       path.join(OUT_DIR, `${pid}.json`),
       JSON.stringify({ personaId: pid, docs, df, avgLen, n: docs.length })

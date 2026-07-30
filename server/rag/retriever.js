@@ -19,6 +19,13 @@ const STORE_DIR = path.join(__dirname, "store");
 const TOP_N = Number(process.env.RAG_TOP_N || 3);
 const BM25_MIN_SCORE = Number(process.env.RAG_BM25_MIN_SCORE || 2.0);
 const COSINE_MIN_SCORE = Number(process.env.RAG_COSINE_MIN_SCORE || 0.35);
+/**
+ * The shared corpus EVERY persona may draw on, alongside their own. Content
+ * filed here is company-wide context — the case brief, market background,
+ * engagement logistics — not one function's specialist detail.
+ */
+export const GENERAL_ID = "general";
+
 const K1 = 1.5;
 const B = 0.75;
 
@@ -38,7 +45,8 @@ export function loadStores() {
     if (data.docs.some((d) => d.embedding)) hasEmbeddings = true;
   }
   const mode = hasEmbeddings && process.env.VOYAGE_API_KEY ? "embeddings (Voyage)" : "BM25";
-  console.log(`[rag] loaded ${stores.size} persona stores — retrieval mode: ${mode}`);
+  const shared = stores.has(GENERAL_ID) ? ", incl. shared general" : "";
+  console.log(`[rag] loaded ${stores.size} stores${shared} — retrieval mode: ${mode}`);
 }
 
 function bm25Scores(store, query) {
@@ -83,10 +91,21 @@ function cosine(a, b) {
   return dot / (Math.sqrt(na) * Math.sqrt(nb) || 1);
 }
 
-/** retrieve(personaId, query) -> [{ id, question_zh, question_en, answer_zh, answer_en }] */
+/**
+ * retrieve(personaId, query) -> [{ id, question_zh, question_en, answer_zh, answer_en }]
+ *
+ * One index per persona, containing their own material plus the shared general
+ * corpus (folded in at ingest — see ingestCore.js). No other persona's store is
+ * ever consulted, so the CFO cannot surface the CTO's material however the
+ * question is phrased. That isolation is structural, not a prompt instruction
+ * that could be talked around.
+ */
 export async function retrieve(personaId, query) {
+  // `general` is a coach-side filing bucket, not a speaking role — never serve
+  // it as if it were a persona.
+  if (!query?.trim() || personaId === GENERAL_ID) return [];
   const store = stores.get(personaId);
-  if (!store || !query?.trim()) return [];
+  if (!store) return [];
 
   let scored;
   if (hasEmbeddings && process.env.VOYAGE_API_KEY) {

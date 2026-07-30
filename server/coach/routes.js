@@ -18,11 +18,13 @@ import express from "express";
 import mammoth from "mammoth";
 import { PERSONAS } from "../../shared/personas.config.js";
 import { runIngestion, SOURCE_PATH } from "../rag/ingestCore.js";
-import { loadStores } from "../rag/retriever.js";
+import { loadStores, GENERAL_ID } from "../rag/retriever.js";
 import { callAnthropic, CHAT_MODEL } from "../anthropic.js";
 
 const router = express.Router();
-const VALID_IDS = new Set(PERSONAS.map((p) => p.id));
+// "general" is a real, selectable target — the shared corpus every persona can
+// retrieve from. It is not a persona: nobody plays it, it just widens access.
+const VALID_IDS = new Set([...PERSONAS.map((p) => p.id), GENERAL_ID]);
 const BACKUP_DIR = path.join(path.dirname(SOURCE_PATH), "backups");
 
 const readSource = () => JSON.parse(fs.readFileSync(SOURCE_PATH, "utf8"));
@@ -70,7 +72,10 @@ router.get("/chunks", (_req, res) => {
   const data = readSource();
   res.json({
     chunks: data.chunks,
-    personas: PERSONAS.map((p) => ({ id: p.id, title_en: p.title.en, title_zh: p.title.zh })),
+    personas: [
+      { id: GENERAL_ID, title_en: "General — every role", title_zh: "通用 — 所有角色" },
+      ...PERSONAS.map((p) => ({ id: p.id, title_en: p.title.en, title_zh: p.title.zh })),
+    ],
   });
 });
 
@@ -205,6 +210,7 @@ async function extractSegment(segText, idPrefix) {
         "(4) keywords: 3-8 short retrieval terms mixing Chinese and English. " +
         "(5) id: kebab-case ascii beginning with '" + idPrefix + "'. " +
         "(6) PERSONAS — this is important: if a line near the question lists applicable roles (for example 'Applicable Personas: COO, CTO' or '适用角色：CMO、CTO'), put EXACTLY those role ids into the personas array, lowercased, using only these valid ids: ceo, cfo, cmo, coo, chro, cto, cpo. If no such line is present for a question, return an empty personas array (the caller will apply a default). Do not invent personas beyond what the line states. " +
+        "(6b) GENERAL — there is one further id, 'general', for material that genuinely applies to EVERY role: company-wide facts, the case brief, market or competitor background, engagement logistics. Use it only when the content belongs to no single function. Never use it as a catch-all for questions you are unsure how to file — leave personas empty for those instead, since anything marked general becomes readable by all seven executives. " +
         "(7) Ignore document titles, section headers, the 'Applicable Personas说明' explainer line, and any item obviously cut off at the very start or end of the excerpt.",
       messages: [{ role: "user", content: "ID prefix: " + idPrefix + "\n\nExcerpt:\n\n" + segText }],
   });
