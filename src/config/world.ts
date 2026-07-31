@@ -255,6 +255,18 @@ const MID_NAMES: Record<string, BL> = {
 };
 // On the shared cubicle grid: upper band ty=3, lower band ty=11.
 const midSpots: [number, number][] = [[4, 3], [12, 3], [20, 3], [28, 3], [4, 11], [12, 11], [20, 11]];
+/** The lower cubicle band turns to face UP, so the two rows look at each other
+ *  across the central aisle instead of both facing the camera. Applied here
+ *  rather than on each NPC so hand-authored and generated workers agree, and so
+ *  `facing` stays the single source of truth — the walk back to a desk after a
+ *  conversation reads it too. */
+function faceLowerBandUp() {
+  for (const n of NPCS) {
+    if (n.ty >= 11 && !n.facing && n.kind !== "persona" && [10, 11, 12].includes(n.floor)) {
+      n.facing = "up";
+    }
+  }
+}
 MID_PERSONAS.forEach((p: any, i: number) => {
   const [tx, ty] = midSpots[i % midSpots.length];
   NPCS.push({
@@ -267,6 +279,8 @@ MID_PERSONAS.forEach((p: any, i: number) => {
     personaId: p.id,
   });
 });
+// Every desk worker on floors 10-12 now exists, so turn the lower band around.
+faceLowerBandUp();
 
 // Floor 15: the seven Nike C-suite personas, each seated INSIDE their sealed
 // office (persona order: ceo, cfo, cmo, coo, chro, cto, cpo) — see EXEC layout
@@ -278,7 +292,12 @@ MID_PERSONAS.forEach((p: any, i: number) => {
 // Seated against the BACK wall of each room, not the middle. Mid-room put the
 // executive within talking reach of the doorway tile, so walking in or out
 // meant brushing past them. Against the back wall the doorway is clear.
-const execSpots: [number, number][] = [[10, 2], [16, 2], [22, 2], [28, 2], [10, 13], [18, 13], [26, 13]];
+//
+// In PERSONAS order (ceo, cfo, cmo, coo, chro, cto, cpo) and MUST stay in step
+// with EXEC_OFFICES[].seat, or executives stand outside their own rooms. CEO,
+// CFO and CPO occupy the three larger bottom rooms; CHRO and CTO took their
+// former places along the top.
+const execSpots: [number, number][] = [[10, 13], [18, 13], [22, 2], [28, 2], [10, 2], [16, 2], [26, 13]];
 PERSONAS.forEach((p: any, i: number) => {
   const [tx, ty] = execSpots[i % execSpots.length];
   NPCS.push({
@@ -314,17 +333,17 @@ export interface ExecOfficeSeat { tx: number; ty: number }
 export const EXEC_OFFICES: (ExecOffice & { seat: ExecOfficeSeat })[] = [
   // Square 5x5 rooms (3x3 interior). Four along the top, three below, all doors
   // opening onto the central corridor.
-  { execId: "ceo",  label: { en: "CEO", zh: "首席执行官" }, tx: 8, ty: 1, w: 5, h: 5,
+  { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 8, ty: 1, w: 5, h: 5,
     door: { tx: 10, ty: 5 }, inside: { tx: 10, ty: 4 }, outside: { tx: 10, ty: 6 }, seat: { tx: 10, ty: 2 } },
-  { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 14, ty: 1, w: 5, h: 5,
+  { execId: "cto",  label: { en: "CTO", zh: "首席技术官" }, tx: 14, ty: 1, w: 5, h: 5,
     door: { tx: 16, ty: 5 }, inside: { tx: 16, ty: 4 }, outside: { tx: 16, ty: 6 }, seat: { tx: 16, ty: 2 } },
   { execId: "cmo",  label: { en: "CMO", zh: "首席营销官" }, tx: 20, ty: 1, w: 5, h: 5,
     door: { tx: 22, ty: 5 }, inside: { tx: 22, ty: 4 }, outside: { tx: 22, ty: 6 }, seat: { tx: 22, ty: 2 } },
   { execId: "coo",  label: { en: "COO", zh: "首席运营官" }, tx: 26, ty: 1, w: 5, h: 5,
     door: { tx: 28, ty: 5 }, inside: { tx: 28, ty: 4 }, outside: { tx: 28, ty: 6 }, seat: { tx: 28, ty: 2 } },
-  { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 8, ty: 10, w: 5, h: 5,
+  { execId: "ceo",  label: { en: "CEO", zh: "首席执行官" }, tx: 8, ty: 10, w: 5, h: 5,
     door: { tx: 10, ty: 10 }, inside: { tx: 10, ty: 11 }, outside: { tx: 10, ty: 9 }, seat: { tx: 10, ty: 13 } },
-  { execId: "cto",  label: { en: "CTO", zh: "首席技术官" }, tx: 16, ty: 10, w: 5, h: 5,
+  { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 16, ty: 10, w: 5, h: 5,
     door: { tx: 18, ty: 10 }, inside: { tx: 18, ty: 11 }, outside: { tx: 18, ty: 9 }, seat: { tx: 18, ty: 13 } },
   { execId: "cpo",  label: { en: "CPO", zh: "首席产品官" }, tx: 24, ty: 10, w: 5, h: 5,
     door: { tx: 26, ty: 10 }, inside: { tx: 26, ty: 11 }, outside: { tx: 26, ty: 9 }, seat: { tx: 26, ty: 13 } },

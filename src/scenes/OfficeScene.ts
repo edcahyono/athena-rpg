@@ -159,15 +159,19 @@ export default class OfficeScene extends Phaser.Scene {
       const x = def.tx * TILE + TILE / 2, y = def.ty * TILE + TILE / 2;
       const wander = WANDER.has(def.id);
       const seated = !STANDING.has(def.id);
-      if (seated && def.kind !== "persona" && [10, 11, 12].includes(this.floor)) this.drawCubicle(x, y);
-      if (seated) this.add.image(x, y - 2, "tile-chair").setDepth(y - 1); // chair behind the desk worker
+      // The lower cubicle band faces up (config/world.ts), so its furniture
+      // mirrors with it — "in front of them" is ABOVE them for that row.
+      const facesUp = def.facing === "up";
+      if (seated && def.kind !== "persona" && [10, 11, 12].includes(this.floor)) this.drawCubicle(x, y, facesUp);
+      if (seated) this.add.image(x, y + (facesUp ? 2 : -2), "tile-chair").setDepth(y - 1); // chair behind the worker
       // Personal cubicle desk (with laptop) directly in front — the worker sits
       // behind it. Executives (F15) get their own office desks instead.
       // Never put a desk on row 8: that is the lane the player walks along
       // when stepping out of the lift, and a collider there strands them.
-      const giveDesk = seated && def.kind !== "persona" && def.ty + 1 !== 8;
+      const deskRow = def.ty + (facesUp ? -1 : 1);
+      const giveDesk = seated && def.kind !== "persona" && deskRow !== 8;
       if (giveDesk) {
-        const dyPix = y + TILE;
+        const dyPix = y + (facesUp ? -TILE : TILE);
         const deskImg = this.add.image(x, dyPix, "tile-work-0").setDepth(dyPix + 4);
         this.deskAnims.push({ img: deskImg, phase: Math.floor(Math.random() * 400) });
         const deskBody = walls.create(x, dyPix, "tile-work-0") as Phaser.Physics.Arcade.Sprite;
@@ -322,10 +326,15 @@ export default class OfficeScene extends Phaser.Scene {
         .setDepth(9000).setStrokeStyle(3, 0x8fb0c4);
       // Door stays visible above the frost — it's the way in (press E).
       this.add.image(o.door.tx * TILE + TILE / 2, o.door.ty * TILE + TILE / 2, "tile-exec-door").setDepth(9001);
-      const label = this.add.text(px + pw / 2, py + ph - 10, L(o.label), {
+      // The room's title sits against the BACK wall — the side away from the
+      // door — so it never sits over the doorway you walk through. The seat is
+      // at the back, so whichever side of it the door is on, the title goes
+      // opposite.
+      const backIsTop = o.door.ty > o.seat.ty;
+      const label = this.add.text(px + pw / 2, backIsTop ? py + 8 : py + ph - 8, L(o.label), {
         fontFamily: FONT_UI, fontSize: "12px", fontStyle: "bold", color: "#1f3038",
         stroke: "#eaf4fa", strokeThickness: 3, align: "center", wordWrap: { width: pw - 6 },
-      }).setOrigin(0.5, 1).setDepth(10002);
+      }).setOrigin(0.5, backIsTop ? 0 : 1).setDepth(10002);
       // The exec's laptop desk, on the door side of their seat (drawn/animated
       // here since executives are excluded from the open-floor cubicle desks).
       const dside = Math.sign(o.door.ty - o.seat.ty) || 1;
@@ -622,16 +631,22 @@ export default class OfficeScene extends Phaser.Scene {
    *  and a RIGHT divider broken by a gap at seat level — the doorway. Every
    *  station opens the same way, so an occupant always has a visible way out
    *  instead of appearing to phase through their own desk. */
-  private drawCubicle(x: number, y: number) {
-    this.add.image(x, y - 15, "tile-cubicle").setDepth(y - 3);            // back panel
-    this.add.rectangle(x - 24, y + 4, 4, 52, 0x646d80).setDepth(y - 4);  // left divider
+  /** @param up mirror the whole cubicle vertically, for the lower band whose
+   *  workers face up — their back panel belongs behind them, which from this
+   *  camera means below. Drawn in front of the worker in that case, since it is
+   *  then the nearer surface. */
+  private drawCubicle(x: number, y: number, up = false) {
+    const f = up ? -1 : 1;
+    this.add.image(x, y - 15 * f, "tile-cubicle")
+      .setFlipY(up).setDepth(up ? y + 16 : y - 3);                          // back panel
+    this.add.rectangle(x - 24, y + 4 * f, 4, 52, 0x646d80).setDepth(y - 4); // left divider
     // Right divider in two pieces; the 20px gap between them is the entrance.
-    this.add.rectangle(x + 24, y - 14, 4, 16, 0x646d80).setDepth(y - 4);
-    this.add.rectangle(x + 24, y + 22, 4, 16, 0x646d80).setDepth(y - 4);
+    this.add.rectangle(x + 24, y - 14 * f, 4, 16, 0x646d80).setDepth(y - 4);
+    this.add.rectangle(x + 24, y + 22 * f, 4, 16, 0x646d80).setDepth(y - 4);
     // Doorway jambs — a lighter capped edge either side of the opening so the
     // gap reads as a deliberate door rather than a hole in the panel.
-    this.add.rectangle(x + 24, y - 6, 6, 3, 0x9aa4ba).setDepth(y - 4);
-    this.add.rectangle(x + 24, y + 14, 6, 3, 0x9aa4ba).setDepth(y - 4);
+    this.add.rectangle(x + 24, y - 6 * f, 6, 3, 0x9aa4ba).setDepth(y - 4);
+    this.add.rectangle(x + 24, y + 14 * f, 6, 3, 0x9aa4ba).setDepth(y - 4);
   }
 
   /** Talking distance. 46px meant standing shoulder-to-shoulder, which reads
