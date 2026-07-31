@@ -6,13 +6,37 @@ import fs from "node:fs";
 import path from "node:path";
 import { QA_SOURCE_FILE, RAG_STORE_DIR } from "../paths.js";
 import { tokenize } from "./tokenize.js";
-import { PERSONAS } from "../../shared/personas.config.js";
+import {
+  EXEC_FOLDERS,
+  GATEKEEPER_FOLDERS,
+  GENERAL_ID,
+} from "../../shared/folders.js";
 
-/** Shared corpus id — kept in step with retriever.js. */
-export const GENERAL_ID = "general";
+export { GENERAL_ID };
 
 export const SOURCE_PATH = QA_SOURCE_FILE;
 const OUT_DIR = RAG_STORE_DIR;
+
+/** Compiled gatekeeper corpora, read back by server/game/trackKnowledge.js. */
+export const GATEKEEPER_FILE = path.join(RAG_STORE_DIR, "gatekeeper-knowledge.json");
+
+/**
+ * A gatekeeper's whole corpus is fed into their system prompt AND into the
+ * 5-MCQ generator. Past that size the quiz prompt starts crowding out its own
+ * instructions, so say so rather than truncating a coach's uploads silently.
+ */
+const GATEKEEPER_SOFT_CAP = 60000;
+
+/** Render one folder's chunks as the plain Q&A text a gatekeeper reads. */
+function compileKnowledge(list) {
+  return list
+    .map((c) => {
+      const q = c.question_en || c.question_zh || "";
+      const a = [c.answer_en, c.answer_zh].filter(Boolean).join("\n");
+      return `Q: ${q}\nA: ${a}`;
+    })
+    .join("\n\n");
+}
 
 function chunkText(c) {
   return [c.question_zh, c.question_en, (c.keywords || []).join(" "), c.answer_zh, c.answer_en]
@@ -37,9 +61,19 @@ export async function runIngestion({ log = console.log } = {}) {
   const { chunks } = JSON.parse(fs.readFileSync(SOURCE_PATH, "utf8"));
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
-  const byPersona = {};
+  const byFolder = {};
   for (const c of chunks) {
-    for (const pid of c.personas) (byPersona[pid] ||= []).push(c);
+    for (const pid of c.personas) (byFolder[pid] ||= []).push(c);
+  }
+
+  // Gatekeeper folders leave the retrieval path here: their content is compiled
+  // whole rather than indexed, so it never reaches a store. Pulled out BEFORE
+  // the general fold, because a gatekeeper reading company-wide background is a
+  // separate editorial decision the coach makes by filing it there.
+  const gatekeeperChunks = {};
+  for (const f of GATEKEEPER_FOLDERS) {
+    gatekeeperChunks[f.trackId] = byFolder[f.id] || [];
+    delete byFolder[f.id];
   }
 
   // Fold the shared corpus into EVERY persona's index. Keeping it in its own
@@ -50,25 +84,31 @@ export async function runIngestion({ log = console.log } = {}) {
   //
   // This does NOT weaken isolation — a persona's index still contains only
   // their own material plus the shared corpus, never another persona's.
-  const generalChunks = byPersona[GENERAL_ID] || [];
+  const generalChunks = byFolder[GENERAL_ID] || [];
   if (generalChunks.length) {
-    for (const p of PERSONAS) (byPersona[p.id] ||= []); // reach personas with no own content yet
-    for (const pid of Object.keys(byPersona)) {
+    for (const f of EXEC_FOLDERS) (byFolder[f.id] ||= []); // reach personas with no own content yet
+    for (const pid of Object.keys(byFolder)) {
       if (pid === GENERAL_ID) continue;
-      const own = new Set(byPersona[pid].map((c) => c.id));
-      byPersona[pid] = [...byPersona[pid], ...generalChunks.filter((c) => !own.has(c.id))];
+      const own = new Set(byFolder[pid].map((c) => c.id));
+      byFolder[pid] = [...byFolder[pid], ...generalChunks.filter((c) => !own.has(c.id))];
     }
   }
+
+  // Only chunks that actually land in a store need a vector. Gatekeeper-only
+  // material is never retrieved, so embedding it would burn quota for nothing.
+  const retrievable = [...new Map(
+    Object.values(byFolder).flat().map((c) => [c.id, c])
+  ).values()];
 
   let embeddingsById = null;
   let embeddingError = null;
   if (VOYAGE_KEY) {
-    log(`Embedding ${chunks.length} chunks with ${VOYAGE_MODEL}...`);
+    log(`Embedding ${retrievable.length} chunks with ${VOYAGE_MODEL}...`);
     try {
       embeddingsById = {};
       const BATCH = 32;
-      for (let i = 0; i < chunks.length; i += BATCH) {
-        const batch = chunks.slice(i, i + BATCH);
+      for (let i = 0; i < retrievable.length; i += BATCH) {
+        const batch = retrievable.slice(i, i + BATCH);
         const vecs = await embedBatch(batch.map(chunkText), VOYAGE_KEY, VOYAGE_MODEL);
         batch.forEach((c, j) => (embeddingsById[c.id] = vecs[j]));
       }
@@ -87,7 +127,7 @@ export async function runIngestion({ log = console.log } = {}) {
   }
 
   const counts = {};
-  for (const [pid, list] of Object.entries(byPersona)) {
+  for (const [pid, list] of Object.entries(byFolder)) {
     const docs = list.map((c) => {
       const tokens = tokenize(chunkText(c));
       const tf = {};
@@ -114,15 +154,46 @@ export async function runIngestion({ log = console.log } = {}) {
     log(`  ${pid}: ${docs.length} chunks`);
   }
 
+  // Gatekeepers: compile, don't index. Every track gets a key even when its
+  // folder is empty, so the overlay can tell "coach added nothing" apart from
+  // "ingest has never run".
+  const warnings = [];
+  const gkCounts = {};
+  const tracks = {};
+  for (const f of GATEKEEPER_FOLDERS) {
+    const list = gatekeeperChunks[f.trackId] || [];
+    tracks[f.trackId] = compileKnowledge(list);
+    gkCounts[f.id] = list.length;
+    if (tracks[f.trackId].length > GATEKEEPER_SOFT_CAP) {
+      warnings.push(
+        `${f.id}: ${tracks[f.trackId].length} characters of knowledge — large enough to crowd out the quiz generator's own instructions. Consider trimming this folder.`
+      );
+    }
+    log(`  ${f.id}: ${list.length} chunks compiled (${tracks[f.trackId].length} chars)`);
+  }
+  fs.writeFileSync(
+    GATEKEEPER_FILE,
+    JSON.stringify({ builtAt: new Date().toISOString(), tracks }, null, 2)
+  );
+
   fs.writeFileSync(
     path.join(OUT_DIR, "meta.json"),
     JSON.stringify({
       builtAt: new Date().toISOString(),
       embeddings: VOYAGE_KEY ? VOYAGE_MODEL : "none (BM25 fallback)",
-      personas: Object.keys(byPersona),
+      personas: Object.keys(byFolder),
+      gatekeepers: Object.keys(gkCounts),
       totalChunks: chunks.length,
     }, null, 2)
   );
+  for (const w of warnings) log(`WARNING: ${w}`);
   log("Ingestion complete → " + OUT_DIR);
-  return { counts, totalChunks: chunks.length, embedded: !!embeddingsById, embeddingError };
+  return {
+    counts,
+    gatekeepers: gkCounts,
+    warnings,
+    totalChunks: chunks.length,
+    embedded: !!embeddingsById,
+    embeddingError,
+  };
 }

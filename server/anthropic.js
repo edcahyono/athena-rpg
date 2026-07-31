@@ -4,11 +4,7 @@
  * (powers the in-game usage dashboard).
  */
 import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const USAGE_FILE = path.join(__dirname, "data", "usage.json");
+import { USAGE_FILE } from "./paths.js";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
@@ -99,25 +95,77 @@ export function parseModelJson(out) {
   try { return JSON.parse(t); } catch { return {}; }
 }
 
-export async function callAnthropic(body) {
-  const res = await fetch(ANTHROPIC_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey(),
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    const err = new Error(`Model call failed (${res.status})`);
-    err.status = res.status === 429 ? 429 : 502;
-    err.detail = detail.slice(0, 300);
-    throw err;
+/**
+ * Statuses worth a second attempt. 529 is Anthropic's "overloaded" — capacity,
+ * not a bad request — and 429/5xx are the same story. A 4xx that is NOT 429
+ * means the request itself is wrong, and repeating it just burns time.
+ */
+const RETRYABLE = new Set([408, 409, 429, 500, 502, 503, 504, 529]);
+const MAX_ATTEMPTS = 3;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * One model request, retried through transient upstream failure.
+ *
+ * Without this a single 529 surfaced to the learner mid-interview as
+ * "connection hiccup — try again", which reads as the game being broken. The
+ * quiz generator already retried for the same reason; conversation did not.
+ */
+async function requestWithRetry(body) {
+  for (let attempt = 1; ; attempt++) {
+    let res, netErr;
+    try {
+      res = await fetch(ANTHROPIC_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey(),
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      netErr = e; // DNS blip, socket reset, VPN drop — all worth one more try
+    }
+
+    if (res?.ok) return res;
+
+    const status = res?.status ?? 0;
+    const retryable = netErr ? true : RETRYABLE.has(status);
+    if (!retryable || attempt >= MAX_ATTEMPTS) {
+      if (netErr) throw Object.assign(netErr, { status: 502 });
+      const detail = await res.text().catch(() => "");
+      const err = new Error(`Model call failed (${status})`);
+      err.status = status === 429 ? 429 : 502;
+      err.detail = detail.slice(0, 300);
+      throw err;
+    }
+
+    // Honour Retry-After when the API sends one; otherwise back off with a
+    // little jitter so concurrent players don't retry in lockstep.
+    const ra = Number(res?.headers?.get("retry-after"));
+    const wait = Number.isFinite(ra) && ra > 0 ? ra * 1000 : 500 * 2 ** (attempt - 1) + Math.random() * 250;
+    console.warn(
+      `[anthropic] ${netErr ? netErr.message : status} on attempt ${attempt}/${MAX_ATTEMPTS} — retrying in ${Math.round(wait)}ms`
+    );
+    await sleep(wait);
   }
+}
+
+/**
+ * The full parsed response. Needed by anything reading tool_use blocks or
+ * stop_reason — callAnthropic() flattens to text and drops both.
+ */
+export async function callAnthropicRaw(body) {
+  const res = await requestWithRetry(body);
   const data = await res.json();
   if (data.usage) recordUsage(body.model, data.usage.input_tokens || 0, data.usage.output_tokens || 0);
+  return data;
+}
+
+export async function callAnthropic(body) {
+  const data = await callAnthropicRaw(body);
   return (data.content || [])
     .filter((b) => b.type === "text")
     .map((b) => b.text)
