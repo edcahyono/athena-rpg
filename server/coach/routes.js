@@ -23,7 +23,7 @@ import { FOLDERS, FOLDER_IDS } from "../../shared/folders.js";
 import { runIngestion, SOURCE_PATH } from "../rag/ingestCore.js";
 import { loadStores } from "../rag/retriever.js";
 import { loadGatekeeperKnowledge } from "../game/trackKnowledge.js";
-import { callAnthropic, CHAT_MODEL } from "../anthropic.js";
+import { callAnthropicRaw, CHAT_MODEL } from "../anthropic.js";
 
 const router = express.Router();
 // Every filing target is a folder now — the seven executives, their seven
@@ -223,7 +223,9 @@ function segmentText(text) {
 async function extractSegment(segText, idPrefix) {
   // Goes through the shared helper rather than a raw fetch, so extraction
   // tokens land in the same usage/cost ledger the /usage dashboard reads.
-  const data = await callAnthropic({
+  // MUST be the Raw variant: callAnthropic() keeps only text blocks, so the
+  // tool_use block this whole function depends on was being thrown away.
+  const data = await callAnthropicRaw({
       model: EXTRACT_MODEL,
       max_tokens: 16000,
       // Structured tool output forces clean JSON with no preamble/fences and no
