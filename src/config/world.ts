@@ -253,6 +253,13 @@ const MID_NAMES: Record<string, BL> = {
   talent: { en: "Cindy Zhao", zh: "赵欣" },
   stratplan: { en: "Hans Zhou", zh: "周子涵" },
 };
+/** First row of the LOWER cubicle band on floors 10-12. Everything from this
+ *  row down sits facing up, with its cubicle mirrored to match, so the two
+ *  rows face each other across the central aisle. Shared with OfficeScene so
+ *  the sprite facing and the furniture can never disagree about which row is
+ *  which — they were computed separately once, and half the floor stayed put. */
+export const LOWER_BAND_ROW = 11;
+
 // On the shared cubicle grid: upper band ty=3, lower band ty=11.
 const midSpots: [number, number][] = [[4, 3], [12, 3], [20, 3], [28, 3], [4, 11], [12, 11], [20, 11]];
 /** The lower cubicle band turns to face UP, so the two rows look at each other
@@ -262,7 +269,7 @@ const midSpots: [number, number][] = [[4, 3], [12, 3], [20, 3], [28, 3], [4, 11]
  *  conversation reads it too. */
 function faceLowerBandUp() {
   for (const n of NPCS) {
-    if (n.ty >= 11 && !n.facing && n.kind !== "persona" && [10, 11, 12].includes(n.floor)) {
+    if (n.ty >= LOWER_BAND_ROW && !n.facing && n.kind !== "persona" && [10, 11, 12].includes(n.floor)) {
       n.facing = "up";
     }
   }

@@ -1,6 +1,6 @@
 /** OfficeScene — one floor at a time; elevator restarts the scene with a new floor. */
 import Phaser from "phaser";
-import { TILE, BLOCKING, LAYOUTS, NPCS, NpcDef, PROP_LINES, spawnPoint, EXEC_OFFICES, FILLER_COLORS } from "../config/world";
+import { TILE, BLOCKING, LAYOUTS, NPCS, NpcDef, PROP_LINES, spawnPoint, EXEC_OFFICES, FILLER_COLORS, LOWER_BAND_ROW } from "../config/world";
 import { api, state } from "../net/api";
 import { ui, updateHUD, updateObjectiveBanner, elevatorPanel, elevatorClose, elevatorOpen, questLogPanel, menuPanel, toast, applyStaticLabels, welcomePanel, setRelabelHandler } from "../ui/ui";
 import { interact, interactProp } from "../game/interactions";
@@ -163,7 +163,9 @@ export default class OfficeScene extends Phaser.Scene {
       // mirrors with it — "in front of them" is ABOVE them for that row.
       const facesUp = def.facing === "up";
       if (seated && def.kind !== "persona" && [10, 11, 12].includes(this.floor)) this.drawCubicle(x, y, facesUp);
-      if (seated) this.add.image(x, y + (facesUp ? 2 : -2), "tile-chair").setDepth(y - 1); // chair behind the worker
+      // Chair behind the worker — flipped too, or its back rest points the
+      // wrong way for someone sitting the other direction.
+      if (seated) this.add.image(x, y + (facesUp ? 2 : -2), "tile-chair").setFlipY(facesUp).setDepth(y - 1);
       // Personal cubicle desk (with laptop) directly in front — the worker sits
       // behind it. Executives (F15) get their own office desks instead.
       // Never put a desk on row 8: that is the lane the player walks along
@@ -234,13 +236,18 @@ export default class OfficeScene extends Phaser.Scene {
           if (nearNpc || nearFurniture) continue;
           const color = FILLER_COLORS[fi++ % FILLER_COLORS.length];
           const x = fx * TILE + TILE / 2, y = fy * TILE + TILE / 2;
-          this.drawCubicle(x, y);
-          this.add.image(x, y - 2, "tile-chair").setDepth(y - 1);
+          // Decorative fillers mirror on the same rule as the named workers —
+          // this path had its own copy of the furniture and was missed, which
+          // left whole stretches of the lower band still facing the camera.
+          const facesUp = fy >= LOWER_BAND_ROW;
+          this.drawCubicle(x, y, facesUp);
+          this.add.image(x, y + (facesUp ? 2 : -2), "tile-chair").setFlipY(facesUp).setDepth(y - 1);
           this.add.image(x, y + 10, "shadow").setDepth(y - 1);
-          this.add.sprite(x, y + 3, `char-${color}-down-0`).setDepth(y);
-          const dImg = this.add.image(x, y + TILE, "tile-work-0").setDepth(y + TILE + 4);
+          this.add.sprite(x, y + 3, `char-${color}-${facesUp ? "up" : "down"}-0`).setDepth(y);
+          const dy = y + (facesUp ? -TILE : TILE);
+          const dImg = this.add.image(x, dy, "tile-work-0").setDepth(facesUp ? dy - 4 : dy + 4);
           this.deskAnims.push({ img: dImg, phase: Math.floor(Math.random() * 400) });
-          const dBody = walls.create(x, y + TILE, "tile-work-0") as Phaser.Physics.Arcade.Sprite;
+          const dBody = walls.create(x, dy, "tile-work-0") as Phaser.Physics.Arcade.Sprite;
           dBody.setVisible(false).setSize(34, 20).refreshBody();
           const pBody = walls.create(x, y, "tile-chair") as Phaser.Physics.Arcade.Sprite;
           pBody.setVisible(false).setSize(20, 20).refreshBody();
