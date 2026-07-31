@@ -10,7 +10,12 @@ import { PERSONAS, MID_PERSONAS } from "../../shared/personas.config.js";
 import type { BL } from "../i18n";
 
 export const TILE = 32;
-export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D", "n", "N", "X", "G", "B", "F"]);
+// "X" — the F15 executive office doorway — is deliberately NOT here. It is a
+// gap in the wall you walk through, in and out, like any other doorway. It used
+// to block, with E teleporting you across it, which meant the only way out of a
+// room competed with talking to the executive standing in it. Walking is the
+// mechanic; nothing needs to arbitrate.
+export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D", "n", "N", "G", "B", "F"]);
 
 // Palette for the decorative filler workers that fill the open floors.
 export const FILLER_COLORS = [0x76808f, 0x8f7680, 0x7f8f76, 0x76778f, 0x8f8676, 0x6f8087];
@@ -270,7 +275,10 @@ MID_PERSONAS.forEach((p: any, i: number) => {
 // Seats must match EXEC_OFFICES below, in PERSONAS order
 // (ceo, cfo, cmo, coo, chro, cto, cpo) — otherwise executives stand outside
 // their own rooms.
-const execSpots: [number, number][] = [[10, 3], [16, 3], [22, 3], [28, 3], [10, 12], [18, 12], [26, 12]];
+// Seated against the BACK wall of each room, not the middle. Mid-room put the
+// executive within talking reach of the doorway tile, so walking in or out
+// meant brushing past them. Against the back wall the doorway is clear.
+const execSpots: [number, number][] = [[10, 2], [16, 2], [22, 2], [28, 2], [10, 13], [18, 13], [26, 13]];
 PERSONAS.forEach((p: any, i: number) => {
   const [tx, ty] = execSpots[i % execSpots.length];
   NPCS.push({
@@ -307,19 +315,19 @@ export const EXEC_OFFICES: (ExecOffice & { seat: ExecOfficeSeat })[] = [
   // Square 5x5 rooms (3x3 interior). Four along the top, three below, all doors
   // opening onto the central corridor.
   { execId: "ceo",  label: { en: "CEO", zh: "首席执行官" }, tx: 8, ty: 1, w: 5, h: 5,
-    door: { tx: 10, ty: 5 }, inside: { tx: 10, ty: 4 }, outside: { tx: 10, ty: 6 }, seat: { tx: 10, ty: 3 } },
+    door: { tx: 10, ty: 5 }, inside: { tx: 10, ty: 4 }, outside: { tx: 10, ty: 6 }, seat: { tx: 10, ty: 2 } },
   { execId: "cfo",  label: { en: "CFO", zh: "首席财务官" }, tx: 14, ty: 1, w: 5, h: 5,
-    door: { tx: 16, ty: 5 }, inside: { tx: 16, ty: 4 }, outside: { tx: 16, ty: 6 }, seat: { tx: 16, ty: 3 } },
+    door: { tx: 16, ty: 5 }, inside: { tx: 16, ty: 4 }, outside: { tx: 16, ty: 6 }, seat: { tx: 16, ty: 2 } },
   { execId: "cmo",  label: { en: "CMO", zh: "首席营销官" }, tx: 20, ty: 1, w: 5, h: 5,
-    door: { tx: 22, ty: 5 }, inside: { tx: 22, ty: 4 }, outside: { tx: 22, ty: 6 }, seat: { tx: 22, ty: 3 } },
+    door: { tx: 22, ty: 5 }, inside: { tx: 22, ty: 4 }, outside: { tx: 22, ty: 6 }, seat: { tx: 22, ty: 2 } },
   { execId: "coo",  label: { en: "COO", zh: "首席运营官" }, tx: 26, ty: 1, w: 5, h: 5,
-    door: { tx: 28, ty: 5 }, inside: { tx: 28, ty: 4 }, outside: { tx: 28, ty: 6 }, seat: { tx: 28, ty: 3 } },
+    door: { tx: 28, ty: 5 }, inside: { tx: 28, ty: 4 }, outside: { tx: 28, ty: 6 }, seat: { tx: 28, ty: 2 } },
   { execId: "chro", label: { en: "CHRO", zh: "首席人力官" }, tx: 8, ty: 10, w: 5, h: 5,
-    door: { tx: 10, ty: 10 }, inside: { tx: 10, ty: 11 }, outside: { tx: 10, ty: 9 }, seat: { tx: 10, ty: 12 } },
+    door: { tx: 10, ty: 10 }, inside: { tx: 10, ty: 11 }, outside: { tx: 10, ty: 9 }, seat: { tx: 10, ty: 13 } },
   { execId: "cto",  label: { en: "CTO", zh: "首席技术官" }, tx: 16, ty: 10, w: 5, h: 5,
-    door: { tx: 18, ty: 10 }, inside: { tx: 18, ty: 11 }, outside: { tx: 18, ty: 9 }, seat: { tx: 18, ty: 12 } },
+    door: { tx: 18, ty: 10 }, inside: { tx: 18, ty: 11 }, outside: { tx: 18, ty: 9 }, seat: { tx: 18, ty: 13 } },
   { execId: "cpo",  label: { en: "CPO", zh: "首席产品官" }, tx: 24, ty: 10, w: 5, h: 5,
-    door: { tx: 26, ty: 10 }, inside: { tx: 26, ty: 11 }, outside: { tx: 26, ty: 9 }, seat: { tx: 26, ty: 12 } },
+    door: { tx: 26, ty: 10 }, inside: { tx: 26, ty: 11 }, outside: { tx: 26, ty: 9 }, seat: { tx: 26, ty: 13 } },
 ];
 
 export const LAYOUTS: Record<number, string[]> = {

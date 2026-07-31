@@ -658,44 +658,8 @@ export default class OfficeScene extends Phaser.Scene {
     return best;
   }
 
-  /** The executive office you can step OUT of right now: you are inside its
-   *  walls AND standing on the landing tile just inside the door.
-   *
-   *  These rooms are 3x3 with the executive seated in the middle, so every
-   *  interior tile sits within talking reach (72px) of them. tryInteract()
-   *  answers NPCs before props and the door tile is BLOCKING, so E could only
-   *  ever re-open the conversation — the room had no exit at all and the only
-   *  way out was to reload. Reserving the landing tile for leaving gives the
-   *  exit one square the executive cannot outrank; every other tile in the
-   *  room still talks to them. */
-  private execDoorwayHere() {
-    if (this.floor !== 15) return null;
-    return (
-      this.execOffices.find((o) => {
-        if (!Phaser.Geom.Rectangle.Contains(o.bounds, this.player.x, this.player.y)) return false;
-        const d = Phaser.Math.Distance.Between(
-          this.player.x,
-          this.player.y,
-          o.meta.inside.tx * TILE + TILE / 2,
-          o.meta.inside.ty * TILE + TILE / 2
-        );
-        return d < 20;
-      }) || null
-    );
-  }
-
-  private leaveExecOffice(off: { meta: { outside: { tx: number; ty: number } } }) {
-    const t = off.meta.outside;
-    (this.player.body as Phaser.Physics.Arcade.Body).reset(t.tx * TILE + TILE / 2, t.ty * TILE + TILE / 2);
-    this.dir = "down";
-    this.player.setTexture(`player-${this.dir}-0`);
-  }
-
   private async tryInteract() {
     if (ui.busy || !state) return;
-    // Stepping back out ranks above talking — see execDoorwayHere().
-    const exitOff = this.execDoorwayHere();
-    if (exitOff) { this.leaveExecOffice(exitOff); return; }
     const npc = this.nearestNpc();
     if (npc) {
       // First time you approach a cubicle worker they get up and come out to
@@ -714,20 +678,9 @@ export default class OfficeScene extends Phaser.Scene {
     }
     const prop = this.nearestProp();
     if (!prop) return;
-    // Executive office door: press E to step inside (revealing the office) or
-    // back out into the corridor.
-    if (prop.char === "X" && this.floor === 15) {
-      const dtx = Math.floor(prop.x / TILE), dty = Math.floor(prop.y / TILE);
-      const off = this.execOffices.find((o) => o.meta.door.tx === dtx && o.meta.door.ty === dty);
-      if (off) {
-        const inside = Phaser.Geom.Rectangle.Contains(off.bounds, this.player.x, this.player.y);
-        const t = inside ? off.meta.outside : off.meta.inside;
-        (this.player.body as Phaser.Physics.Arcade.Body).reset(t.tx * TILE + TILE / 2, t.ty * TILE + TILE / 2);
-        this.dir = inside ? "down" : "up";
-        this.player.setTexture(`player-${this.dir}-0`);
-      }
-      return;
-    }
+    // The executive doorway is something you walk through, not something you
+    // press. Swallow E on it so it never reads as a broken interaction.
+    if (prop.char === "X") return;
     if (prop.char === "E") {
       const target = await elevatorPanel(this.floor);
       if (target !== null) {
@@ -846,14 +799,12 @@ export default class OfficeScene extends Phaser.Scene {
       l.role.setVisible(d < 92);
     }
 
-    // interaction prompt — mirrors tryInteract()'s order, so the marker always
-    // sits on whatever E is actually about to do. On an office landing tile
-    // that is the door, not the executive two squares away.
-    const exitOff = this.execDoorwayHere();
-    const near = exitOff || this.nearestNpc() || this.nearestProp();
+    // interaction prompt — the doorway is walkable, so it never advertises E.
+    const nearProp = this.nearestProp();
+    const near = this.nearestNpc() || (nearProp?.char === "X" ? null : nearProp);
     if (near && !ui.busy) {
-      const nx = exitOff ? exitOff.meta.door.tx * TILE + TILE / 2 : ((near as any).sprite?.x ?? (near as any).x);
-      const ny = exitOff ? exitOff.meta.door.ty * TILE + TILE / 2 : ((near as any).sprite?.y ?? (near as any).y);
+      const nx = (near as any).sprite?.x ?? (near as any).x;
+      const ny = (near as any).sprite?.y ?? (near as any).y;
       this.prompt.setPosition(nx, ny - 36).setVisible(true);
     } else this.prompt.setVisible(false);
 
