@@ -482,9 +482,20 @@ export default class OfficeScene extends Phaser.Scene {
   /** Wait until no dialogue, panel or cutscene is open. The domain check runs
    *  AFTER chatMode's lifecycle ends, so without this the manager wanders back
    *  to their desk while the player is still being quizzed by them. */
-  private untilIdle(): Promise<void> {
+  /** Wait for the UI to go quiet, but never forever.
+   *
+   *  This gates an NPC's walk back to their desk. If ui.busy is ever left set —
+   *  a panel closed by a route the dialogue didn't see, an error mid-exchange —
+   *  an unbounded wait strands the NPC standing in the aisle for the rest of
+   *  the session. Sitting back down a little early is a far smaller glitch than
+   *  never sitting down at all, so cap the wait. */
+  private untilIdle(maxMs = 30000): Promise<void> {
     return new Promise((resolve) => {
-      const tick = () => { if (!ui.busy) resolve(); else this.time.delayedCall(150, tick); };
+      const started = Date.now();
+      const tick = () => {
+        if (!ui.busy || Date.now() - started > maxMs) resolve();
+        else this.time.delayedCall(150, tick);
+      };
       tick();
     });
   }
@@ -541,9 +552,19 @@ export default class OfficeScene extends Phaser.Scene {
       await interact(def, this.floor);
       await this.untilIdle();   // don't head back mid-check
       ui.cutscene = true;
+      // Going home is not optional. Routing is the nice version; if the route
+      // fails for any reason the NPC still ends up back at their desk, because
+      // the alternative is a worker left standing in the aisle permanently —
+      // which is what the old `else` branch did, since it only re-pointed the
+      // sprite and left it wherever it was.
       const back = this.pathBetween(stop, home, blocked);
-      if (back?.length) await this.walkNpcPath(def.id, this.legsFor(stop, back), def.facing || "down", 3);
-      else npc.sprite.setTexture(`char-${def.color}-${def.facing || "down"}-0`);
+      if (back?.length) {
+        await this.walkNpcPath(def.id, this.legsFor(stop, back), def.facing || "down", 3);
+      } else if (stop.tx !== home.tx || stop.ty !== home.ty) {
+        console.warn(`[escort] no route home for ${def.id}, walking straight back`);
+        await this.walkNpcTo(def.id, home.tx, home.ty, def.facing || "down", 600);
+      }
+      npc.sprite.setTexture(`char-${def.color}-${def.facing || "down"}-0`);
     } finally {
       ui.cutscene = false;
       updateHUD(this.floor);
