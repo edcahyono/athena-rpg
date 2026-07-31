@@ -25,6 +25,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** Repo-relative defaults, also used as first-boot seed content. */
 const REPO = {
   sessions: path.join(__dirname, "data", "sessions.json"),
+  usage: path.join(__dirname, "data", "usage.json"),
   qaSource: path.join(__dirname, "data", "qa", "qa.source.json"),
   ragStore: path.join(__dirname, "rag", "store"),
 };
@@ -35,6 +36,7 @@ export const usingPersistentDisk = !!DATA_DIR;
 const root = DATA_DIR ? path.resolve(DATA_DIR) : null;
 
 export const SESSIONS_FILE = root ? path.join(root, "sessions.json") : REPO.sessions;
+export const USAGE_FILE = root ? path.join(root, "usage.json") : REPO.usage;
 export const QA_SOURCE_FILE = root ? path.join(root, "qa", "qa.source.json") : REPO.qaSource;
 export const RAG_STORE_DIR = root ? path.join(root, "rag-store") : REPO.ragStore;
 
@@ -43,12 +45,13 @@ export const RAG_STORE_DIR = root ? path.join(root, "rag-store") : REPO.ragStore
  * gaps — an existing file on the disk is left strictly alone, because it is by
  * definition newer than the repo copy (a coach wrote it).
  *
- * sessions.json is deliberately NOT seeded: the repo copy is local test data,
- * and a production deploy should start with no sessions rather than inherit
- * someone's debugging leftovers.
+ * sessions.json and usage.json are deliberately NOT seeded: the repo copies are
+ * local test data, and a production deploy should start with no sessions and a
+ * zeroed cost ledger rather than inherit someone's debugging leftovers.
  */
 export function seedDataDir(log = console.log) {
   if (!root) return;
+  fs.mkdirSync(root, { recursive: true }); // usage.json lives directly here
   fs.mkdirSync(path.dirname(QA_SOURCE_FILE), { recursive: true });
   fs.mkdirSync(RAG_STORE_DIR, { recursive: true });
 

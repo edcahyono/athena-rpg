@@ -4,11 +4,7 @@
  * (powers the in-game usage dashboard).
  */
 import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const USAGE_FILE = path.join(__dirname, "data", "usage.json");
+import { USAGE_FILE } from "./paths.js";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
