@@ -15,6 +15,7 @@ if (!process.env.ANTHROPIC_API_KEY) {
 const { seedDataDir } = await import("./paths.js");
 const { default: gameRouter } = await import("./game/routes.js");
 const { loadStores } = await import("./rag/retriever.js");
+const { loadGatekeeperKnowledge } = await import("./game/trackKnowledge.js");
 const { loadSessions } = await import("./game/sessionStore.js");
 const { getUsage } = await import("./anthropic.js");
 const { requireAdminAuth, requireCoachAuth } = await import("./middleware/auth.js");
@@ -58,6 +59,7 @@ if (fs.existsSync(dist)) {
 // committed corpus there for loadStores() to find. No-op unless DATA_DIR is set.
 seedDataDir();
 loadStores();
+loadGatekeeperKnowledge();
 loadSessions();
 
 app.listen(PORT, () => console.log(`ATHENA RPG server on http://localhost:${PORT}`));

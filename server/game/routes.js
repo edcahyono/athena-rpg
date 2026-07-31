@@ -13,6 +13,7 @@ import { buildSystemPrompt } from "../../shared/promptBuilder.js";
 import { GAME_CONFIG } from "../../shared/gameConfig.js";
 import { TASKS, TRACKS, trackForPersona, trackById } from "../../shared/gameContent.js";
 import { buildGatekeeperPrompt } from "../../shared/gatekeeperPrompt.js";
+import { resolveTrack } from "./trackKnowledge.js";
 import { REVIEW_CRITERIA, GATEKEEPER_REVIEW } from "../../shared/reviewCriteria.js";
 import { BENCHMARKS } from "../../shared/benchmarks.js";
 import { ASIS_MIN_INTERVIEWS } from "../../shared/phases.js";
@@ -213,7 +214,7 @@ function requireTrackPassed(s, personaId, lang) {
   // No admin exemption: in admin mode the gatekeeper's check passes on any
   // answer, but you still have to go and take it before the executive will see
   // you — the unlock order is part of the flow being tested.
-  const track = trackForPersona(personaId);
+  const track = resolveTrack(trackForPersona(personaId));
   if (!track) return;
   const t = s.tasks[track.taskId];
   if (!t || !["passed"].includes(t.status)) {
@@ -385,7 +386,7 @@ router.post("/gatekeeper/chat", async (req, res) => {
     const s = getSession(req.body?.sessionId, false);
     const { trackId, text } = req.body || {};
     const lang = langOf(req);
-    const track = trackById(trackId);
+    const track = resolveTrack(trackById(trackId));
     if (!track) return res.status(400).json({ error: "Unknown track" });
     if (typeof text !== "string" || !text.trim() || text.length > 2000)
       return res.status(400).json({ error: "Message must be 1–2000 characters" });
@@ -473,7 +474,7 @@ router.post("/gatekeeper/quiz", async (req, res) => {
     const s = getSession(req.body?.sessionId, false);
     const { trackId } = req.body || {};
     const lang = langOf(req);
-    const track = trackById(trackId);
+    const track = resolveTrack(trackById(trackId));
     if (!track) return res.status(400).json({ error: "Unknown track" });
     if (s.tasks[track.taskId]?.status === "passed")
       return res.status(409).json({ error: TT(lang, "You've already passed this check.", "你已经通过这项考核了。") });
@@ -556,7 +557,7 @@ router.post("/gatekeeper/answer", async (req, res) => {
     const s = getSession(req.body?.sessionId, false);
     const { trackId, index, choice } = req.body || {};
     const lang = langOf(req);
-    const track = trackById(trackId);
+    const track = resolveTrack(trackById(trackId));
     if (!track) return res.status(400).json({ error: "Unknown track" });
 
     const quiz = s.gatekeepers[trackId]?.quiz;
@@ -1340,7 +1341,7 @@ router.post("/review-work", async (req, res) => {
       reviewerName = `${LB(npc.name, lang)} · ${LB(npc.role, lang)}`;
       identity = `You are ${npc.name.en}, ${npc.role.en}, a Deloitte consultant mentoring a junior analyst on the Nike Greater China engagement.`;
     } else if (PERSONA_MAP[reviewerId]) {
-      const track = trackForPersona(reviewerId);
+      const track = resolveTrack(trackForPersona(reviewerId));
       const t = track && s.tasks[track.taskId];
       if (!t || !["passed"].includes(t.status)) {
         return res.status(403).json({ error: TT(lang,

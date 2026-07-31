@@ -4,10 +4,13 @@
  * so the editing surface is not exposed.
  *
  * Endpoints (all under /api/coach):
- *   GET    /chunks        — full chunk list
  *   POST   /chunks        — add a chunk
  *   PUT    /chunks/:id    — update a chunk
  *   DELETE /chunks/:id    — remove a chunk
+ *   GET    /chunks        — full chunk list + the 15 folders with counts/files
+ *   POST   /upload        — file INTO a folder (x-folder header); extraction job
+ *   POST   /commit/:jobId — file every extracted pair into that job's folder
+ *   DELETE /files         — drop one uploaded document from one folder
  *   POST   /ingest        — rebuild all persona stores and hot-reload retrieval
  *
  * Every write first snapshots qa.source.json into data/qa/backups/.
@@ -16,15 +19,16 @@ import fs from "node:fs";
 import path from "node:path";
 import express from "express";
 import mammoth from "mammoth";
-import { PERSONAS } from "../../shared/personas.config.js";
+import { FOLDERS, FOLDER_IDS } from "../../shared/folders.js";
 import { runIngestion, SOURCE_PATH } from "../rag/ingestCore.js";
-import { loadStores, GENERAL_ID } from "../rag/retriever.js";
+import { loadStores } from "../rag/retriever.js";
+import { loadGatekeeperKnowledge } from "../game/trackKnowledge.js";
 import { callAnthropic, CHAT_MODEL } from "../anthropic.js";
 
 const router = express.Router();
-// "general" is a real, selectable target — the shared corpus every persona can
-// retrieve from. It is not a persona: nobody plays it, it just widens access.
-const VALID_IDS = new Set([...PERSONAS.map((p) => p.id), GENERAL_ID]);
+// Every filing target is a folder now — the seven executives, their seven
+// gatekeepers, and the shared general corpus. See shared/folders.js.
+const VALID_IDS = FOLDER_IDS;
 const BACKUP_DIR = path.join(path.dirname(SOURCE_PATH), "backups");
 
 const readSource = () => JSON.parse(fs.readFileSync(SOURCE_PATH, "utf8"));
@@ -42,8 +46,8 @@ function validateChunk(c, existingIds, isUpdate = false) {
     if (!c.id || !/^[a-z0-9-]+$/.test(c.id)) errors.push("id is required (lowercase letters, digits, hyphens)");
     else if (existingIds.has(c.id)) errors.push(`id "${c.id}" already exists`);
   }
-  if (!Array.isArray(c.personas) || c.personas.length === 0) errors.push("at least one persona must be selected");
-  else if (c.personas.some((p) => !VALID_IDS.has(p))) errors.push("unknown persona id");
+  if (!Array.isArray(c.personas) || c.personas.length === 0) errors.push("a folder must be chosen");
+  else if (c.personas.some((p) => !VALID_IDS.has(p))) errors.push("unknown folder id");
   const hasZhA = !!c.answer_zh?.trim(), hasEnA = !!c.answer_en?.trim();
   if (!c.question_zh?.trim() && !c.question_en?.trim()) errors.push("a question is required (中文 or English)");
   // At least one answer is required, and every answer that exists must be paired
@@ -65,17 +69,37 @@ function cleanChunk(c) {
     question_en: c.question_en?.trim() || "",
     answer_zh: c.answer_zh?.trim() || "",
     ...(c.answer_en?.trim() ? { answer_en: c.answer_en.trim() } : {}),
+    // Which upload this came from, so a folder can show its files and drop one
+    // whole document again. Absent on the hand-authored originals.
+    ...(c.source?.trim?.() ? { source: c.source.trim() } : {}),
   };
 }
 
+/**
+ * The whole bank plus the folder index. The corpus is a few hundred chunks, so
+ * the console filters client-side rather than paging — one round trip, and
+ * switching folders is instant.
+ */
 router.get("/chunks", (_req, res) => {
   const data = readSource();
+  const counts = {};
+  const files = {};
+  for (const c of data.chunks) {
+    for (const p of c.personas) {
+      counts[p] = (counts[p] || 0) + 1;
+      if (c.source) ((files[p] ||= new Set())).add(c.source);
+    }
+  }
   res.json({
     chunks: data.chunks,
-    personas: [
-      { id: GENERAL_ID, title_en: "General — every role", title_zh: "通用 — 所有角色" },
-      ...PERSONAS.map((p) => ({ id: p.id, title_en: p.title.en, title_zh: p.title.zh })),
-    ],
+    folders: FOLDERS.map((f) => ({
+      id: f.id,
+      kind: f.kind,
+      title_en: f.title.en,
+      title_zh: f.title.zh,
+      count: counts[f.id] || 0,
+      files: [...(files[f.id] || [])].sort(),
+    })),
   });
 });
 
@@ -109,11 +133,42 @@ router.delete("/chunks/:id", (req, res) => {
   res.json({ ok: true, count: data.chunks.length });
 });
 
+/**
+ * DELETE /files — remove every chunk one upload put into one folder.
+ *
+ * Scoped to the folder rather than the filename alone: the same document can be
+ * filed into several folders deliberately, and clearing the CFO's copy must not
+ * silently empty the CEO's.
+ */
+router.delete("/files", (req, res) => {
+  const { folder, source } = req.body || {};
+  if (!VALID_IDS.has(folder)) return res.status(400).json({ errors: ["unknown folder id"] });
+  if (!source) return res.status(400).json({ errors: ["source filename is required"] });
+
+  const data = readSource();
+  let removed = 0;
+  data.chunks = data.chunks.filter((c) => {
+    if (c.source !== source || !c.personas.includes(folder)) return true;
+    // Filed in other folders too — take it out of this one and keep the rest.
+    if (c.personas.length > 1) {
+      c.personas = c.personas.filter((p) => p !== folder);
+      removed++;
+      return true;
+    }
+    removed++;
+    return false;
+  });
+  if (!removed) return res.status(404).json({ errors: ["no chunks matched that file in that folder"] });
+  writeSource(data);
+  res.json({ ok: true, removed, count: data.chunks.length });
+});
+
 router.post("/ingest", async (_req, res) => {
   try {
     const lines = [];
     const result = await runIngestion({ log: (m) => lines.push(m) });
-    loadStores(); // hot-reload retrieval — personas use the new content immediately
+    loadStores();              // executives: hot-reload retrieval
+    loadGatekeeperKnowledge(); // gatekeepers: hot-reload the compiled corpus
     res.json({ ok: true, ...result, log: lines });
   } catch (e) {
     res.status(500).json({ errors: [e.message] });
@@ -186,14 +241,13 @@ async function extractSegment(segText, idPrefix) {
                   type: "object",
                   properties: {
                     id: { type: "string", description: "kebab-case ascii id starting with the given prefix" },
-                    personas: { type: "array", items: { type: "string" }, description: "role ids from the question's Applicable Personas line, or empty if none stated" },
                     keywords: { type: "array", items: { type: "string" } },
                     question_zh: { type: "string" },
                     question_en: { type: "string" },
                     answer_zh: { type: "string" },
                     answer_en: { type: "string" },
                   },
-                  required: ["id", "personas", "keywords", "question_zh", "question_en", "answer_zh", "answer_en"],
+                  required: ["id", "keywords", "question_zh", "question_en", "answer_zh", "answer_en"],
                 },
               },
             },
@@ -209,9 +263,10 @@ async function extractSegment(segText, idPrefix) {
         "(3) Fill BOTH question_zh and question_en (translate only the short question, never the answer). " +
         "(4) keywords: 3-8 short retrieval terms mixing Chinese and English. " +
         "(5) id: kebab-case ascii beginning with '" + idPrefix + "'. " +
-        "(6) PERSONAS — this is important: if a line near the question lists applicable roles (for example 'Applicable Personas: COO, CTO' or '适用角色：CMO、CTO'), put EXACTLY those role ids into the personas array, lowercased, using only these valid ids: ceo, cfo, cmo, coo, chro, cto, cpo. If no such line is present for a question, return an empty personas array (the caller will apply a default). Do not invent personas beyond what the line states. " +
-        "(6b) GENERAL — there is one further id, 'general', for material that genuinely applies to EVERY role: company-wide facts, the case brief, market or competitor background, engagement logistics. Use it only when the content belongs to no single function. Never use it as a catch-all for questions you are unsure how to file — leave personas empty for those instead, since anything marked general becomes readable by all seven executives. " +
-        "(7) Ignore document titles, section headers, the 'Applicable Personas说明' explainer line, and any item obviously cut off at the very start or end of the excerpt.",
+        // Filing is no longer the model's job. The coach uploaded this file INTO
+        // a folder, so every pair it yields belongs to that folder — there is
+        // nothing left to infer and nothing left to get wrong.
+        "(6) Ignore document titles, section headers, and any item obviously cut off at the very start or end of the excerpt.",
       messages: [{ role: "user", content: "ID prefix: " + idPrefix + "\n\nExcerpt:\n\n" + segText }],
   });
   const toolUse = (data.content || []).find((b) => b.type === "tool_use");
@@ -247,13 +302,8 @@ async function runExtractionJob(jobId, segments, idPrefix) {
         while (existing.has(id)) id = `${id}-x`;
         existing.add(id);
         n++;
-        const VALID = new Set(["ceo","cfo","cmo","coo","chro","cto","cpo"]);
-        const perChunk = Array.isArray(p.personas)
-          ? [...new Set(p.personas.map((x) => String(x).toLowerCase().trim()).filter((x) => VALID.has(x)))]
-          : [];
         job.proposals.push({
           id,
-          personas: perChunk, // may be empty → default applied at commit time
           keywords: Array.isArray(p.keywords) ? p.keywords.map(String) : [],
           question_zh: String(p.question_zh || "").trim(),
           question_en: String(p.question_en || "").trim(),
@@ -282,6 +332,13 @@ router.post(
   async (req, res) => {
     try {
       const filename = decodeURIComponent(req.headers["x-filename"] || "upload.txt");
+      // The folder is the whole point: it is chosen before the file is read, so
+      // there is no inference step and no way for a document to land somewhere
+      // the coach did not put it.
+      const folder = String(req.headers["x-folder"] || "").trim();
+      if (!VALID_IDS.has(folder)) {
+        return res.status(400).json({ errors: ["Upload into a folder — none was given, or it is not a known folder."] });
+      }
       if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
         return res.status(400).json({ errors: ["Empty file"] });
       }
@@ -310,6 +367,8 @@ router.post(
         status: "running",
         done: 0,
         total: segments.length,
+        folder,
+        filename,
         proposals: [],
         warnings: truncated ? ["File exceeded the size limit — the tail was skipped."] : [],
         ts: Date.now(),
@@ -328,7 +387,6 @@ router.post("/commit/:jobId", (req, res) => {
   const job = jobs.get(req.params.jobId);
   if (!job) return res.status(404).json({ errors: ["Unknown or expired job"] });
   if (job.status !== "done") return res.status(409).json({ errors: ["Job is not finished yet"] });
-  const fallback = Array.isArray(req.body?.personas) ? req.body.personas.filter((p) => VALID_IDS.has(p)) : [];
 
   const src = readSource();
   const existing = new Set(src.chunks.map((c) => c.id));
@@ -337,13 +395,11 @@ router.post("/commit/:jobId", (req, res) => {
   for (const p of job.proposals) {
     let id = p.id;
     while (existing.has(id)) id = id + "-x";
-    // Per-chunk personas parsed from the document take priority; the UI
-    // selection is only a fallback for chunks with no stated personas.
-    const personas = (Array.isArray(p.personas) && p.personas.length > 0) ? p.personas : fallback;
-    if (personas.length === 0) { skipped.push(`${id}: no persona (none in file, none selected)`); continue; }
     const chunk = {
       id,
-      personas,
+      // Everything from this upload belongs to the folder it was uploaded into.
+      personas: [job.folder],
+      source: job.filename,
       keywords: Array.isArray(p.keywords) ? p.keywords : String(p.keywords || "").split(",").map((k) => k.trim()).filter(Boolean),
       question_zh: p.question_zh || "",
       question_en: p.question_en || "",

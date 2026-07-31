@@ -96,6 +96,24 @@ td .acts{display:flex;gap:.4rem}
 .imp-row{display:flex;gap:.7rem;align-items:center;flex-wrap:wrap;margin:.6rem 0}
 #consoleBody{display:none}
 .hint{font-family:var(--font-body);font-size:.78rem;color:var(--ink-soft)}
+/* ---- folder grid ---- */
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.9rem;margin-top:1rem}
+.fcard{text-align:left;border:1px solid var(--line);border-radius:14px;padding:1.1rem;background:transparent;color:var(--ink);display:flex;flex-direction:column;gap:.5rem;min-height:118px;transition:border-color .18s,transform .18s}
+.fcard:hover{border-color:var(--line-strong);transform:translateY(-2px)}
+.fcard .fid{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+.fcard .fname{font-family:var(--font-body);font-size:.9rem;line-height:1.35}
+.fcard .fmeta{margin-top:auto;display:flex;align-items:center;gap:.5rem;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+.kind{border:1px solid var(--line);border-radius:999px;padding:.1rem .5rem;font-size:.52rem;letter-spacing:.1em}
+.count{font-weight:700;color:var(--ink)}
+.groupHead{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin:1.8rem 0 .2rem}
+html[data-lang="zh"] .fcard .fid,html[data-lang="zh"] .fcard .fmeta,html[data-lang="zh"] .groupHead{font-size:.8rem;letter-spacing:.04em}
+/* ---- folder detail ---- */
+.crumb{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin-bottom:.4rem}
+.crumb h1{font-size:1.05rem;letter-spacing:.02em;font-family:var(--font-body)}
+.filerow{display:flex;align-items:center;justify-content:space-between;gap:.8rem;border:1px solid var(--line);border-radius:10px;padding:.55rem .85rem;margin:.4rem 0;font-family:var(--font-body);font-size:.85rem}
+.dropzone{border:1.5px dashed var(--line);border-radius:14px;padding:1.4rem;text-align:center;margin:.8rem 0}
+.dropzone.hot{border-color:var(--line-strong);background:var(--bg-soft)}
+#folderView{display:none}
 </style>
 </head>
 <body>
@@ -137,21 +155,38 @@ td .acts{display:flex;gap:.4rem}
   <button class="btn" onclick="reingest()" data-i="reingest">Apply to personas (re-ingest)</button>
   <span class="hint" style="margin-left:.8rem" data-i="reingestHint">Run after any change — personas pick it up immediately.</span>
 
-  <h2 data-i="importTitle">Import from file</h2>
-  <p class="hint" data-i="importHint">.pdf / .docx / .txt / .md / .json / .csv, max 8 MB. The file is converted into proposed Q&A chunks for your review — nothing is saved until you approve it.</p>
-  <div class="imp-row">
-    <input id="importFile" type="file" accept=".pdf,.docx,.txt,.md,.json,.csv" style="max-width:340px"/>
-    <button class="btn" onclick="extractFile()" id="extractBtn" data-i="extract">Extract Q&A</button>
-    <button class="btn ghost" onclick="clearImport()" data-i="clearProps">Clear</button>
+  <!-- ===================== FOLDER GRID ===================== -->
+  <div id="folderGrid">
+    <div class="groupHead" data-i="grpExec">Nike executives</div>
+    <div class="fgrid" id="gridExec"></div>
+    <div class="groupHead" data-i="grpGate">Deloitte gatekeepers</div>
+    <div class="fgrid" id="gridGate"></div>
+    <div class="groupHead" data-i="grpShared">Shared</div>
+    <div class="fgrid" id="gridShared"></div>
   </div>
-  <label class="f" data-i="defaultPersonas">Default personas for extracted chunks</label>
-  <div id="importPersonas" class="personas"></div>
 
-  <h2 data-i="editorTitle">Add / edit a chunk</h2>
+  <!-- ==================== FOLDER DETAIL ==================== -->
+  <div id="folderView">
+  <div class="crumb">
+    <button class="mini" onclick="closeFolder()" id="backBtn">← All folders</button>
+    <span class="kind" id="fvKind"></span>
+  </div>
+  <h1 id="fvTitle"></h1>
+  <p class="hint" id="fvNote"></p>
+
+  <h2 data-i="filesTitle">Project files</h2>
+  <p class="hint" data-i="importHint">.pdf / .docx / .txt / .md / .json / .csv, max 8 MB. Everything the file contains is filed into this folder.</p>
+  <div class="dropzone" id="drop">
+    <div class="imp-row" style="justify-content:center;margin:0">
+      <input id="importFile" type="file" accept=".pdf,.docx,.txt,.md,.json,.csv" style="max-width:320px"/>
+      <button class="btn" onclick="extractFile()" id="extractBtn" data-i="extract">Upload to this folder</button>
+    </div>
+  </div>
+  <div id="fileList"></div>
+
+  <h2 data-i="editorTitle">Add an entry by hand</h2>
   <label class="f">ID</label>
   <input id="f_id" placeholder="e.g. cmo-douyin-strategy"/>
-  <label class="f" data-i="personasLbl">Personas</label>
-  <div id="f_personas" class="personas"></div>
   <div class="grid2">
     <div><label class="f" data-i="qzh">Question (中文)</label><textarea id="f_qzh" rows="2"></textarea></div>
     <div><label class="f" data-i="qen">Question (English)</label><textarea id="f_qen" rows="2"></textarea></div>
@@ -167,11 +202,12 @@ td .acts{display:flex;gap:.4rem}
     <button class="btn ghost" onclick="resetForm()" data-i="cancel">Reset</button>
   </div>
 
-  <h2 data-i="bankTitle">Question bank</h2>
+  <h2 data-i="bankTitle">Contents</h2>
   <table>
-    <thead><tr><th data-i="thq">ID / question</th><th data-i="thp">Personas</th><th style="width:150px"></th></tr></thead>
+    <thead><tr><th data-i="thq">ID / question</th><th data-i="thp">Folders</th><th style="width:150px"></th></tr></thead>
     <tbody id="list"></tbody>
   </table>
+  </div>
 </div>
 </div>
 
@@ -209,20 +245,31 @@ const I18N = {
     user:"Username", pass:"Password", signIn:"Sign in", signOut:"Sign out",
     reingest:"Apply to personas (re-ingest)", reingestHint:"Run after any change.",
     importTitle:"Import from file",
-    importHint:"If your file labels each question with an \"Applicable Personas:\" line, those are read automatically per question. The checkboxes below are only a fallback for questions with no such line. .pdf / .docx / .txt / .md / .json / .csv, max 8 MB.",
-    extract:"Extract & import", clearProps:"Clear", defaultPersonas:"Fallback personas (used only for questions with no Applicable Personas line in the file):",
-    pickPersonaFirst:"Select at least one persona before importing.", pickFileFirst:"Choose a file first.",
-    imported:(n)=>`Imported ${n} question(s) into the bank.`,
+    importHint:"Everything the file contains is filed into this folder — no labelling needed inside the document. .pdf / .docx / .txt / .md / .json / .csv, max 8 MB.",
+    extract:"Upload to this folder", clearProps:"Clear",
+    pickFileFirst:"Choose a file first.",
+    imported:(n)=>`Added ${n} entr${n===1?"y":"ies"} to this folder.`,
     addSelected:"Add selected to question bank",
     editorTitle:"Add a question",
     pairNote:"Each question needs an answer in the same language — a 中文 question needs a 中文 answer, an English question needs an English answer.",
     editTitle:"Edit question",
     saveChanges:"Save changes", cancelBtn:"Cancel",
-    analyzingPart:(d,t)=>`Analyzing file — part ${d} of ${t}…`, personasLbl:"Personas",
+    analyzingPart:(d,t)=>`Analyzing file — part ${d} of ${t}…`, personasLbl:"Folders",
     qzh:"Question (中文)", qen:"Question (English)", azh:"Answer (中文)", aen:"Answer (English)",
     keywords:"Keywords (comma separated, both languages help retrieval)",
     save:"Add question", cancel:"Reset",
-    bankTitle:"Question bank", thq:"ID / question", thp:"Personas",
+    bankTitle:"Contents", thq:"ID / question", thp:"Folders",
+    grpExec:"Nike executives", grpGate:"Deloitte gatekeepers", grpShared:"Shared",
+    filesTitle:"Project files", backAll:"← All folders",
+    entries:"entries", filesWord:"files",
+    kind_exec:"Executive", kind_gatekeeper:"Gatekeeper", kind_shared:"Shared",
+    note_exec:"This executive retrieves from their own folder — the three most relevant entries per question. No other executive can see it.",
+    note_gatekeeper:"This gatekeeper reads their whole folder at once, both in conversation and when writing their five domain-check questions.",
+    note_shared:"Company-wide background. Every executive can draw on this folder in addition to their own.",
+    noFiles:"No files uploaded yet. Entries added by hand still count towards this folder.",
+    delFile:"Remove file", openFolderFirst:"Open a folder first.",
+    delFileConfirm:(f)=>`Remove "${f}" from this folder? Its entries leave this folder's knowledge. A backup is kept.`,
+    fileDeleted:(n)=>`File removed — ${n} entr${n===1?"y":"ies"} taken out of this folder.`,
     edit:"Edit", del:"Delete", delConfirm:"Delete this chunk? A backup is kept, but it will leave the personas' knowledge.",
     wrongLogin:"Incorrect username or password.", signedIn:"Signed in.",
     extracting:"Analyzing file — this can take up to a minute…",
@@ -234,20 +281,31 @@ const I18N = {
     user:"用户名", pass:"密码", signIn:"登录", signOut:"退出登录",
     reingest:"应用到角色（重新摄取）", reingestHint:"任何修改后请点击。",
     importTitle:"从文件导入",
-    importHint:"若文件中每个问题都标注了 \"Applicable Personas:\" 行，将按问题自动识别角色。下方勾选仅作为无标注问题的兜底。支持 .pdf / .docx / .txt / .md / .json / .csv，最大 8 MB。",
-    extract:"提取并导入", clearProps:"清空", defaultPersonas:"兜底角色（仅用于文件中没有标注 Applicable Personas 的问题）：",
-    pickPersonaFirst:"导入前请至少选择一个角色。", pickFileFirst:"请先选择文件。",
-    imported:(n)=>`已导入 ${n} 个问题到题库。`,
+    importHint:"文件中的全部内容都会归入本文件夹——文档内无需任何角色标注。支持 .pdf / .docx / .txt / .md / .json / .csv，最大 8 MB。",
+    extract:"上传到本文件夹", clearProps:"清空",
+    pickFileFirst:"请先选择文件。",
+    imported:(n)=>`已向本文件夹添加 ${n} 条内容。`,
     addSelected:"将所选加入题库",
     editorTitle:"添加问题",
     pairNote:"每个问题都需要同一语言的答案——中文问题配中文答案，英文问题配英文答案。",
     editTitle:"编辑问题",
     saveChanges:"保存修改", cancelBtn:"取消",
-    analyzingPart:(d,t)=>`正在分析文件——第 ${d} / ${t} 部分…`, personasLbl:"角色",
+    analyzingPart:(d,t)=>`正在分析文件——第 ${d} / ${t} 部分…`, personasLbl:"文件夹",
     qzh:"问题（中文）", qen:"问题（English）", azh:"答案（中文）", aen:"答案（English）",
     keywords:"关键词（逗号分隔，中英文都有助于检索）",
     save:"添加问题", cancel:"重置",
-    bankTitle:"题库", thq:"ID / 问题", thp:"角色",
+    bankTitle:"内容", thq:"ID / 问题", thp:"文件夹",
+    grpExec:"耐克高管", grpGate:"德勤关卡负责人", grpShared:"共享",
+    filesTitle:"项目文件", backAll:"← 返回全部文件夹",
+    entries:"条", filesWord:"个文件",
+    kind_exec:"高管", kind_gatekeeper:"关卡负责人", kind_shared:"共享",
+    note_exec:"该高管只从自己的文件夹检索——每个问题取最相关的三条。其他高管无法看到这些内容。",
+    note_gatekeeper:"该关卡负责人会一次性读取整个文件夹，对话和出五道领域考核题时都是如此。",
+    note_shared:"公司层面的背景资料。除自己的文件夹外，每位高管都可以调用这里的内容。",
+    noFiles:"尚未上传文件。手动添加的条目同样计入本文件夹。",
+    delFile:"移除文件", openFolderFirst:"请先打开一个文件夹。",
+    delFileConfirm:(f)=>`确定从本文件夹移除"${f}"？其条目将不再属于本文件夹的知识。系统会保留备份。`,
+    fileDeleted:(n)=>`文件已移除——${n} 条内容已移出本文件夹。`,
     edit:"编辑", del:"删除", delConfirm:"确定删除此条目？会保留备份，但角色将不再掌握该内容。",
     wrongLogin:"用户名或密码不正确。", signedIn:"已登录。",
     extracting:"正在分析文件——最长可能需要一分钟…",
@@ -263,7 +321,8 @@ function applyLang() {
   document.querySelectorAll("[data-i]").forEach((el) => (el.textContent = T(el.dataset.i)));
   document.querySelectorAll("[data-ph]").forEach((el) => (el.placeholder = T(el.dataset.ph)));
   $("langBtn").textContent = $("langBtnL").textContent = LANG === "en" ? "中文" : "EN";
-  renderList();
+  renderGrid();
+  if (CURRENT) renderFolder();
 }
 function applyTheme() {
   document.documentElement.dataset.theme = THEME;
@@ -343,16 +402,94 @@ async function boot() {
 }
 
 /* --------------------------- console state --------------------------- */
-let CHUNKS = [], PERSONAS = [], EDITING = null;
+/* CURRENT is the open folder id, or null while the grid is showing. Every
+   listing, upload and hand-written entry is scoped to it — which is the whole
+   point of the folders: nothing has to be told who it applies to. */
+let CHUNKS = [], FOLDERS = [], CURRENT = null, EDITING = null;
 
 function status(msg, cls){ const el=$("status"); el.textContent=msg; el.className="status "+(cls||""); }
 
 async function load() {
   const d = await api("/chunks");
-  CHUNKS = d.chunks; PERSONAS = d.personas;
-  renderPersonaChips($("f_personas"), "f_p_");
-  renderPersonaChips($("importPersonas"), "imp_p_");
+  CHUNKS = d.chunks; FOLDERS = d.folders;
+  renderGrid();
+  if (CURRENT) renderFolder();
+}
+
+const folderOf = (id) => FOLDERS.find((f) => f.id === id);
+const titleOf = (f) => (LANG === "zh" ? f.title_zh : f.title_en);
+const inFolder = (id) => CHUNKS.filter((c) => c.personas.includes(id));
+
+/* ------------------------------ grid ------------------------------ */
+function renderGrid() {
+  const hosts = { exec: $("gridExec"), gatekeeper: $("gridGate"), shared: $("gridShared") };
+  for (const h of Object.values(hosts)) if (h) h.innerHTML = "";
+  FOLDERS.forEach((f) => {
+    const host = hosts[f.kind]; if (!host) return;
+    const b = document.createElement("button");
+    b.className = "fcard";
+    b.onclick = () => openFolder(f.id);
+    const files = f.files.length ? ` · ${f.files.length} ${T("filesWord")}` : "";
+    b.innerHTML =
+      `<span class="fid">${escapeHtml(f.id)}</span>` +
+      `<span class="fname">${escapeHtml(titleOf(f))}</span>` +
+      `<span class="fmeta"><span class="count">${f.count}</span> ${T("entries")}${files}</span>`;
+    host.append(b);
+  });
+}
+
+/* --------------------------- folder view --------------------------- */
+function openFolder(id) {
+  CURRENT = id;
+  $("folderGrid").style.display = "none";
+  $("folderView").style.display = "block";
+  resetForm();
+  renderFolder();
+  fx($("folderView"));
+  window.scrollTo({ top: 0 });
+}
+function closeFolder() {
+  CURRENT = null;
+  $("folderView").style.display = "none";
+  $("folderGrid").style.display = "block";
+  renderGrid();
+  fx($("folderGrid"));
+}
+function renderFolder() {
+  const f = folderOf(CURRENT);
+  if (!f) return closeFolder();
+  $("fvTitle").textContent = titleOf(f);
+  $("fvKind").textContent = T("kind_" + f.kind);
+  $("fvNote").textContent = T("note_" + f.kind);
+  $("backBtn").textContent = T("backAll");
+  renderFiles(f);
   renderList();
+}
+function renderFiles(f) {
+  const host = $("fileList");
+  host.innerHTML = "";
+  if (!f.files.length) { host.innerHTML = `<p class="hint">${escapeHtml(T("noFiles"))}</p>`; return; }
+  f.files.forEach((src) => {
+    const n = CHUNKS.filter((c) => c.source === src && c.personas.includes(f.id)).length;
+    const row = document.createElement("div");
+    row.className = "filerow";
+    const label = document.createElement("span");
+    label.textContent = `${src} · ${n} ${T("entries")}`;
+    const del = document.createElement("button");
+    del.className = "mini danger";
+    del.textContent = T("delFile");
+    del.onclick = () => delFile(src);
+    row.append(label, del);
+    host.append(row);
+  });
+}
+async function delFile(source) {
+  if (!confirm(T("delFileConfirm", source))) return;
+  try {
+    const d = await api("/files", { method: "DELETE", body: JSON.stringify({ folder: CURRENT, source }) });
+    status(T("fileDeleted", d.removed), "ok");
+    await load();
+  } catch (e) { status(e.message, "err"); }
 }
 
 function personaChip(prefix, pid) {
@@ -366,11 +503,11 @@ function personaChip(prefix, pid) {
 }
 function renderPersonaChips(host, prefix) {
   host.innerHTML = "";
-  PERSONAS.forEach((p) => host.append(personaChip(prefix, p.id)));
+  FOLDERS.forEach((p) => host.append(personaChip(prefix, p.id)));
 }
-const chipVals = (prefix) => PERSONAS.filter((p) => $(prefix + p.id)?.checked).map((p) => p.id);
+const chipVals = (prefix) => FOLDERS.filter((p) => $(prefix + p.id)?.checked).map((p) => p.id);
 function setChips(prefix, ids) {
-  PERSONAS.forEach((p) => {
+  FOLDERS.forEach((p) => {
     const c = $(prefix + p.id); if (!c) return;
     c.checked = ids.includes(p.id);
     $(prefix + p.id + "_chip").classList.toggle("on", c.checked);
@@ -378,9 +515,9 @@ function setChips(prefix, ids) {
 }
 
 function renderList() {
-  const tb = $("list"); if (!tb) return;
+  const tb = $("list"); if (!tb || !CURRENT) return;
   tb.innerHTML = "";
-  CHUNKS.forEach((c) => {
+  inFolder(CURRENT).forEach((c) => {
     const tr = document.createElement("tr");
     const q = LANG === "zh" ? (c.question_zh || c.question_en) : (c.question_en || c.question_zh);
     const td1 = document.createElement("td");
@@ -399,7 +536,9 @@ const escapeHtml = (s) => s.replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;"
 /* --------------------------- add / edit --------------------------- */
 function formChunk() {
   return {
-    id: $("f_id").value.trim(), personas: chipVals("f_p_"),
+    // Filed where you are standing — the hand-written path matches the upload
+    // path, so neither one asks you to pick a role twice.
+    id: $("f_id").value.trim(), personas: CURRENT ? [CURRENT] : [],
     question_zh: $("f_qzh").value, question_en: $("f_qen").value,
     answer_zh: $("f_azh").value, answer_en: $("f_aen").value,
     keywords: $("f_kw").value,
@@ -407,7 +546,6 @@ function formChunk() {
 }
 function resetForm() {
   ["f_id","f_qzh","f_qen","f_azh","f_aen","f_kw"].forEach((id) => ($(id).value = ""));
-  setChips("f_p_", []);
 }
 async function saveChunk() {
   try {
@@ -460,17 +598,19 @@ async function reingest() {
 }
 
 /* ----------------------------- import ----------------------------- */
-function clearImport(){ $("importFile").value = ""; setChips("imp_p_", []); }
+function clearImport(){ $("importFile").value = ""; }
 
 async function extractFile() {
-  const personas = chipVals("imp_p_"); // fallback only; file labels take priority
   const file = $("importFile").files[0];
+  if (!CURRENT) { status(T("openFolderFirst"), "err"); return; }
   if (!file) { status(T("pickFileFirst"), "err"); return; }
 
   status(T("extracting"));
   $("extractBtn").disabled = true;
   try {
-    const headers = { "x-filename": encodeURIComponent(file.name) };
+    // The destination travels with the request, so the server never has to
+    // work out where this belongs.
+    const headers = { "x-filename": encodeURIComponent(file.name), "x-folder": CURRENT };
     if (AUTH) { headers["x-coach-user"] = AUTH.u; headers["x-coach-pass"] = AUTH.p; }
     const res = await fetch("/api/coach/upload", { method: "POST", headers, body: file });
     const data = await res.json().catch(() => ({}));
@@ -487,8 +627,8 @@ async function extractFile() {
       if (st.status === "error") throw new Error((st.warnings || ["extraction failed"]).join("; "));
     }
 
-    // Commit everything straight into the question bank with the chosen personas.
-    const commit = await api(`/commit/${jobId}`, { method: "POST", body: JSON.stringify({ personas }) });
+    // Commit straight into this folder — the job already knows which one.
+    const commit = await api(`/commit/${jobId}`, { method: "POST", body: "{}" });
     // Re-ingest so personas use the new content immediately.
     await api("/ingest", { method: "POST" });
 
@@ -497,8 +637,7 @@ async function extractFile() {
     status(T("imported", commit.added) + warn + skip, "ok");
     clearImport();
     await load();
-    // jump to the question bank so the new rows are visible
-    document.querySelector("table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    $("fileList")?.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) { status(e.message, "err"); }
   finally { $("extractBtn").disabled = false; }
 }
