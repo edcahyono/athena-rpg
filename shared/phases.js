@@ -35,8 +35,8 @@ export const PHASES = [
     deliverable: { en: "As-is diagnostic (pain points + evidence)", zh: "现状诊断（痛点 + 证据）" },
     gate: { en: "As-Is Alignment Meeting — the client confirms your diagnosis.", zh: "现状对齐会 — 客户确认你的诊断。" },
     guidance: {
-      en: "Interview at least 3 Nike executives on F15 — unlock each one by passing their Deloitte manager's check on F10. Log the pain points, findings and supporting quotes in your binder (B). Then report back to Manager Lin. The client panel agrees only if your diagnosis (a) is grounded in what their executives actually said, (b) names specific, real pain points rather than platitudes, and (c) shows prioritisation instead of an undifferentiated list.",
-      zh: "在15层至少访谈3位耐克高管——每位都需先通过其在10层对口德勤经理的考核才能解锁。把痛点、发现和支撑引述记入工作底稿（B）。然后回去向林经理汇报。客户方只有在你的诊断满足以下三点时才会认可：(a) 有高管原话作依据，(b) 指出具体真实的痛点而非套话，(c) 体现出优先级排序，而不是罗列一堆。",
+      en: "Work the domain tracks on F10 — each Deloitte manager's check unlocks the matching Nike executive on F15, and the executives are where the real evidence is. When you've gathered enough, write up your as-is diagnosis in your own document: the pain points, the findings, and what each one rests on. Then take it to Manager Lin and upload it. She checks every claim against your interview transcripts and the project files, and hands back the ones that aren't supported — with her own corrected wording. Fix those and resubmit until nothing is left standing on air.",
+      zh: "先在10层推进各条领域线——每通过一位德勤经理的考核，就解锁15层对应的耐克高管，而真正的证据在高管那里。收集得差不多后，用你自己的文档写出现状诊断：痛点、发现，以及每一条的依据。然后交给林经理上传。她会拿你的每一条主张去比对访谈记录与项目文件，把站不住的挑出来还给你——并附上她改好的措辞。改完再交，直到没有一条是凭空而来的。",
     },
   },
   {
@@ -59,8 +59,8 @@ export const PHASES = [
     deliverable: { en: "Draft 5-year strategy", zh: "五年战略草案" },
     gate: { en: "Interim readout to Manager Lin (midterm-style feedback).", zh: "向林经理做中期汇报（期中式反馈）。" },
     guidance: {
-      en: "Draft your 5-year strategy in the binder (B): recommendations tied to the pain points you evidenced, each with an owner, sequencing and the trade-offs you accept. Then give Manager Lin an interim readout. She passes you if you state a point of view — what you actually believe, not just a summary of facts — tie it to something you genuinely heard, and name what you still need to test.",
-      zh: "在工作底稿（B）中起草五年战略：每条建议都要对应你已取证的痛点，并写明责任人、推进节奏和你接受的取舍。然后向林经理做中期汇报。她的通过标准是：你提出了明确观点（你真正相信什么，而不只是复述事实）、观点能追溯到你实际听到的内容，并说明还需要验证什么。",
+      en: "Draft your 5-year strategy in your own document: recommendations tied to the pain points you evidenced, each with an owner, sequencing and the trade-offs you accept. Then give Manager Lin an interim readout. She passes you if you state a point of view — what you actually believe, not just a summary of facts — tie it to something you genuinely heard, and name what you still need to test.",
+      zh: "用你自己的文档起草五年战略：每条建议都要对应你已取证的痛点，并写明责任人、推进节奏和你接受的取舍。然后向林经理做中期汇报。她的通过标准是：你提出了明确观点（你真正相信什么，而不只是复述事实）、观点能追溯到你实际听到的内容，并说明还需要验证什么。",
     },
   },
   {
@@ -80,8 +80,18 @@ export const PHASES = [
 export const PHASE_IDS = PHASES.map((p) => p.id);
 export const PHASE_MAP = Object.fromEntries(PHASES.map((p) => [p.id, p]));
 
-/** How many executive interviews are required before the As-Is diagnostic can be submitted. */
-export const ASIS_MIN_INTERVIEWS = 3;
+/**
+ * How many executive interviews are required before the As-Is diagnostic can be
+ * submitted.
+ *
+ * Zero by design decision: the gate is now the QUALITY of the diagnosis, not a
+ * headcount of meetings. Every claim is checked against the transcripts and the
+ * project files, so a learner who skipped the executives has nothing to ground
+ * their document in and fails on the evidence — the same lesson the quota
+ * taught, delivered where it actually bites. Kept rather than deleted so
+ * raising the bar again is a one-line change.
+ */
+export const ASIS_MIN_INTERVIEWS = 0;
 
 /** Fresh engagement state for a new session. */
 export function newEngagement() {

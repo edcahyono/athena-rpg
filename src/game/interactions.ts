@@ -5,6 +5,7 @@
  */
 import { NpcDef, NPCS, PROP_LINES } from "../config/world";
 import { TASKS, TRACKS, trackForPersona } from "../../shared/gameContent.js";
+import { ASIS_MIN_INTERVIEWS } from "../../shared/phases.js";
 import { PERSONA_MAP } from "../../shared/personas.config.js";
 import { api, state } from "../net/api";
 import {
@@ -170,7 +171,10 @@ async function supervisor(npc: NpcDef) {
 
   // Phase gate 1 — As-Is Alignment. After enough interviews to have a diagnosis,
   // the client must confirm the as-is before benchmarking can begin.
-  if (!align.asis.agreed && n >= 3) {
+  // The interview minimum lives in shared/phases.js. It was duplicated here as
+  // a literal 3, so lowering the constant changed nothing and Lin simply never
+  // offered the meeting — the "I passed every check and nothing happens" wall.
+  if (!align.asis.agreed && n >= ASIS_MIN_INTERVIEWS) {
     await showLines(name, [L(UI.asisIntro)]);
     while (true) {
       const answer = await taskPanel(L(UI.asisTitle), L(UI.asisPrompt), align.asis.lastFeedback || undefined);
@@ -183,7 +187,16 @@ async function supervisor(npc: NpcDef) {
         markBriefed("benchmark");
         return;
       }
-      await showLines(name, [`${res.feedback}`, L(UI.asisRevise)]);
+      // Show the claims Lin actually rejected, each with her corrected wording.
+      // A bare "revise this" tells the learner nothing about which sentence was
+      // invented, which is the entire point of checking claim by claim.
+      const flagged = (res.claims || []).filter((c: any) => c.verdict !== "supported");
+      await showLines(name, [
+        `${res.feedback}`,
+        ...flagged.slice(0, 6).map((c: any) =>
+          `“${c.claim}”\n${c.verdict === "contradicted" ? "✕" : "?"} ${c.correction || c.evidence || ""}`),
+        L(UI.asisRevise),
+      ]);
       const again = await showChoice(name, L(UI.asisRevise), [L(UI.alignReviseBtn), L(UI.alignLaterBtn)]);
       if (again !== 0) return;
     }

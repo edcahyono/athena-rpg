@@ -1163,6 +1163,87 @@ function alignmentEvidence(s, lang) {
   return quotes + doc;
 }
 
+/**
+ * Everything a claim may legitimately rest on: what the player was actually
+ * told in this session, plus the curated corpus behind the personas.
+ *
+ * Transcripts alone cannot catch invention. A learner can write a plausible
+ * figure nobody ever said, and with only their own notes to check against,
+ * "not in the transcript" is indistinguishable from "said in a conversation we
+ * truncated". The persona project files give the verifier the same ground truth
+ * the personas themselves answer from.
+ */
+async function groundingEvidence(s, text) {
+  const transcripts = s.questLog
+    .filter((e) => e.type === "quote" || e.type === "fact")
+    .slice(-40)
+    .map((e) => `[${e.title}] ${e.body}`)
+    .join("\n");
+
+  // Retrieve against every executive corpus: a diagnosis spans domains, and we
+  // cannot know in advance which one a given claim belongs to.
+  const seen = new Set();
+  const chunks = [];
+  for (const p of PERSONAS) {
+    try {
+      for (const d of await retrieve(p.id, text.slice(0, 1200))) {
+        if (seen.has(d.id)) continue;
+        seen.add(d.id);
+        chunks.push(`[${p.id}] ${d.question_en || d.question_zh}\n${(d.answer_en || d.answer_zh || "").slice(0, 500)}`);
+      }
+    } catch (err) {
+      // Retrieval enriches the check; it is not the mechanism. Losing one store
+      // must not take the whole verification down.
+      console.warn(`[asis grounding] retrieval failed for ${p.id}:`, err.message);
+    }
+  }
+  return {
+    transcripts: transcripts || "(no interviews recorded yet)",
+    corpus: chunks.join("\n\n") || "(no project files matched)",
+  };
+}
+
+/**
+ * Claim-by-claim verification of an as-is diagnosis.
+ *
+ * A verdict per claim rather than one overall pass/fail: the point is to show
+ * WHICH sentence is unsupported and what the evidence actually says. Lin
+ * supplies the corrected wording herself, so a learner is never left guessing
+ * what would have been acceptable.
+ *
+ * This checks GROUNDING, not truth — whether a claim is supported by the
+ * evidence available. It cannot certify that a well-grounded claim is correct.
+ */
+async function verifyAsIs({ answer, transcripts, corpus, lang }) {
+  const zh = lang === "zh";
+  const out = await callAnthropic({
+    model: LIGHT_MODEL,
+    max_tokens: 2000,
+    system:
+      `You are Manager Lin, a Deloitte engagement manager reviewing a junior consultant's AS-IS DIAGNOSIS of Nike Greater China before it goes to the client.\n\n` +
+      `Split their document into its distinct factual CLAIMS — pain points, findings, figures, causal statements. Ignore headings and filler. For each claim decide:\n` +
+      `- "supported": the evidence below backs it. Quote the specific line that does.\n` +
+      `- "unsupported": nothing in the evidence backs it. This includes invented figures, competitor facts nobody stated, and confident causal claims with no basis.\n` +
+      `- "contradicted": the evidence says otherwise. Quote what it actually says.\n\n` +
+      `For every claim that is NOT supported, write a correction in your own voice: what the evidence actually supports and how they should restate it. Be concrete — give them the corrected sentence, do not just say "check your sources".\n\n` +
+      `INTERVIEW TRANSCRIPTS AND NOTES FROM THIS ENGAGEMENT:\n${transcripts.slice(0, 6000)}\n\n` +
+      `PROJECT FILES (the curated corpus behind these executives):\n${corpus.slice(0, 8000)}\n\n` +
+      `Set "clean" true ONLY when every claim is "supported". Write all prose in ${zh ? "Simplified Chinese" : "English"}.\n` +
+      `Reply with ONLY JSON: {"clean":true|false,"summary":"<2 sentences in your voice>","claims":[{"claim":"<their words, trimmed>","verdict":"supported|unsupported|contradicted","evidence":"<the line that backs or refutes it, or empty>","correction":"<your corrected version, empty when supported>"}]}`,
+    messages: [{ role: "user", content: answer.slice(0, 6000) }],
+  });
+  const parsed = parseModelJson(out);
+  const claims = Array.isArray(parsed.claims) ? parsed.claims.slice(0, 30) : [];
+  const bad = claims.filter((c) => c.verdict !== "supported");
+  // Trust the per-claim verdicts over the model's own summary flag: the claims
+  // are what the learner is shown, so the gate must agree with what they read.
+  const clean = claims.length > 0 && bad.length === 0;
+  const summary = typeof parsed.summary === "string" && parsed.summary.trim()
+    ? parsed.summary.slice(0, 600)
+    : TT(lang, "Let's go through this.", "我们过一遍。");
+  return { clean, claims, unsupported: bad.length, summary };
+}
+
 router.post("/alignment/asis", async (req, res) => {
   try {
     const s = getSession(req.body?.sessionId, false);
@@ -1179,24 +1260,46 @@ router.post("/alignment/asis", async (req, res) => {
         `Diagnose before you align — interview at least ${ASIS_MIN_INTERVIEWS} executives first (you're at ${n}).`,
         `先诊断再对齐——至少访谈${ASIS_MIN_INTERVIEWS}位高管（你目前${n}位）。`) });
     }
-    if (typeof answer !== "string" || !answer.trim() || answer.length > 4000)
-      return res.status(400).json({ error: "Answer must be 1–4000 characters" });
+    // The deliverable is the document handed to Manager Lin. Typed text is
+    // still accepted so the gate keeps working without an upload.
+    const submitted = (typeof answer === "string" && answer.trim()) ? answer : (s.workDoc?.text || "");
+    if (!submitted.trim())
+      return res.status(400).json({ error: TT(lang,
+        "Give Manager Lin your as-is document first — pain points, findings, and what they rest on.",
+        "先把你的现状文档交给林经理——痛点、发现，以及它们的依据。") });
 
-    const { agreed, feedback } = s.admin
-      ? { agreed: true, feedback: TT(lang, "[ADMIN] Auto-agreed.", "[管理员] 自动通过。") }
-      : await gradeAlignment({ kind: "asis", answer, evidence: alignmentEvidence(s, lang), lang });
+    if (s.admin) {
+      a.agreed = true;
+      a.attempts += 1;
+      a.lastFeedback = TT(lang, "[ADMIN] Auto-agreed.", "[管理员] 自动通过。");
+      addCredibility(s, 25, TT(lang, "As-Is alignment agreed", "现状对齐达成"));
+      touch(s);
+      return res.json({ ...publicState(s), result: "agreed", feedback: a.lastFeedback, claims: [], delta: 25 });
+    }
+
+    const { transcripts, corpus } = await groundingEvidence(s, submitted);
+    const { clean, claims, unsupported, summary } = await verifyAsIs({ answer: submitted, transcripts, corpus, lang });
+
     a.attempts += 1;
-    a.lastFeedback = feedback;
-    const delta = agreed ? 25 : 0;
-    if (agreed) {
+    a.lastFeedback = summary;
+    const delta = clean ? 25 : 0;
+    if (clean) {
       a.agreed = true;
       addCredibility(s, delta, TT(lang, "As-Is alignment agreed", "现状对齐达成"));
     }
+    // Log the corrections, not just the verdict — this is the record the player
+    // works from when revising, and it is the teaching content of the gate.
+    const corrections = claims
+      .filter((c) => c.verdict !== "supported")
+      .map((c) => `• ${c.claim}\n  → ${c.correction || c.evidence || ""}`)
+      .join("\n")
+      .slice(0, 1200);
     addQuestEntry(s, "task",
-      TT(lang, agreed ? "As-Is Alignment agreed" : "As-Is Alignment — revise", agreed ? "现状对齐达成" : "现状对齐 — 需修改"),
-      TT(lang, "Your diagnosis: ", "你的诊断：") + answer.slice(0, 280) + "\n" + TT(lang, "Client: ", "客户：") + feedback);
+      TT(lang, clean ? "As-Is Alignment agreed" : `As-Is review — ${unsupported} claim(s) to fix`,
+        clean ? "现状对齐达成" : `现状复核 — ${unsupported}处待修正`),
+      summary + (corrections ? "\n" + corrections : ""));
     touch(s);
-    res.json({ ...publicState(s), result: agreed ? "agreed" : "revise", feedback, delta });
+    res.json({ ...publicState(s), result: clean ? "agreed" : "revise", feedback: summary, claims, unsupported, delta });
   } catch (err) {
     console.error("[alignment asis]", err.message, err.detail || "");
     res.status(err.status || 500).json({ error: err.message });
