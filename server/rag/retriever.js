@@ -38,8 +38,15 @@ export function loadStores() {
     return;
   }
   for (const f of fs.readdirSync(STORE_DIR)) {
-    if (!f.endsWith(".json") || f === "meta.json") continue;
+    // Only persona indexes live here. meta.json is build metadata and
+    // gatekeeper-knowledge.json is compiled prose for the gatekeeper prompts —
+    // neither has a `docs` array, so parsing them as stores throws.
+    if (!f.endsWith(".json") || f === "meta.json" || f === "gatekeeper-knowledge.json") continue;
     const data = JSON.parse(fs.readFileSync(path.join(STORE_DIR, f), "utf8"));
+    if (!data?.personaId || !Array.isArray(data.docs)) {
+      console.warn(`[rag] ignoring ${f} — not a persona store.`);
+      continue;
+    }
     stores.set(data.personaId, data);
     if (data.docs.some((d) => d.embedding)) hasEmbeddings = true;
   }

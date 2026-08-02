@@ -1,14 +1,15 @@
 {
-  "builtAt": "2026-07-20T18:29:02.576Z",
+  "builtAt": "2026-08-02T15:21:12.677Z",
   "embeddings": "voyage-3.5",
-  "personas": [
-    "ceo",
-    "cfo",
-    "cmo",
-    "coo",
-    "cpo",
-    "cto",
-    "chro"
+  "personas": [],
+  "gatekeepers": [
+    "gk-strategy",
+    "gk-finance",
+    "gk-marketing",
+    "gk-ops",
+    "gk-hr",
+    "gk-tech",
+    "gk-product"
   ],
-  "totalChunks": 349
+  "totalChunks": 0
 }
