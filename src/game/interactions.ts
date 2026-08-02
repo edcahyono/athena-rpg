@@ -259,16 +259,15 @@ async function taskNpc(npc: NpcDef) {
 
   // Already cleared this manager's check → just a friendly word; the executive
   // is already unlocked. (Document review lives with Manager Lin, not here.)
-  if (passed) {
-    return await showLines(name, [L(track.doneLine)]);
-  }
   if (t?.status === "failed") {
     await showLines(name, [L(track.retryLine)]);
   }
 
   chatMode({
     name,
-    greeting: hasTalked ? L(UI.gkGreetReturn) : L(track.greeting),
+    // Passing used to end the relationship — one closing line and the door shut.
+    // They stay available to consult afterwards; only the check itself is spent.
+    greeting: passed ? L(track.doneLine) : hasTalked ? L(UI.gkGreetReturn) : L(track.greeting),
     send: async (text) => {
       const res = await api.gatekeeperChat(trackId, text);
       if (res.leads?.length) toast(L(UI.gkLeadToast));
@@ -276,7 +275,9 @@ async function taskNpc(npc: NpcDef) {
     },
     // LEAVE just leaves — the check is its own button, taken when the player
     // decides they're ready (so stepping out never forces the quiz load).
-    check: {
+    // Once passed there is nothing left to take: the server already answers a
+    // repeat attempt with 409, so offering the button only invites a dead end.
+    check: passed ? undefined : {
       label: L(UI.gkTakeCheck),
       onCheck: async () => {
         // fires after chatMode's own lifecycle has ended — no enclosing
