@@ -212,8 +212,20 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 #panel .quest-entry b { display: block; }
 #panel .muted { color: #666; font-size: 12px; }
 #panel .dir-floor { margin: 12px 0 4px; font-weight: bold; border-bottom: 2px solid #ccc; }
-#panel .dir-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed #ddd; gap: 8px; }
+/* Staff profiles: portrait, name over role, status right. The face is what
+   makes seven similarly-titled managers scannable at a glance. */
+#panel .dir-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 6px 0; border-bottom: 1px dashed #ddd; gap: 10px; }
 #panel .dir-row .status { color: #666; font-size: 12px; white-space: nowrap; text-align: right; }
+#panel .dir-row .who { display: flex; flex-direction: column; line-height: 1.25; flex: 1; min-width: 0; }
+#panel .dir-row .dir-role { color: #666; font-size: 11px; }
+/* Sprites are tiny pixel art: scale hard-edged, and frame the head by pinning
+   the sprite to the top of the box rather than showing the whole body. */
+#panel .dir-face {
+  width: 34px; height: 34px; flex-shrink: 0; border: 2px solid var(--ink);
+  border-radius: 6px; background: #efece4; object-fit: none; object-position: 50% 2px;
+  image-rendering: pixelated; display: block;
+}
+#panel .dir-face-blank { background: #e2ded4; }
 #panel .mission-pick {
   font-size: 11px !important; padding: 2px 8px !important; margin-top: 3px;
   background: var(--accent) !important; color: #fff !important; border-color: var(--ink) !important;

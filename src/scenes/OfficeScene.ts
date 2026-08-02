@@ -503,9 +503,13 @@ export default class OfficeScene extends Phaser.Scene {
    *  This gates an NPC's walk back to their desk. If ui.busy is ever left set —
    *  a panel closed by a route the dialogue didn't see, an error mid-exchange —
    *  an unbounded wait strands the NPC standing in the aisle for the rest of
-   *  the session. Sitting back down a little early is a far smaller glitch than
-   *  never sitting down at all, so cap the wait. */
-  private untilIdle(maxMs = 30000): Promise<void> {
+   *  the session, so there is a cap.
+   *
+   *  The cap is a LAST RESORT, not a timeout on normal use. At 30s it fired
+   *  during ordinary play — generating five bilingual MCQs can take longer than
+   *  that on its own — and the manager walked off mid-check. It must comfortably
+   *  exceed a full interview (8 min per gameConfig) plus a check. */
+  private untilIdle(maxMs = 900000): Promise<void> {
     return new Promise((resolve) => {
       const started = Date.now();
       const tick = () => {

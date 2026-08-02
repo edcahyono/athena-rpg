@@ -7,6 +7,7 @@
  */
 import Phaser from "phaser";
 import { TILE, NPCS, FILLER_COLORS } from "../config/world";
+import { FACES } from "../ui/faces";
 import {
   DIRS, drawCharacter, CharOpts, DEFAULT_PLAYER, HAIRSTYLES_MALE, HAIRSTYLES_FEMALE,
 } from "../game/charDraw";
@@ -52,6 +53,13 @@ export default class BootScene extends Phaser.Scene {
         ...DEFAULT_PLAYER, gender, skin: c % 4, hair: c % 6, hairKey: list[c % list.length].key,
       }, c);
       done.add(c);
+    }
+    // Hand the DOM a copy of each face. The directory panel is HTML, so it
+    // cannot draw from Phaser's texture manager — one data URI per colour, made
+    // once here rather than per render.
+    for (const color of done) {
+      const key = `char-${color}-down-0`;
+      if (!FACES.has(color) && this.textures.exists(key)) FACES.set(color, this.textures.getBase64(key));
     }
     // Animated intro vignettes play only for a genuinely new player — never
     // again once seen (even if they quit before meeting Manager Lin).

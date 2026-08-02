@@ -11,6 +11,7 @@ import { COMPETENCIES } from "../../shared/competencies.js";
 import { PERSONA_MAP } from "../../shared/personas.config.js";
 import { NPCS } from "../config/world";
 import { computeObjective } from "../game/objective";
+import { faceFor } from "./faces";
 import { clearProfile } from "../game/profile";
 import { L, fmt, UI, lang, setLang } from "../i18n";
 
@@ -187,10 +188,19 @@ export function closeDialogue() {
 /** A blocking, non-advanceable "…" line held on screen until close() is
  *  called — keeps the player locked in place while something loads (e.g.
  *  the exit quiz), so there's no walk-away gap before it appears. */
+/**
+ * A waiting state that visibly ticks. Static text during a slow model call
+ * reads as a hang — the player cannot tell "thinking" from "broken" — and
+ * generating five bilingual MCQs is the longest wait in the game.
+ */
 export function showLoading(name: string, text: string): { close: () => void } {
   openBox(name);
-  dlgText().textContent = text;
-  return { close: () => closeDialogue() };
+  const el = dlgText();
+  let n = 0;
+  const tick = () => { el.textContent = `${text} ${".".repeat(n % 4)}`; n++; };
+  tick();
+  const timer = window.setInterval(tick, 450);
+  return { close: () => { window.clearInterval(timer); closeDialogue(); } };
 }
 
 /** Scripted lines, advanced with E / Space / Enter / click. */
@@ -747,7 +757,14 @@ export function menuPanel(objective: { label: string; why: string }) {
         status = passed ? L(UI.chat) : "🔒";
       } else if (n.kind === "board") status = state.board.done ? L(UI.pitchMade) : locked ? "🔒" : L(UI.finalPitch);
       else status = L(UI.chat);
-      return `<div class="dir-row"><span class="who"><b>${esc(L(n.name))}</b> — ${esc(L(n.role))}</span><span class="status">${status}</span></div>`;
+      // Profile row: portrait, name over role, status on the right. The face
+      // makes the cast scannable — seven gatekeepers with similar titles read
+      // as a wall of text otherwise.
+      const face = faceFor(n.color);
+      const avatar = face
+        ? `<img class="dir-face" src="${face}" alt="" draggable="false"/>`
+        : `<span class="dir-face dir-face-blank"></span>`;
+      return `<div class="dir-row">${avatar}<span class="who"><b>${esc(L(n.name))}</b><span class="dir-role">${esc(L(n.role))}</span></span><span class="status">${status}</span></div>`;
     }).join("");
     return `<div class="dir-floor">F${f} · ${L(info.name)}${locked ? " 🔒" : ""}</div>${rows}`;
   }).join("");

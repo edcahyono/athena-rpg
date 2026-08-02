@@ -91,7 +91,7 @@ export const UI = {
   missionBoardHint: { en: "No fixed order. Each track: a Deloitte manager briefs & checks you → the matching Nike executive unlocks.", zh: "没有固定顺序。每条线：德勤经理简报并考核你 → 解锁对应的耐克高管。" },
   setActive: { en: "Set active", zh: "设为当前" },
   active: { en: "✔ Active", zh: "✔ 当前任务" },
-  directory: { en: "🏢 Building directory", zh: "🏢 楼层人员名录" },
+  directory: { en: "🏢 Building directory & staff", zh: "🏢 楼层人员名录与员工" },
   backToOffice: { en: "Back to the office", zh: "返回办公区" },
   language: { en: "Language: English (switch to 中文)", zh: "语言：中文（切换到 English）" },
   nextStep: { en: "🎯 Next step:", zh: "🎯 下一步：" },
