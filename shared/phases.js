@@ -47,7 +47,7 @@ export const PHASES = [
     deliverable: { en: "Benchmark conclusion + recommended direction", zh: "对标结论 + 建议方向" },
     gate: { en: "Benchmark Alignment Meeting — the client agrees the priorities.", zh: "对标对齐会 — 客户认可优先事项。" },
     guidance: {
-      en: "Compare Nike China against named competitors (Anta, Li-Ning, Adidas, Xtep, 361°) using only disclosed, like-for-like metrics — for Nike Greater China that means EBIT margin and revenue growth. Greater China net profit, inventory, ROE and ROIC are NOT disclosed, so quoting them will be challenged. Name concrete relative strengths and weaknesses versus specific peers and land a prioritised direction. The CEO and CFO must both agree before you may design.",
+      en: "Compare Nike China against named competitors (Anta, Li-Ning, Adidas, Xtep, 361°) using only disclosed, like-for-like metrics — for Nike Greater China that means EBIT margin and revenue growth. Greater China net profit, inventory, ROE and ROIC are NOT disclosed, so quoting them will be challenged. Name concrete relative strengths and weaknesses versus specific peers and land a prioritised direction. Take it to Manager Lin on F12 once you've interviewed all seven executives — she convenes the alignment meeting, and the CEO and CFO judge it there. You do not pitch them separately.",
       zh: "用已披露、可比口径的指标把耐克中国与具名对手（安踏、李宁、阿迪达斯、特步、361°）对标——对大中华区而言即 EBIT 利润率与收入增速。大中华区净利润、库存、ROE、ROIC 并未披露，引用会被当场质疑。要针对具体对手指出明确的相对优势与劣势，并给出有优先级的方向。CEO 与 CFO 都认可后，才能进入设计阶段。",
     },
   },

@@ -188,6 +188,8 @@ export const UI = {
   asisObjective: { en: "Take your as-is diagnosis to Manager Lin (F12)", zh: "把现状诊断交给林经理（12层）" },
   asisObjectiveWhy: { en: "Every domain check is passed. Write up the pain points and findings, with what each one rests on, and hand it to Lin — she checks every claim against your transcripts and the project files before the client sees it.", zh: "所有领域考核都已通过。把痛点与发现写出来，并写明每一条的依据，然后交给林经理——在客户看到之前，她会拿你的每一条主张去比对访谈记录与项目文件。" },
   benchNeedsAllExecs: { en: "Benchmark after you've met all seven executives — you're at {n} of 7.", zh: "先见完七位高管再做对标——目前{n}/7。" },
+  benchObjective: { en: "Take your benchmark to Manager Lin (F12)", zh: "把对标结论交给林经理（12层）" },
+  benchObjectiveWhy: { en: "All seven executives are interviewed. Lin convenes the Benchmark Alignment Meeting — the CEO and CFO judge it there, so you don't pitch them separately. Compare on disclosed, like-for-like metrics only, and land a prioritised direction.", zh: "七位高管都已访谈。林经理会召集对标对齐会——CEO 与 CFO 在会上评判，无需再单独向他们汇报。只用已披露、可比口径的指标对标，并给出有优先级的方向。" },
   asisAgreed: { en: "The client agrees your diagnosis. That's your shared starting point — now you can benchmark. (+{n} credibility)", zh: "客户认可了你的诊断。这就是你们共同的起点——现在可以开始对标了。（信誉值 +{n}）" },
   asisRevise: { en: "The client isn't sold yet — revise and present again.", zh: "客户还没被说服——修改后再汇报一次。" },
   benchIntro: { en: "The client agreed the as-is. Now the benchmark: where does Nike stand versus Anta, Li-Ning, Adidas — and what's your recommended direction? Bring only comparisons that hold up.", zh: "客户已认可现状。现在做对标：耐克相对安踏、李宁、阿迪达斯处在什么位置——你建议的方向是什么？只带经得起推敲的对比来。" },

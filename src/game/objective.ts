@@ -46,6 +46,16 @@ export function computeObjective(state: GameState | undefined): Objective {
     return { npcId: "supervisor", floor: 12, label: L(UI.asisObjective), why: L(UI.asisObjectiveWhy) };
   }
 
+  // Benchmark alignment — the same gap one phase later. Nothing pointed here
+  // either, so once the as-is was agreed the guidance jumped to the interim
+  // readout and skipped the phase entirely. Lin hosts it; the CEO and CFO are
+  // the ones judging, which is why the guidance text alone sent people to F15.
+  if (state.engagement?.alignments?.asis?.agreed
+    && !state.engagement?.alignments?.benchmark?.agreed
+    && interviewed >= 7) {
+    return { npcId: "supervisor", floor: 12, label: L(UI.benchObjective), why: L(UI.benchObjectiveWhy) };
+  }
+
   // All seven done: the interim readout is the hard prerequisite for the
   // board, so it takes priority only here — otherwise it must not shadow
   // an unlocked executive the player could go see right now.
