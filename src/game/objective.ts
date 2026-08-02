@@ -33,6 +33,18 @@ export function computeObjective(state: GameState | undefined): Objective {
   }
 
   const interviewed = Object.values(state.personas).filter((p) => p.used > 0).length;
+  const checksPassed = Object.values(TRACKS)
+    .filter((t: any) => state.tasks[t.taskId]?.status === "passed").length;
+
+  // As-Is alignment. Once every domain check is behind you the diagnosis is the
+  // next thing owed, and it is owed to Manager Lin — not to another executive.
+  // There was no branch for this at all: a player who passed all seven checks
+  // fell through every case below and the guidance stopped pointing anywhere,
+  // which is the "nothing happens" wall. It sits above the interview-driven
+  // branches because the gate is the diagnosis, not a meeting count.
+  if (checksPassed >= 7 && !state.engagement?.alignments?.asis?.agreed) {
+    return { npcId: "supervisor", floor: 12, label: L(UI.asisObjective), why: L(UI.asisObjectiveWhy) };
+  }
 
   // All seven done: the interim readout is the hard prerequisite for the
   // board, so it takes priority only here — otherwise it must not shadow

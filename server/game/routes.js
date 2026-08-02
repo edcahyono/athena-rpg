@@ -1319,6 +1319,16 @@ router.post("/alignment/benchmark", async (req, res) => {
         "Benchmark after the as-is is agreed — settle the As-Is Alignment Meeting first.",
         "对标要在现状对齐之后——请先完成现状对齐会。") });
     }
+    // Benchmarking is where the executives become mandatory. The as-is can be
+    // built from the engagement team's own material, but judging Nike against
+    // named competitors needs every C-suite lens — you cannot rank priorities
+    // across seven functions having heard from three of them.
+    const met = interviewedCount(s);
+    if (met < PERSONAS.length) {
+      return res.status(403).json({ error: TT(lang,
+        `Benchmark after you've met all seven executives — you're at ${met} of ${PERSONAS.length}.`,
+        `先见完七位高管再做对标——目前${met}/${PERSONAS.length}。`) });
+    }
     if (typeof answer !== "string" || !answer.trim() || answer.length > 4000)
       return res.status(400).json({ error: "Answer must be 1–4000 characters" });
 

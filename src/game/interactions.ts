@@ -204,6 +204,12 @@ async function supervisor(npc: NpcDef) {
 
   // Phase gate 2 — Benchmark Alignment. Only after the as-is is agreed; the
   // client disputes irrelevant comparisons before the to-be design is allowed.
+  // All seven executives are required here: ranking priorities across seven
+  // functions means having heard from all seven. The server enforces the same
+  // bound — this only keeps Lin from opening a meeting she'd have to refuse.
+  if (align.asis.agreed && !align.benchmark.agreed && n < 7) {
+    return await showLines(name, [fmt(UI.benchNeedsAllExecs, { n })]);
+  }
   if (align.asis.agreed && !align.benchmark.agreed) {
     await showLines(name, [L(UI.benchIntro)]);
     while (true) {
