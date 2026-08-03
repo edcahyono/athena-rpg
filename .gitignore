@@ -4,3 +4,4 @@ dist/
 server/data/sessions.json
 .DS_Store
 server/data/qa/backups/
+ATHENA-Feature-Overview.docx

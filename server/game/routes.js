@@ -1423,8 +1423,13 @@ router.post("/interim", async (req, res) => {
  * The player uploads a working document; a chosen reviewer (Manager Lin or
  * any unlocked executive) audits it against per-persona criteria
  * (shared/reviewCriteria.js — placeholders until the owner defines them).
- * Feedback only, no credibility — this is a quality audit, not a check.
+ *
+ * An executive's review is feedback only. Manager Lin's is credited once, the
+ * first time you bring her a document, because that submission is a required
+ * step on the spine rather than an optional second opinion.
  */
+const WORKDOC_CREDIBILITY = { strong: 20, acceptable: 12, weak: 5 };
+
 router.post("/review-work", async (req, res) => {
   try {
     const s = getSession(req.body?.sessionId, false);
@@ -1488,7 +1493,16 @@ router.post("/review-work", async (req, res) => {
 
     // Handing a document to Manager Lin IS the review mission — any later
     // submission just refreshes the document, it doesn't re-open the task.
-    if (reviewerId === "supervisor") s.flags.workDocDone = true;
+    // Credited once, on the first submission, and scaled by her verdict: the
+    // point is to bring your manager real work, so a weak document still beats
+    // never showing her anything.
+    if (reviewerId === "supervisor") {
+      if (!s.flags.workDocDone) {
+        addCredibility(s, WORKDOC_CREDIBILITY[verdict] || 0,
+          TT(lang, "Working document reviewed by Manager Lin", "林经理审阅了你的工作文档"));
+      }
+      s.flags.workDocDone = true;
+    }
     // Keep the latest submitted document: the alignment meetings read it as the
     // consultant's own synthesis, alongside their interview quotes.
     s.workDoc = {
@@ -1528,10 +1542,29 @@ router.post("/extract-text", async (req, res) => {
 
 /* ------------------------------ debrief -------------------------------- */
 
+/**
+ * Credibility for closing the loop with Manager Lin. Deliberately modest next
+ * to the alignment gates (+25) and the interim readout (+30): reporting back is
+ * expected professional conduct, not a feat. It is credited so the scoreboard
+ * agrees with the lesson — the engagement ends with your manager, not the board.
+ */
+const DEBRIEF_CREDIBILITY = 15;
+
 router.post("/debrief", async (req, res) => {
   try {
     const s = getSession(req.body?.sessionId, false);
     const lang = langOf(req);
+    // The debrief now closes the engagement (shared/phases.js syncEngagement),
+    // so it must not be reachable before the board has actually sat. Without
+    // this the final phase could be ticked off without ever pitching.
+    if (!s.board?.done) {
+      return res.status(403).json({ error: TT(lang,
+        "The debrief comes after the board meeting — pitch first, then come and see me.",
+        "复盘要在董事会之后——先完成汇报，再来找我。") });
+    }
+    if (s.flags.debriefDone) {
+      return res.status(409).json({ error: TT(lang, "We've already had your debrief.", "我们已经复盘过了。") });
+    }
     const taskLines = Object.entries(s.tasks)
       .map(([id, t]) => `${id}: ${t.status} (+${t.delta})`).join(", ") || "none";
     const warmthLines = PERSONAS
@@ -1559,8 +1592,12 @@ router.post("/debrief", async (req, res) => {
     }
     s.flags.debriefDone = true;
     addQuestEntry(s, "debrief", TT(lang, "Debrief from Manager Lin", "林经理的复盘"), text);
+    // Closing the loop with your manager is itself part of the job, so it is
+    // credited like every other gate on the spine rather than being unpaid work
+    // after the "real" ending.
+    addCredibility(s, DEBRIEF_CREDIBILITY, TT(lang, "Reported back to Manager Lin", "向林经理复盘汇报"));
     touch(s);
-    res.json({ ...publicState(s), text });
+    res.json({ ...publicState(s), text, delta: DEBRIEF_CREDIBILITY });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }

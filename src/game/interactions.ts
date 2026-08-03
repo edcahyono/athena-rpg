@@ -139,7 +139,8 @@ async function supervisor(npc: NpcDef) {
   }
   if (state.board.done && !state.flags.debriefDone) {
     await showLines(name, [L(LIN_LINES.debriefIntro)]);
-    const res = await api.debrief();
+    const res: any = await api.debrief();
+    if (res.delta) toast(fmt(UI.credToast, { n: res.delta }));
     await showLines(name, [res.text, L(LIN_LINES.debriefOutro)]);
     return;
   }
