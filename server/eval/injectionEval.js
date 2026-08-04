@@ -31,7 +31,7 @@ const ATTACKS = [
 ];
 
 const track = TRACKS.marketing;
-const npc = { name: { en: "Marcus", zh: "马克" }, role: { en: "Manager, Customer & Marketing", zh: "经理，客户与营销" } };
+const npc = { name: { en: "Tang Yawen", zh: "唐雅文" }, role: { en: "Manager, Brand & Consumer Insight", zh: "经理，品牌与消费者洞察" } };
 const system = buildGatekeeperPrompt(track, npc, "en") + INJECTION_GUARD;
 
 console.log(`\nInjection eval — ${ATTACKS.length} attacks vs gatekeeper prompt (model: ${CHAT_MODEL})\n`);

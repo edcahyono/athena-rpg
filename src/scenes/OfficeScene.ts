@@ -162,22 +162,36 @@ export default class OfficeScene extends Phaser.Scene {
       // The lower cubicle band faces up (config/world.ts), so its furniture
       // mirrors with it — "in front of them" is ABOVE them for that row.
       const facesUp = def.facing === "up";
+      // Vivian at the F15 front desk faces sideways, toward the lift, not
+      // up/down like the F10-12 bands — her desk/chair/cubicle rotate 90°
+      // instead of mirroring vertically.
+      const facesLeft = def.facing === "left";
       if (seated && def.kind !== "persona" && [10, 11, 12].includes(this.floor)) this.drawCubicle(x, y, facesUp);
-      // Chair behind the worker — flipped too, or its back rest points the
-      // wrong way for someone sitting the other direction.
-      if (seated) this.add.image(x, y + (facesUp ? 2 : -2), "tile-chair").setFlipY(facesUp).setDepth(y - 1);
+      else if (seated && facesLeft) this.drawCubicleLeft(x, y);
+      // Chair behind the worker — flipped/rotated too, or its back rest points
+      // the wrong way for someone sitting a different direction.
+      if (seated && facesLeft) this.add.image(x + 2, y, "tile-chair").setAngle(90).setDepth(y - 1);
+      else if (seated) this.add.image(x, y + (facesUp ? 2 : -2), "tile-chair").setFlipY(facesUp).setDepth(y - 1);
       // Personal cubicle desk (with laptop) directly in front — the worker sits
       // behind it. Executives (F15) get their own office desks instead.
       // Never put a desk on row 8: that is the lane the player walks along
       // when stepping out of the lift, and a collider there strands them.
       const deskRow = def.ty + (facesUp ? -1 : 1);
-      const giveDesk = seated && def.kind !== "persona" && deskRow !== 8;
+      const giveDesk = seated && def.kind !== "persona" && !facesLeft && deskRow !== 8;
       if (giveDesk) {
         const dyPix = y + (facesUp ? -TILE : TILE);
         const deskImg = this.add.image(x, dyPix, "tile-work-0").setDepth(dyPix + 4);
         this.deskAnims.push({ img: deskImg, phase: Math.floor(Math.random() * 400) });
         const deskBody = walls.create(x, dyPix, "tile-work-0") as Phaser.Physics.Arcade.Sprite;
         deskBody.setVisible(false).setSize(34, 20).refreshBody();
+      } else if (seated && facesLeft) {
+        // Desk sits to her left, in front of her — same standard tile,
+        // rotated 90° so the worksurface faces back toward her seat.
+        const dxPix = x - TILE;
+        const deskImg = this.add.image(dxPix, y, "tile-work-0").setAngle(90).setDepth(y + 4);
+        this.deskAnims.push({ img: deskImg, phase: Math.floor(Math.random() * 400) });
+        const deskBody = walls.create(dxPix, y, "tile-work-0") as Phaser.Physics.Arcade.Sprite;
+        deskBody.setVisible(false).setSize(20, 34).refreshBody();
       }
       const shadow = this.add.image(x, y + 10, "shadow").setDepth(y - 1);
       const s = this.add.sprite(x, y + (seated ? 3 : 0), `char-${def.color}-${def.facing || "down"}-0`).setDepth(y);
@@ -658,6 +672,20 @@ export default class OfficeScene extends Phaser.Scene {
     // gap reads as a deliberate door rather than a hole in the panel.
     this.add.rectangle(x + 24, y - 6 * f, 6, 3, 0x9aa4ba).setDepth(y - 4);
     this.add.rectangle(x + 24, y + 14 * f, 6, 3, 0x9aa4ba).setDepth(y - 4);
+  }
+
+  /** Same F10-12 cubicle dressing as drawCubicle(), rotated 90° for a
+   *  LEFT-facing worker (Vivian at the F15 front desk): the back panel sits
+   *  behind her (to her right), the side walls run top/bottom instead of
+   *  left/right, and the doorway gap opens south, toward the lift lobby she
+   *  watches over. */
+  private drawCubicleLeft(x: number, y: number) {
+    this.add.image(x + 15, y, "tile-cubicle").setAngle(90).setDepth(y - 3);   // back panel
+    this.add.rectangle(x - 4, y - 24, 52, 4, 0x646d80).setDepth(y - 4);       // top wall (solid)
+    this.add.rectangle(x + 14, y + 24, 16, 4, 0x646d80).setDepth(y - 4);      // bottom wall, right piece
+    this.add.rectangle(x - 22, y + 24, 16, 4, 0x646d80).setDepth(y - 4);      // bottom wall, left piece — gap is the doorway
+    this.add.rectangle(x + 6, y + 24, 3, 6, 0x9aa4ba).setDepth(y - 4);        // doorway jamb
+    this.add.rectangle(x - 14, y + 24, 3, 6, 0x9aa4ba).setDepth(y - 4);       // doorway jamb
   }
 
   /** Talking distance. 46px meant standing shoulder-to-shoulder, which reads

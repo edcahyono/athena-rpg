@@ -35,8 +35,8 @@ export const PHASES = [
     deliverable: { en: "As-is diagnostic — your own document, handed to Manager Lin", zh: "现状诊断——你自己写的文档，交给林经理" },
     gate: { en: "Manager Lin reads it claim by claim against your interview transcripts and the project files. Anything unsupported comes back with her corrected wording, and you resubmit.", zh: "林经理会逐条拿它比对你的访谈记录与项目文件。凡是没有依据的，都会附上她改好的措辞退回，你需要改完再交。" },
     guidance: {
-      en: "Work the domain tracks on F10 — each Deloitte manager's check unlocks the matching Nike executive on F15, and the executives are where the real evidence is. When you've gathered enough, write up your as-is diagnosis in your own document: the pain points, the findings, and what each one rests on. Then take it to Manager Lin and upload it. She checks every claim against your interview transcripts and the project files, and hands back the ones that aren't supported — with her own corrected wording. Fix those and resubmit until nothing is left standing on air.",
-      zh: "先在10层推进各条领域线——每通过一位德勤经理的考核，就解锁15层对应的耐克高管，而真正的证据在高管那里。收集得差不多后，用你自己的文档写出现状诊断：痛点、发现，以及每一条的依据。然后交给林经理上传。她会拿你的每一条主张去比对访谈记录与项目文件，把站不住的挑出来还给你——并附上她改好的措辞。改完再交，直到没有一条是凭空而来的。",
+      en: "Work all seven domain tracks on F10 — passing each manager's check clears that domain, but no Nike executive opens their door until every one of the seven is behind you. Once they are, Manager Lin debriefs you and the whole F15 C-suite opens at once; that's where the real evidence is. Interview them, then write up your as-is diagnosis in your own document: the pain points, the findings, and what each one rests on. Take it to Manager Lin and upload it. She checks every claim against your interview transcripts and the project files, and hands back the ones that aren't supported — with her own corrected wording. Fix those and resubmit until nothing is left standing on air.",
+      zh: "先在10层推进全部七条领域线——通过每位经理的考核只会清掉那一条线，耐克高管的门不会开，直到七条线全部通过。全部通过后，林经理会给你复盘，15层的高管会一次性全部开放——真正的证据在他们那里。访谈他们，然后用你自己的文档写出现状诊断：痛点、发现，以及每一条的依据。交给林经理上传。她会拿你的每一条主张去比对访谈记录与项目文件，把站不住的挑出来还给你——并附上她改好的措辞。改完再交，直到没有一条是凭空而来的。",
     },
   },
   {

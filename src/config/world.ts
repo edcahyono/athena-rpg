@@ -140,7 +140,7 @@ export interface NpcDef {
 const personaColors: Record<string, number> = {};
 for (const p of PERSONAS) personaColors[p.id] = parseInt(p.accent.slice(1), 16);
 
-// Executive display names (persona cards); CPO card has no personal name.
+// Executive display names, from the persona cards.
 const PERSONA_NAMES: Record<string, BL> = {
   ceo: { en: "Chen Wei", zh: "陈韦" },
   cfo: { en: "Zhou Mingyuan", zh: "周明远" },
@@ -148,7 +148,7 @@ const PERSONA_NAMES: Record<string, BL> = {
   coo: { en: "Zhao Zhengping", zh: "赵正平" },
   chro: { en: "Shen Ruolin", zh: "沈若琳" },
   cto: { en: "Lin Zhiyao", zh: "林知遥" },
-  cpo: { en: "CPO", zh: "首席产品官" },
+  cpo: { en: "Song Zhixing", zh: "宋知行" },
 };
 
 export const NPCS: NpcDef[] = [
@@ -205,11 +205,11 @@ export const NPCS: NpcDef[] = [
 
   // ---- Floor 10: the seven Deloitte gatekeepers (Product, Marketing, Tech,
   // Strategy, Finance, Ops, HR) sit together across the engagement floor, in
-  // two neat desk rows. Pass a gatekeeper and the matching Nike exec on 15
-  // takes your meeting. ----
-  { id: "gk-product", name: { en: "Chen Jing", zh: "陈静" }, role: { en: "Consultant · Consumer Products", zh: "顾问 · 消费品行业" }, floor: 10, tx: 12, ty: 3, color: 0x3b8a6e, kind: "task", taskId: "track-product", trackId: "product" },
-  { id: "gk-marketing", name: { en: "Marcus", zh: "马克" }, role: { en: "Manager · Customer & Marketing", zh: "经理 · 客户与营销" }, floor: 10, tx: 16, ty: 3, color: 0x8a5c3b, kind: "task", taskId: "track-marketing", trackId: "marketing" },
-  { id: "gk-tech", name: { en: "Ryan Xu", zh: "徐锐" }, role: { en: "Manager · Enterprise Technology & Performance", zh: "经理 · 企业技术与绩效" }, floor: 10, tx: 20, ty: 3, color: 0x3b6e9a, kind: "task", taskId: "track-tech", trackId: "tech" },
+  // two neat desk rows. Pass all seven and Manager Lin's mandatory debrief
+  // clears the whole Nike C-suite on 15 at once. ----
+  { id: "gk-product", name: { en: "Chen Jing", zh: "陈静" }, role: { en: "Manager · Consumer Products & Product Strategy", zh: "经理 · 消费品行业与产品战略" }, floor: 10, tx: 12, ty: 3, color: 0x3b8a6e, kind: "task", taskId: "track-product", trackId: "product" },
+  { id: "gk-marketing", name: { en: "Tang Yawen", zh: "唐雅文" }, role: { en: "Manager · Brand & Consumer Insight", zh: "经理 · 品牌与消费者洞察" }, floor: 10, tx: 16, ty: 3, color: 0x8a5c3b, kind: "task", taskId: "track-marketing", trackId: "marketing" },
+  { id: "gk-tech", name: { en: "Lu Xingzhi", zh: "陆行知" }, role: { en: "Manager · Enterprise Technology & Performance", zh: "经理 · 企业技术与绩效" }, floor: 10, tx: 20, ty: 3, color: 0x3b6e9a, kind: "task", taskId: "track-tech", trackId: "tech" },
   { id: "tnt-flavor", name: { en: "Wen", zh: "小文" }, role: { en: "Analyst · Consumer Industry", zh: "分析师 · 消费品行业" }, floor: 10, tx: 12, ty: 11, color: 0x999944, kind: "flavor",
     lines: [
       { en: "Third all-nighter this week. The deck is 214 slides and the client wants 'something punchier'.", zh: "这周第三个通宵了。PPT已经214页，客户还想要「更有冲击力一点的」。" },
@@ -223,14 +223,14 @@ export const NPCS: NpcDef[] = [
       { en: "Aiyah, so many empty coffee cups. Strategy runs on caffeine, hm?", zh: "哎呀，这么多空咖啡杯。战略都是咖啡因撑起来的吧？" },
     ] },
 
-  { id: "gk-strategy", name: { en: "Wu Jianguo", zh: "吴建国" }, role: { en: "Senior Manager · Strategy & Business Design", zh: "高级经理 · 战略与业务设计" }, floor: 10, tx: 4, ty: 3, color: 0x2f4f6f, kind: "task", taskId: "track-strategy", trackId: "strategy" },
-  { id: "gk-finance", name: { en: "Priya", zh: "普莉亚" }, role: { en: "Senior Consultant · Finance Transformation", zh: "高级顾问 · 财务转型" }, floor: 10, tx: 8, ty: 3, color: 0x6e3b8a, kind: "task", taskId: "track-finance", trackId: "finance" },
-  { id: "gk-ops", name: { en: "Sarah Deng", zh: "邓莎拉" }, role: { en: "Senior Manager · Core Business Operations", zh: "高级经理 · 核心业务运营" }, floor: 10, tx: 24, ty: 3, color: 0x6f2f4f, kind: "task", taskId: "track-ops", trackId: "ops" },
+  { id: "gk-strategy", name: { en: "Zhou Mingzhe", zh: "周明哲" }, role: { en: "Manager · Strategy & Business Design", zh: "经理 · 战略与业务设计" }, floor: 10, tx: 4, ty: 3, color: 0x2f4f6f, kind: "task", taskId: "track-strategy", trackId: "strategy" },
+  { id: "gk-finance", name: { en: "Priya", zh: "普莉亚" }, role: { en: "Manager · Finance Transformation", zh: "经理 · 财务转型" }, floor: 10, tx: 8, ty: 3, color: 0x6e3b8a, kind: "task", taskId: "track-finance", trackId: "finance" },
+  { id: "gk-ops", name: { en: "Fang Yuan", zh: "方远" }, role: { en: "Manager · Operations & Supply Chain", zh: "经理 · 运营与供应链" }, floor: 10, tx: 24, ty: 3, color: 0x6f2f4f, kind: "task", taskId: "track-ops", trackId: "ops" },
   { id: "gk-hr", name: { en: "Coco Ye", zh: "叶可可" }, role: { en: "Manager · Human Capital", zh: "经理 · 人力资本" }, floor: 10, tx: 28, ty: 3, color: 0x7a5c8a, kind: "task", taskId: "track-hr", trackId: "hr" },
   { id: "sm-ea", name: { en: "Joyce", zh: "乔伊丝" }, role: { en: "Team Assistant · Deloitte", zh: "团队助理 · 德勤" }, floor: 10, tx: 16, ty: 11, color: 0xb08a9a, kind: "flavor",
     lines: [
       { en: "Everyone here bills by the six-minute increment. Make it count.", zh: "这里每个人都是按六分钟一个计费单元收费的。别浪费。" },
-      { en: "Pass a manager's check and the matching executive upstairs takes your meeting. Any order you like.", zh: "通过一位经理的考核，楼上对应的那位高管就会见你。顺序随你。" },
+      { en: "Pass all seven managers' checks and Manager Lin clears you to meet the whole floor upstairs. Any order you like.", zh: "通过全部七位经理的考核后，林经理会批准你去见楼上全部高管。顺序随你。" },
     ] },
 
   // ---- Floor 16: Boardroom ----
@@ -246,8 +246,8 @@ export const NPCS: NpcDef[] = [
 // office (names from the mid-level character cards).
 const MID_NAMES: Record<string, BL> = {
   vpfin: { en: "Karen Lin", zh: "林嘉怡" },
-  brand: { en: "Su Qing", zh: "苏晴" },
-  scops: { en: "Legend Wang", zh: "王立群" },
+  brand: { en: "Lin Qingyan", zh: "林清妍" },
+  scops: { en: "Chen Zhengyang", zh: "陈正阳" },
   digital: { en: "Howard Chen", zh: "陈昊" },
   merch: { en: "Vivian Li", zh: "李蔚然" },
   talent: { en: "Cindy Zhao", zh: "赵欣" },

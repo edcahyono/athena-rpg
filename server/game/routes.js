@@ -216,11 +216,24 @@ function requireTrackPassed(s, personaId, lang) {
   // you — the unlock order is part of the flow being tested.
   const track = resolveTrack(trackForPersona(personaId));
   if (!track) return;
-  const t = s.tasks[track.taskId];
-  if (!t || !["passed"].includes(t.status)) {
+  // The C-suite opens once, for everyone, after the WHOLE diagnostic is done —
+  // not one executive at a time. Gating each office on its own manager's check
+  // let a learner meet the CEO having understood a seventh of the business,
+  // which inverts the lesson: you diagnose before you prescribe.
+  const all = Object.values(TRACKS);
+  const passed = all.filter((tr) => s.tasks[tr.taskId]?.status === "passed").length;
+  if (passed < all.length) {
     throw Object.assign(new Error(TT(lang,
-      "This executive only takes meetings arranged through the engagement team — pass the domain manager's check first.",
-      "这位高管只接受项目组安排的会面——请先通过对应领域经理的考核。")), { status: 403 });
+      `The Nike executives receive the team once the diagnostic is complete — you've cleared ${passed} of ${all.length} domain checks on Floor 10.`,
+      `诊断阶段全部完成后，耐克高管才会接待项目组——你已通过10层 ${passed}/${all.length} 项领域考核。`)), { status: 403 });
+  }
+  // All seven checks alone don't open the door — Manager Lin still has to
+  // debrief the diagnostic and clear the team in, the same way she'd never let
+  // an analyst walk straight from the last domain manager into the C-suite.
+  if (!s.flags.execBriefingDone) {
+    throw Object.assign(new Error(TT(lang,
+      "The diagnostic is done, but the executives won't see you until Manager Lin has debriefed you on it. Go find her on Floor 12.",
+      "诊断已经完成，但你还没向林经理复盘，高管暂时不会见你。去12层找她。")), { status: 403 });
   }
 }
 
@@ -325,14 +338,27 @@ router.post("/event", (req, res) => {
     s.flags.metSupervisor = true;
     addQuestEntry(s, "task", TT(lang, "Onboarding complete", "入职报到完成"),
       TT(lang,
-        "Manager Lin briefed you: build an independent 5-year growth strategy for Nike Greater China. Pick any domain track from the mission board (menu, M) — pass its manager's check to unlock the matching Nike executive.",
-        "林经理已向你交代：为耐克大中华区撰写一份独立的五年增长战略。从任务板（菜单M）任选一条领域线——通过该线经理的考核即可解锁对应的耐克高管。"));
+        "Manager Lin briefed you: build an independent 5-year growth strategy for Nike Greater China. Pick any domain track from the mission board (menu, M) — pass all seven managers' checks, then Lin will clear you to meet the whole Nike C-suite.",
+        "林经理已向你交代：为耐克大中华区撰写一份独立的五年增长战略。从任务板（菜单M）任选一条领域线——通过全部七位经理的考核后，林经理会批准你去见耐克全部高管。"));
     touch(s);
   }
   // Player picked an active mission from the mission board.
   if (type === "selectMission" && (TRACKS[trackId] || trackId === null)) {
     s.selectedMission = TRACKS[trackId] ? trackId : null;
     touch(s);
+  }
+  // Manager Lin's mandatory post-diagnostic briefing. Only takes once all
+  // seven domain checks are passed — everything else stays server-authoritative.
+  if (type === "execBriefingDone" && !s.flags.execBriefingDone) {
+    const allTracksPassed = Object.values(TRACKS).every((tr) => s.tasks[tr.taskId]?.status === "passed");
+    if (allTracksPassed) {
+      s.flags.execBriefingDone = true;
+      addQuestEntry(s, "task", TT(lang, "Diagnostic debrief complete", "诊断复盘完成"),
+        TT(lang,
+          "Manager Lin has cleared you to meet the whole Nike C-suite on Floor 15.",
+          "林经理已批准你去见15层全部耐克高管。"));
+      touch(s);
+    }
   }
   res.json(publicState(s));
 });
@@ -370,13 +396,13 @@ function gatekeeperNpcFromTrack(trackId) {
   // Minimal display identity — full roster lives in src/config/world.ts on
   // the client; the server only needs name/role for the system prompt.
   const NAMES = {
-    strategy: { name: { en: "Wu Jianguo", zh: "吴建国" }, role: { en: "Senior Manager, Strategy & Business Design", zh: "高级经理，战略与业务设计" } },
-    finance: { name: { en: "Priya", zh: "普莉亚" }, role: { en: "Senior Consultant, Finance Transformation", zh: "高级顾问，财务转型" } },
-    marketing: { name: { en: "Marcus", zh: "马克" }, role: { en: "Manager, Customer & Marketing", zh: "经理，客户与营销" } },
-    ops: { name: { en: "Sarah Deng", zh: "邓莎拉" }, role: { en: "Senior Manager, Core Business Operations", zh: "高级经理，核心业务运营" } },
+    strategy: { name: { en: "Zhou Mingzhe", zh: "周明哲" }, role: { en: "Manager, Strategy & Business Design", zh: "经理，战略与业务设计" } },
+    finance: { name: { en: "Priya", zh: "普莉亚" }, role: { en: "Manager, Finance Transformation", zh: "经理，财务转型" } },
+    marketing: { name: { en: "Tang Yawen", zh: "唐雅文" }, role: { en: "Manager, Brand & Consumer Insight", zh: "经理，品牌与消费者洞察" } },
+    ops: { name: { en: "Fang Yuan", zh: "方远" }, role: { en: "Manager, Operations & Supply Chain", zh: "经理，运营与供应链" } },
     hr: { name: { en: "Coco Ye", zh: "叶可可" }, role: { en: "Manager, Human Capital", zh: "经理，人力资本" } },
-    tech: { name: { en: "Ryan Xu", zh: "徐锐" }, role: { en: "Manager, Enterprise Technology & Performance", zh: "经理，企业技术与绩效" } },
-    product: { name: { en: "Chen Jing", zh: "陈静" }, role: { en: "Consultant, Consumer Products", zh: "顾问，消费品行业" } },
+    tech: { name: { en: "Lu Xingzhi", zh: "陆行知" }, role: { en: "Manager, Enterprise Technology & Performance", zh: "经理，企业技术与绩效" } },
+    product: { name: { en: "Chen Jing", zh: "陈静" }, role: { en: "Manager, Consumer Products & Product Strategy", zh: "经理，消费品行业与产品战略" } },
   };
   return NAMES[trackId];
 }
@@ -588,10 +614,14 @@ router.post("/gatekeeper/answer", async (req, res) => {
       s.tasks[track.taskId] = { status: "passed", delta, feedback };
       addQuestEntry(s, "task", TT(lang, "Check passed: ", "考核通过：") + LB(track.name, lang), feedback);
       addCredibility(s, delta, LB(track.name, lang));
-      const execTitle = LB(PERSONA_MAP[track.personaId]?.title, lang);
-      addQuestEntry(s, "unlock", TT(lang, `Executive unlocked: ${execTitle}`, `高管已解锁：${execTitle}`),
-        TT(lang, "Their office is on Floor 15. Meetings are timed and limited — prep first.",
-          "TA的办公室在15层。会面限时限次——先做好准备。"));
+      // No single track unlocks its executive anymore — the C-suite opens
+      // together, once ALL seven are passed and Lin has debriefed it.
+      const allTracksPassed = Object.values(TRACKS).every((tr) => s.tasks[tr.taskId]?.status === "passed");
+      if (allTracksPassed) {
+        addQuestEntry(s, "unlock", TT(lang, "All seven domain checks passed", "七项领域考核全部通过"),
+          TT(lang, "Report back to Manager Lin on Floor 12 for a debrief — she'll clear you to meet the whole Nike C-suite on Floor 15.",
+            "回12层向林经理复盘——她会批准你去见15层全部耐克高管。"));
+      }
     }
     touch(s);
     res.json({ ...publicState(s), correct, why: correct ? null : m.why, done, delta, feedback });

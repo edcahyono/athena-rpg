@@ -36,6 +36,14 @@ export function computeObjective(state: GameState | undefined): Objective {
   const checksPassed = Object.values(TRACKS)
     .filter((t: any) => state.tasks[t.taskId]?.status === "passed").length;
 
+  // All seven domain checks are in, but the C-suite still won't take a
+  // meeting — Manager Lin has to debrief the diagnostic first (server-enforced
+  // in requireTrackPassed()). This sits above the As-Is branch below because
+  // that debrief is the gate on F15 itself, not on the diagnosis document.
+  if (checksPassed >= 7 && !state.flags.execBriefingDone) {
+    return { npcId: "supervisor", floor: 12, label: L(UI.execBriefingObjective), why: L(UI.execBriefingObjectiveWhy) };
+  }
+
   // As-Is alignment. Once every domain check is behind you the diagnosis is the
   // next thing owed, and it is owed to Manager Lin — not to another executive.
   // There was no branch for this at all: a player who passed all seven checks
@@ -82,6 +90,24 @@ export function computeObjective(state: GameState | undefined): Objective {
         label: fmt(UI.seeGatekeeper, { name: L(gk.name), floor: gk.floor }),
         why: fmt(UI.gatekeeperWhy, { name: L(gk.name), track: L(track.name), exec: L(exec.name) }),
       };
+    }
+    // This track's check is passed, but no executive opens their door until
+    // EVERY domain check has — the C-suite reads the whole diagnostic at
+    // once, not one function at a time (see requireTrackPassed() server-side).
+    // Pointing at this track's own exec here would send the player to a door
+    // that turns them away; point at the next open check instead.
+    const totalTracks = Object.keys(TRACKS).length;
+    if (checksPassed < totalTracks) {
+      const nextEntry: any = Object.values(TRACKS).find((tr: any) => state.tasks[tr.taskId]?.status !== "passed");
+      if (nextEntry) {
+        const nextGk = npcById(nextEntry.npcId)!;
+        const nextExec = npcById(`persona-${nextEntry.personaId}`)!;
+        return {
+          npcId: nextGk.id, floor: nextGk.floor,
+          label: fmt(UI.seeGatekeeper, { name: L(nextGk.name), floor: nextGk.floor }),
+          why: fmt(UI.gatekeeperWhy, { name: L(nextGk.name), track: L(nextEntry.name), exec: L(nextExec.name) }),
+        };
+      }
     }
     if (state.personas[track.personaId]?.used === 0) {
       return {

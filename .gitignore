@@ -8,3 +8,4 @@ ATHENA-Feature-Overview.docx
 # Generated from docs/WORKFLOW.md by `npm run docs:render` — regenerate, don't commit.
 ATHENA-Workflow.pdf
 docs/workflow-png/
+athena-canva-assets/
