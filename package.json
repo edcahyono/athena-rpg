@@ -11,6 +11,7 @@
     "build": "vite build",
     "start": "npm run build && node server/server.js",
     "ingest": "node server/rag/ingest.js",
+    "docs:render": "node scripts/render-workflow.mjs",
     "eval:grader": "node server/eval/graderEval.js",
     "eval:injection": "node server/eval/injectionEval.js"
   },
@@ -24,6 +25,9 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
+    "marked": "^18.0.8",
+    "mermaid": "^11.16.0",
+    "puppeteer-core": "^25.4.0",
     "typescript": "^5.6.3",
     "vite": "^5.4.11"
   }

@@ -5,3 +5,6 @@ server/data/sessions.json
 .DS_Store
 server/data/qa/backups/
 ATHENA-Feature-Overview.docx
+# Generated from docs/WORKFLOW.md by `npm run docs:render` — regenerate, don't commit.
+ATHENA-Workflow.pdf
+docs/workflow-png/
