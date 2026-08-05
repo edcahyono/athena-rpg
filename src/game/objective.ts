@@ -54,14 +54,18 @@ export function computeObjective(state: GameState | undefined): Objective {
     return { npcId: "supervisor", floor: 12, label: L(UI.asisObjective), why: L(UI.asisObjectiveWhy) };
   }
 
-  // Benchmark alignment — the same gap one phase later. Nothing pointed here
-  // either, so once the as-is was agreed the guidance jumped to the interim
-  // readout and skipped the phase entirely. Lin hosts it; the CEO and CFO are
-  // the ones judging, which is why the guidance text alone sent people to F15.
+  // Design Review — the phase that replaced Benchmark Alignment. It is held by
+  // the seven Deloitte managers on F10, NOT by Lin, so the arrow points at a
+  // gatekeeper. Any of them can convene the team, so aim at the first one
+  // rather than inventing a "correct" desk to knock on.
   if (state.engagement?.alignments?.asis?.agreed
-    && !state.engagement?.alignments?.benchmark?.agreed
+    && !state.engagement?.designReview?.done
     && interviewed >= 7) {
-    return { npcId: "supervisor", floor: 12, label: L(UI.benchObjective), why: L(UI.benchObjectiveWhy) };
+    const anyGk = npcById((Object.values(TRACKS)[0] as any).npcId);
+    return {
+      npcId: anyGk?.id ?? null, floor: 10,
+      label: L(UI.designObjective), why: L(UI.designObjectiveWhy),
+    };
   }
 
   // All seven done: the interim readout is the hard prerequisite for the
@@ -92,22 +96,18 @@ export function computeObjective(state: GameState | undefined): Objective {
       };
     }
     // This track's check is passed, but no executive opens their door until
-    // EVERY domain check has — the C-suite reads the whole diagnostic at
-    // once, not one function at a time (see requireTrackPassed() server-side).
-    // Pointing at this track's own exec here would send the player to a door
-    // that turns them away; point at the next open check instead.
+    // EVERY domain check has (see requireTrackPassed() server-side), so there
+    // is nothing further to do on THIS track right now.
+    //
+    // Deliberately does NOT auto-advance to the next unpassed track. The order
+    // of TRACKS is a declaration order, not a curriculum: taking the next one
+    // off it told the player "now go see Priya" purely because finance happens
+    // to be declared second, which reads as a required sequence in a phase
+    // whose whole point is that the order is yours. Hand the choice back to
+    // the mission board instead.
     const totalTracks = Object.keys(TRACKS).length;
     if (checksPassed < totalTracks) {
-      const nextEntry: any = Object.values(TRACKS).find((tr: any) => state.tasks[tr.taskId]?.status !== "passed");
-      if (nextEntry) {
-        const nextGk = npcById(nextEntry.npcId)!;
-        const nextExec = npcById(`persona-${nextEntry.personaId}`)!;
-        return {
-          npcId: nextGk.id, floor: nextGk.floor,
-          label: fmt(UI.seeGatekeeper, { name: L(nextGk.name), floor: nextGk.floor }),
-          why: fmt(UI.gatekeeperWhy, { name: L(nextGk.name), track: L(nextEntry.name), exec: L(nextExec.name) }),
-        };
-      }
+      return { npcId: null, floor: null, label: L(UI.pickMission), why: fmt(UI.pickNextMissionWhy, { done: checksPassed, total: totalTracks }) };
     }
     if (state.personas[track.personaId]?.used === 0) {
       return {

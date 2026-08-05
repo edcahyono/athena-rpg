@@ -24,7 +24,6 @@ const nameOf = (npc: NpcDef) => `${L(npc.name)} · ${L(npc.role)}`;
 // have already been briefed (purely narrative — safe to keep client-side).
 const PHASE_BRIEF: Record<string, any> = {
   asis: UI.linBriefDiagnose,
-  benchmark: UI.linBriefBenchmark,
   tobe: UI.linBriefDesign,
   pitch: UI.linBriefPresent,
 };
@@ -182,21 +181,29 @@ async function supervisor(npc: NpcDef) {
   }
 
   // Phase gate 1 — As-Is Alignment. After enough interviews to have a diagnosis,
-  // the client must confirm the as-is before benchmarking can begin.
+  // the client must confirm the as-is before any design work is allowed.
   // The interview minimum lives in shared/phases.js. It was duplicated here as
   // a literal 3, so lowering the constant changed nothing and Lin simply never
   // offered the meeting — the "I passed every check and nothing happens" wall.
   if (!align.asis.agreed && n >= ASIS_MIN_INTERVIEWS) {
     await showLines(name, [L(UI.asisIntro)]);
+    // Carries the last submission across the revise loop so the box reopens
+    // with the learner's own draft in it. Lin's corrections are per-claim edits
+    // to a long document; reopening blank meant retyping the whole diagnosis to
+    // fix one sentence, which is why people abandoned the revision.
+    let draft = "";
     while (true) {
-      const answer = await taskPanel(L(UI.asisTitle), L(UI.asisPrompt), align.asis.lastFeedback || undefined);
+      const answer = await taskPanel(L(UI.asisTitle), L(UI.asisPrompt), align.asis.lastFeedback || undefined, draft);
       if (answer === null) return;
+      draft = answer;
       const res = await api.alignmentAsis(answer);
       if (res.delta) toast(fmt(UI.credToast, { n: res.delta }));
       if (res.result === "agreed" || res.result === "already") {
-        // Gate cleared → advance to Benchmark and brief it right away.
-        await showLines(name, [fmt(UI.asisAgreed, { n: res.delta || 25 }), L(UI.linBriefBenchmark)]);
-        markBriefed("benchmark");
+        // Gate cleared → advance to Design and brief it right away. The
+        // design review itself belongs to the Deloitte team on F10, so the
+        // brief ends by sending the player there rather than back to Lin.
+        await showLines(name, [fmt(UI.asisAgreed, { n: res.delta || 25 }), L(UI.linBriefDesign)]);
+        markBriefed("tobe");
         return;
       }
       // Show the claims Lin actually rejected, each with her corrected wording.
@@ -214,34 +221,13 @@ async function supervisor(npc: NpcDef) {
     }
   }
 
-  // Phase gate 2 — Benchmark Alignment. Only after the as-is is agreed; the
-  // client disputes irrelevant comparisons before the to-be design is allowed.
-  // All seven executives are required here: ranking priorities across seven
-  // functions means having heard from all seven. The server enforces the same
-  // bound — this only keeps Lin from opening a meeting she'd have to refuse.
-  if (align.asis.agreed && !align.benchmark.agreed && n < 7) {
-    return await showLines(name, [fmt(UI.benchNeedsAllExecs, { n })]);
-  }
-  if (align.asis.agreed && !align.benchmark.agreed) {
-    await showLines(name, [L(UI.benchIntro)]);
-    while (true) {
-      const answer = await taskPanel(L(UI.benchTitle), L(UI.benchPrompt), align.benchmark.lastFeedback || undefined);
-      if (answer === null) return;
-      const res = await api.alignmentBenchmark(answer);
-      if (res.delta) toast(fmt(UI.credToast, { n: res.delta }));
-      if (res.result === "agreed" || res.result === "already") {
-        // Gate cleared → advance to To-Be (Design) and brief it right away.
-        await showLines(name, [fmt(UI.benchAgreed, { n: res.delta || 25 }), L(UI.linBriefDesign)]);
-        markBriefed("tobe");
-        return;
-      }
-      await showLines(name, [`${res.feedback}`, L(UI.benchRevise)]);
-      const again = await showChoice(name, L(UI.benchRevise), [L(UI.alignReviseBtn), L(UI.alignLaterBtn)]);
-      if (again !== 0) return;
-    }
-  }
+  // Phase gate 2 — Design. Deliberately NOT held here: the design review is a
+  // group meeting with the seven Deloitte managers on F10, not a submission to
+  // Lin, so all she does now is point the player at the team. (The old
+  // Benchmark Alignment gate stood here; benchmarking is a criterion inside
+  // that review now, not a phase of its own.)
 
-  // Mid-engagement synthesis checkpoint — after the benchmark is aligned Lin
+  // Mid-engagement synthesis checkpoint — after the design is reviewed Lin
   // wants an interim readout (and the board won't convene without it).
   if (!state.flags.interimDone && n >= 3) {
     await showLines(name, [L(UI.interimIntro)]);
@@ -293,6 +279,38 @@ async function taskNpc(npc: NpcDef) {
   // is already unlocked. (Document review lives with Manager Lin, not here.)
   if (t?.status === "failed") {
     await showLines(name, [L(track.retryLine)]);
+  }
+
+  // DESIGN REVIEW — convened here rather than with Lin, because the reviewers
+  // ARE the seven managers. Any of them can call the team together, so the
+  // player doesn't have to guess which desk holds the meeting. One attempt: the
+  // server refuses a second, so the offer disappears once it's been used.
+  const align0 = state.engagement?.alignments;
+  if (align0?.asis?.agreed && !state.engagement?.designReview?.done) {
+    const choice = await showChoice(name, L(UI.designReviewPrompt), [L(UI.designReviewYes), L(UI.designReviewLater)]);
+    if (choice === 0) {
+      await showLines(name, [L(UI.designReviewIntro)]);
+      const draft = await taskPanel(L(UI.designReviewTitle), L(UI.designReviewBrief), L(UI.designReviewOneShot));
+      if (draft !== null) {
+        const loading = showLoading(name, L(UI.designReviewLoading), 26000);
+        let res: any;
+        try {
+          res = await api.designReview(draft);
+        } catch (e: any) {
+          loading.close();
+          toast(e.message);
+          return updateHUD(npc.floor);
+        }
+        loading.close();
+        if (res.delta) toast(fmt(UI.credToast, { n: res.delta }));
+        // Each manager speaks in turn, named with their workstream, so the
+        // advice reads as a room of people rather than one blob of feedback.
+        await showLines(L(UI.designReviewRoom), (res.reviews || []).map(
+          (r: any) => `${r.name} · ${r.workstream}\n${r.advice}`));
+        await showLines(name, [L(UI.designReviewDone)]);
+        return updateHUD(npc.floor);
+      }
+    }
   }
 
   chatMode({
@@ -367,8 +385,12 @@ async function runExitQuiz(trackId: string, gkName: string, track: any) {
         if (res.done) {
           toast(fmt(UI.credToast, { n: res.delta }));
           await showLines(gkName, [fmt(UI.gkCheckPassed, { feedback: res.feedback, n: res.delta })]);
-          const exec = NPCS.find((n) => n.id === `persona-${track.personaId}`)!;
-          toast(`🔓 ${L(exec.name)} — F15`);
+          // Reports THIS check as complete and how many remain — no "🔓 <exec>
+          // — F15", which announced an unlock that hasn't happened: Floor 15
+          // stays shut until all seven pass and Lin has debriefed the
+          // diagnostic (requireTrackPassed, server-side).
+          const passed = Object.values(TRACKS).filter((tr: any) => state.tasks[tr.taskId]?.status === "passed").length;
+          toast(fmt(UI.gkCheckDoneToast, { done: passed, total: Object.keys(TRACKS).length }));
         }
         break;
       }

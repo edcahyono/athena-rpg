@@ -193,14 +193,60 @@ export function closeDialogue() {
  * reads as a hang — the player cannot tell "thinking" from "broken" — and
  * generating five bilingual MCQs is the longest wait in the game.
  */
-export function showLoading(name: string, text: string): { close: () => void } {
+export function showLoading(name: string, text: string, expectedMs = 20000): { close: () => void } {
   openBox(name);
   const el = dlgText();
-  let n = 0;
-  const tick = () => { el.textContent = `${text} ${".".repeat(n % 4)}`; n++; };
+
+  // HONEST ABOUT WHAT THIS MEASURES: the five MCQs come back from ONE model
+  // call, so the server has no intermediate progress to report and the bar
+  // cannot show real completion. It shows ELAPSED time against how long this
+  // call usually takes, easing toward 95% and never reaching it on its own —
+  // so it keeps moving during a slow generation instead of sitting at 100%
+  // and looking hung, which is the failure mode a naive linear bar has. The
+  // jump to 100% happens on close(), when the work has genuinely finished.
+  // Two rows, not three: the dialogue box is a fixed ~150px and a label/bar/
+  // percentage stack overflowed it, pushing the percentage out of sight below
+  // the visible area. Percentage sits inline with the label instead.
+  // The fill is painted as a background GRADIENT on the track itself rather
+  // than as a nested child div. A child <div> with a background sits inside
+  // this dialogue box without ever painting — the parent's own background wins
+  // on screen even though the child computes as visible with a solid colour.
+  // One element and a hard gradient stop renders reliably and is less markup.
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px">
+      <span id="ld-label"></span><span id="ld-pct" style="font-size:12px;opacity:.75;flex:none"></span>
+    </div>
+    <div id="ld-bar" style="height:16px;border:2px solid #2b2f3a;border-radius:3px;background:#11141b"></div>`;
+
+  const label = el.querySelector("#ld-label") as HTMLElement;
+  const bar = el.querySelector("#ld-bar") as HTMLElement;
+  const pctEl = el.querySelector("#ld-pct") as HTMLElement;
+  const paint = (pct: number) => {
+    bar.style.background = `linear-gradient(to right, #7ec24a 0 ${pct}%, #11141b ${pct}% 100%)`;
+  };
+
+  const start = Date.now();
+  let dots = 0;
+  const tau = Math.max(1, expectedMs) / 2.5; // time constant of the ease
+  const tick = () => {
+    const elapsed = Date.now() - start;
+    const pct = Math.min(95, 95 * (1 - Math.exp(-elapsed / tau)));
+    paint(pct);
+    pctEl.textContent = `${Math.round(pct)}%`;
+    label.textContent = `${text} ${".".repeat(dots % 4)}`;
+    dots++;
+  };
   tick();
-  const timer = window.setInterval(tick, 450);
-  return { close: () => { window.clearInterval(timer); closeDialogue(); } };
+  const timer = window.setInterval(tick, 400);
+
+  return {
+    close: () => {
+      window.clearInterval(timer);
+      paint(100);
+      pctEl.textContent = "100%";
+      closeDialogue();
+    },
+  };
 }
 
 /** Scripted lines, advanced with E / Space / Enter / click. */
@@ -445,12 +491,20 @@ export function elevatorPanel(current: number): Promise<number | null> {
 
 /** Free-response check panel. Resolves with answer text or null.
  *  `note` (optional) shows prior reviewer feedback as context on a revise pass. */
-export function taskPanel(title: string, prompt: string, note?: string): Promise<string | null> {
+/** `initial` pre-fills the textarea. Revision loops pass the previous answer
+ *  back in: a submission that comes back for revision used to reopen an EMPTY
+ *  box, so the learner lost everything they had written and had to retype a
+ *  long diagnosis from scratch to change one unsupported claim. */
+export function taskPanel(title: string, prompt: string, note?: string, initial?: string): Promise<string | null> {
   return new Promise((resolve) => {
     const noteBlock = note ? `<p class="warnbox">${esc(note)}</p>` : "";
     const p = openPanel(`<h2>📋 ${esc(title)}</h2><p>${esc(prompt)}</p>${noteBlock}
-      <textarea id="ptext" placeholder="${L(UI.writeAnswerPh)}"></textarea>
+      <textarea id="ptext" placeholder="${L(UI.writeAnswerPh)}">${esc(initial || "")}</textarea>
       <div class="row"><button id="psubmit">${L(UI.submitAnswer)}</button><button id="pcancel">${L(UI.notYet)}</button></div>`);
+    // Caret at the end of the restored draft, ready to edit rather than
+    // overwrite — and focused, so revising is one keystroke away.
+    const ta = p.querySelector("#ptext") as HTMLTextAreaElement;
+    if (initial) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
     (p.querySelector("#psubmit") as HTMLButtonElement).onclick = () => {
       const v = (p.querySelector("#ptext") as HTMLTextAreaElement).value.trim();
       if (!v) return toast(L(UI.writeSomething));
@@ -658,26 +712,41 @@ export function boardResultPanel(score: number, checklist: { short: string; name
  *  full review response {evals, score, checklist} (or null if cancelled). */
 export function boardDeckPanel(): Promise<any | null> {
   return new Promise((resolve) => {
+    // .pptx ONLY, and the file itself is the submission — no typed fallback.
+    // The deck is the deliverable and its shape is part of the brief, so there
+    // is deliberately no way to paste text past the requirement.
     const p = openPanel(`<h2>${L(UI.boardDeckTitle)}</h2>
       <p class="muted">${L(UI.boardDeckHint)}</p>
-      <div class="row"><input type="file" id="pfile" accept="${FILE_ACCEPT}" /></div>
-      <textarea id="ptext" placeholder="${L(UI.writeAnswerPh)}" style="height:150px"></textarea>
+      <p class="warnbox">${L(UI.boardDeckSpec)}</p>
+      <div class="row"><input type="file" id="pfile" accept=".pptx" /></div>
       <div class="row"><button id="psubmit">${L(UI.boardDeckSubmit)}</button><button id="pcancel">${L(UI.cancel)}</button></div>
       <div id="deck-result"></div>`);
-    wireFileUpload(p);
     (p.querySelector("#pcancel") as HTMLButtonElement).onclick = () => { closePanel(); resolve(null); };
     (p.querySelector("#psubmit") as HTMLButtonElement).onclick = async () => {
-      const text = (p.querySelector("#ptext") as HTMLTextAreaElement).value.trim();
-      if (!text) return toast(L(UI.writeSomething));
+      const input = p.querySelector("#pfile") as HTMLInputElement;
+      const file = input.files?.[0];
+      const out = p.querySelector("#deck-result") as HTMLElement;
+      if (!file) { out.innerHTML = `<p class="warnbox">${L(UI.boardDeckNoFile)}</p>`; return; }
       const btn = p.querySelector("#psubmit") as HTMLButtonElement;
       btn.disabled = true;
-      (p.querySelector("#deck-result") as HTMLElement).innerHTML = `<p class="muted">${L(UI.boardDeckReading)}</p>`;
+      out.innerHTML = `<p class="muted">${L(UI.boardDeckReading)}</p>`;
       try {
-        const res = await api.boardReviewDeck(text);
+        // Read as base64 so the server can open the archive and count slides;
+        // the browser cannot be trusted to self-report the slide count.
+        const b64: string = await new Promise((ok, bad) => {
+          const fr = new FileReader();
+          fr.onload = () => ok(String(fr.result).split(",")[1] || "");
+          fr.onerror = () => bad(new Error("read failed"));
+          fr.readAsDataURL(file);
+        });
+        const res = await api.boardReviewDeck(file.name, b64);
         closePanel();
         resolve(res);
       } catch (err: any) {
-        (p.querySelector("#deck-result") as HTMLElement).innerHTML = `<p class="muted">${esc(err.message)}</p>`;
+        // A rejected deck (wrong type / wrong slide count) lands here as a
+        // normal error and must stay on screen so it can be fixed and retried —
+        // the server has not consumed the single attempt unless it graded it.
+        out.innerHTML = `<p class="warnbox">${esc(err.message)}</p>`;
         btn.disabled = false;
       }
     };
@@ -719,12 +788,15 @@ export function menuPanel(objective: { label: string; why: string }) {
   // Mission board — one row per track, any order.
   const board = Object.entries(TRACKS).map(([id, t]: [string, any]) => {
     const gk = NPCS.find((n) => n.id === t.npcId)!;
-    const exec = NPCS.find((n) => n.id === `persona-${t.personaId}`)!;
     const st = trackStatus(id);
     const isActive = state.selectedMission === id;
+    // Deliberately no "→ unlocks <exec>": during Diagnose the board is a list
+    // of seven domain checks, and naming the executive each one "unlocks" both
+    // overstated it (nobody on 15 opens until ALL seven are passed and Lin has
+    // debriefed you) and framed the diagnostic as a way of collecting execs.
     return `<div class="dir-row">
       <span class="who"><b>${esc(L(t.name))}</b><br/>
-        <span class="muted">${esc(L(gk.name))} (F${gk.floor}) → ${L(UI.unlocks)} ${esc(L(exec.name))}</span></span>
+        <span class="muted">${esc(L(gk.name))} · F${gk.floor}</span></span>
       <span class="status">${st.text}<br/>
         ${st.done ? "" : `<button class="mission-pick${isActive ? " sel" : ""}" data-track="${id}">${isActive ? L(UI.active) : L(UI.setActive)}</button>`}
       </span>

@@ -40,39 +40,27 @@ export const PHASES = [
     },
   },
   {
-    id: "benchmark",
-    order: 2,
-    name: { en: "Benchmarking", zh: "对标分析" },
-    short: { en: "Benchmark", zh: "对标" },
-    deliverable: { en: "Benchmark conclusion + prioritised direction", zh: "对标结论 + 有优先级的方向" },
-    gate: { en: "Benchmark Alignment Meeting — Manager Lin convenes it on F12 once you've interviewed all seven executives; the CEO and CFO are the ones judging.", zh: "对标对齐会——七位高管全部访谈完后，由林经理在12层召集；评判的是 CEO 与 CFO。" },
-    guidance: {
-      en: "Compare Nike China against named competitors (Anta, Li-Ning, Adidas, Xtep, 361°) using only disclosed, like-for-like metrics — for Nike Greater China that means EBIT margin and revenue growth. Greater China net profit, inventory, ROE and ROIC are NOT disclosed, so quoting them will be challenged. Name concrete relative strengths and weaknesses versus specific peers and land a prioritised direction. Take it to Manager Lin on F12 once you've interviewed all seven executives — she convenes the alignment meeting, and the CEO and CFO judge it there. You do not pitch them separately.",
-      zh: "用已披露、可比口径的指标把耐克中国与具名对手（安踏、李宁、阿迪达斯、特步、361°）对标——对大中华区而言即 EBIT 利润率与收入增速。大中华区净利润、库存、ROE、ROIC 并未披露，引用会被当场质疑。要针对具体对手指出明确的相对优势与劣势，并给出有优先级的方向。七位高管全部访谈完之后，把它带给12层的林经理——由她召集对齐会，CEO 与 CFO 在会上评判。你不需要单独去找他们汇报。",
-    },
-  },
-  {
     id: "tobe",
-    order: 3,
+    order: 2,
     name: { en: "To-Be Design", zh: "未来蓝图设计" },
     short: { en: "Design", zh: "设计" },
-    deliverable: { en: "Draft 5-year strategy", zh: "五年战略草案" },
-    gate: { en: "Interim readout to Manager Lin — the boardroom will not convene until she has heard it.", zh: "向林经理做中期汇报——她没听过，董事会就不会召开。" },
+    deliverable: { en: "Draft 5-year strategy — uploaded or typed, reviewed by the whole Deloitte team", zh: "五年战略草案——上传或直接输入，由德勤项目组集体评审" },
+    gate: { en: "Design Review — all seven Deloitte managers read your draft together and each returns advice from their own workstream. ONE attempt: it is a review, not a resubmission loop.", zh: "设计评审——七位德勤经理集体审阅你的草案，各自从自己的工作流给出建议。仅有一次机会：这是评审，不是反复提交。" },
     guidance: {
-      en: "Draft your 5-year strategy in your own document: recommendations tied to the pain points you evidenced, each with an owner, sequencing and the trade-offs you accept. Then give Manager Lin an interim readout. She passes you if you state a point of view — what you actually believe, not just a summary of facts — tie it to something you genuinely heard, and name what you still need to test.",
-      zh: "用你自己的文档起草五年战略：每条建议都要对应你已取证的痛点，并写明责任人、推进节奏和你接受的取舍。然后向林经理做中期汇报。她的通过标准是：你提出了明确观点（你真正相信什么，而不只是复述事实）、观点能追溯到你实际听到的内容，并说明还需要验证什么。",
+      en: "Draft your 5-year strategy in your own document: recommendations tied to the pain points you evidenced, each with an owner, sequencing and the trade-offs you accept. BENCHMARKING BELONGS HERE — a recommendation is only as good as the comparison behind it, so position Nike against named competitors (Anta, Li-Ning, Adidas, Xtep, 361°) using disclosed, like-for-like metrics. For Nike Greater China that means EBIT margin and revenue growth; Greater China net profit, inventory, ROE and ROIC are NOT disclosed, so quoting them will be challenged. Then bring the draft to the Deloitte team — all seven managers review it together, each judging the part that belongs to their workstream and telling you what to implement, what to change and what to strengthen. You get ONE pass at this, so submit when the draft is genuinely ready.",
+      zh: "用你自己的文档起草五年战略：每条建议都要对应你已取证的痛点，并写明责任人、推进节奏和你接受的取舍。【对标属于这个阶段】——一条建议的价值取决于它背后的比较，所以要用已披露、可比口径的指标把耐克与具名对手（安踏、李宁、阿迪达斯、特步、361°）放在一起看。对大中华区而言即 EBIT 利润率与收入增速；大中华区净利润、库存、ROE、ROIC 并未披露，引用会被当场质疑。然后把草案带给德勤项目组——七位经理会集体评审，各自就自己工作流内的部分告诉你该落实什么、该改什么、还能怎么加强。这个环节只有一次机会，草案真正就绪了再交。",
     },
   },
   {
     id: "pitch",
-    order: 4,
+    order: 3,
     name: { en: "Final Pitch", zh: "最终汇报" },
     short: { en: "Present", zh: "汇报" },
-    deliverable: { en: "Board pitch + defence, then your closing debrief with Manager Lin", zh: "董事会汇报 + 答辩，之后与林经理复盘收尾" },
-    gate: { en: "Terminal assessment — deck score + per-stakeholder checklist — and then Manager Lin's debrief. The engagement is not finished until you report back to her.", zh: "终审——方案评分 + 各干系人清单——最后是林经理的复盘。没有回去向她汇报，项目就不算结束。" },
+    deliverable: { en: "A 10-slide PowerPoint (.pptx) of your 5-year strategy, presented to the full C-suite — then your closing debrief with Manager Lin", zh: "一份10页的PowerPoint（.pptx）五年战略方案，向全体高管汇报——之后与林经理复盘收尾" },
+    gate: { en: "Final Presentation — all seven Nike executives read the deck together and each grades it against their own criteria. ONE attempt. The file must be a .pptx of EXACTLY 10 slides; anything else is refused at the door. Then Manager Lin's debrief closes the engagement.", zh: "最终汇报——七位耐克高管集体审阅方案，各自按自己的评分标准打分。仅有一次机会。文件必须是【恰好10页】的 .pptx，不符合要求会被当场退回。最后由林经理复盘收尾。" },
     guidance: {
-      en: "Two things unlock the boardroom (F16): all seven executives interviewed at least once, and your interim readout already given to Manager Lin. Then take your place at the table. Each executive judges your deck through their own lens: the CEO wants one clear thesis with explicit trade-offs, the CFO a margin-recovery path, the CMO favourability, the COO executability, the CHRO owners and capability, the CTO platform-native digital, the CPO real product relevance. You then defend it under their challenge questions. Final score = 60% deck + 40% defence. When the board rises, go back to Manager Lin on F12 for your debrief — that is what closes the engagement.",
-      zh: "解锁16层董事会会议室需要两件事：七位高管都至少访谈过一次，并且已经向林经理做过中期汇报。然后到桌前就座。每位高管都会用自己的视角评判你的方案：CEO 要一个清晰主线和明确取舍，CFO 要利润率修复路径，CMO 看好感度，COO 看可执行性，CHRO 看责任人与能力建设，CTO 看数字化原生程度，CPO 看产品的真实相关性。随后你要在他们的追问下答辩。最终得分 = 方案 60% + 答辩 40%。散会后，回12层找林经理复盘——项目由此才算收尾。",
+      en: "The boardroom (F16) opens once all seven executives have been interviewed and the Deloitte team has reviewed your design. Build your 5-year strategy as a PowerPoint deck — it must be a .pptx file and it must be EXACTLY 10 slides; a PDF, a Word file, or a deck of 9 or 11 slides is rejected before anyone reads it. Then present to the full C-suite in one sitting. Each executive grades it through their own lens: the CEO wants one clear thesis with explicit trade-offs, the CFO a margin-recovery path, the CMO favourability, the COO executability, the CHRO owners and capability, the CTO platform-native digital, the CPO real product relevance. You get ONE attempt, so submit the deck you actually want judged. When the board rises, go back to Manager Lin on F12 for your debrief — that is what closes the engagement.",
+      zh: "七位高管全部访谈完、且德勤项目组已评审过你的设计之后，16层董事会会议室才会开放。把五年战略做成 PowerPoint：必须是 .pptx 文件，且必须【恰好10页】——PDF、Word，或者9页、11页的方案，都会在有人翻开之前被退回。然后一次性向全体高管汇报。每位高管都会用自己的视角评分：CEO 要一个清晰主线和明确取舍，CFO 要利润率修复路径，CMO 看好感度，COO 看可执行性，CHRO 看责任人与能力建设，CTO 看数字化原生程度，CPO 看产品的真实相关性。只有一次机会，所以交你真正想被评判的那一版。散会后，回12层找林经理复盘——项目由此才算收尾。",
     },
   },
 ];
@@ -100,9 +88,38 @@ export function newEngagement() {
     completed: Object.fromEntries(PHASE_IDS.map((id) => [id, false])),
     alignments: {
       asis: { agreed: false, attempts: 0, lastFeedback: null },
-      benchmark: { agreed: false, attempts: 0, lastFeedback: null },
     },
+    // Design Review — the seven Deloitte managers read the draft together.
+    // ONE attempt by design, so `done` is set the moment it is submitted,
+    // whatever the managers think of it; their advice is the deliverable, not
+    // a pass mark. `reviews` is [{ trackId, name, advice }].
+    designReview: { done: false, submittedAt: null, reviews: [], summary: null },
   };
+}
+
+/**
+ * Bring an engagement saved under an older shape up to the current one.
+ *
+ * The 5-phase spine (…asis → benchmark → tobe…) collapsed to 4 when
+ * benchmarking became a grading criterion inside Design rather than a phase of
+ * its own. A session persisted mid-engagement can therefore be sitting on
+ * `phase: "benchmark"`, a phase id that no longer exists — which would strand
+ * it, because syncEngagement() derives the active phase from PHASES and would
+ * never match. Anyone who had already cleared the old benchmark gate is
+ * credited with Design's predecessor rather than being sent backwards.
+ */
+export function migrateEngagement(e) {
+  if (!e) return newEngagement();
+  if (!e.alignments) e.alignments = {};
+  if (!e.alignments.asis) e.alignments.asis = { agreed: false, attempts: 0, lastFeedback: null };
+  if (!e.designReview) e.designReview = { done: false, submittedAt: null, reviews: [], summary: null };
+  // The old benchmark alignment is no longer a gate. If it was agreed, treat
+  // that work as already reflected in the design draft rather than discarding
+  // the player's progress; either way the key stops being consulted.
+  delete e.alignments.benchmark;
+  if (e.completed) delete e.completed.benchmark;
+  if (e.phase === "benchmark") e.phase = "tobe";
+  return e;
 }
 
 /** Advance the active phase to `phaseId` if it is later than the current one. */
@@ -122,8 +139,10 @@ export function syncEngagement(s) {
   const e = s.engagement;
   e.completed.mobilize = !!s.flags?.metSupervisor;
   e.completed.asis = !!e.alignments?.asis?.agreed;
-  e.completed.benchmark = !!e.alignments?.benchmark?.agreed;
-  e.completed.tobe = !!s.flags?.interimDone;
+  // Design closes on the Deloitte team having REVIEWED the draft, not on their
+  // approving it: the review is a single pass that returns advice, so gating
+  // the phase on a verdict would let one harsh reviewer strand the engagement.
+  e.completed.tobe = !!e.designReview?.done;
   // The board is not the last step. Every other phase in this spine closes by
   // reporting back to Manager Lin, and the engagement closes the same way — she
   // delivers the terminal assessment. Marking pitch complete on the board alone

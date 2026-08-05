@@ -20,6 +20,7 @@ import { ASIS_MIN_INTERVIEWS } from "../../shared/phases.js";
 import { grantPack, DATA_PACK_MAP, packForSource } from "../../shared/workspace.js";
 import { retrieve } from "../rag/retriever.js";
 import { callAnthropic, CHAT_MODEL, LIGHT_MODEL, parseModelJson } from "../anthropic.js";
+import { readDeck, REQUIRED_SLIDES } from "../pptx.js";
 import { extractText } from "./extract.js";
 import { INJECTION_GUARD } from "./guards.js";
 import {
@@ -27,7 +28,10 @@ import {
 } from "./sessionStore.js";
 
 const router = express.Router();
-const MAX_TOKENS = Number(process.env.MAX_TOKENS || 900);
+// Executive interview replies. Raised from 900: bilingual answers ran past it
+// and stopped mid-sentence. callAnthropic() continues past the ceiling now, so
+// this is a cost guard rather than the thing that decides answer length.
+const MAX_TOKENS = Number(process.env.MAX_TOKENS || 1600);
 const now = () => Date.now();
 
 const langOf = (req) => (req.body?.language === "zh" ? "zh" : "en");
@@ -436,7 +440,10 @@ router.post("/gatekeeper/chat", async (req, res) => {
       content: m.text,
     }));
 
-    const raw = await callAnthropic({ model: CHAT_MODEL, max_tokens: 700, system, messages });
+    // 700 clipped bilingual answers mid-sentence often enough to notice. The
+    // ceiling is a safety net, not a length target — the prompt still asks for
+    // a paragraph or two — and callAnthropic() now continues past it anyway.
+    const raw = await callAnthropic({ model: CHAT_MODEL, max_tokens: 1400, system, messages });
 
     // Strip [[UNKNOWN:execId:topic]] tags, log each as a fresh notebook lead.
     const leads = [];
@@ -605,9 +612,13 @@ router.post("/gatekeeper/answer", async (req, res) => {
     let delta = 0, feedback = null;
     if (done) {
       const firstPass = quiz.firstTry.filter(Boolean).length;
-      // 50% floor: finishing at all proves mastery; first-attempt accuracy
-      // decides the rest, so the number still means something.
-      delta = Math.round(track.credibility * (0.5 + 0.5 * (firstPass / quiz.mcqs.length)));
+      // Full marks for finishing, however many attempts each question took. The
+      // award used to scale with first-attempt accuracy, which docked
+      // credibility for a wrong answer the learner then went and corrected —
+      // penalising the exact behaviour the retry loop exists to encourage, on a
+      // score that gates nothing. The first-try count is still reported back as
+      // feedback, because that IS worth knowing; it just no longer costs.
+      delta = track.credibility;
       feedback = TT(lang,
         `${firstPass}/${quiz.mcqs.length} right first time.`,
         `首次作答正确 ${firstPass}/${quiz.mcqs.length}。`);
@@ -886,7 +897,7 @@ router.post("/board/end", async (req, res) => {
 router.post("/board/review-deck", async (req, res) => {
   try {
     const s = getSession(req.body?.sessionId, false);
-    const { text } = req.body || {};
+    const { filename, fileBase64 } = req.body || {};
     const lang = langOf(req);
     const n = interviewedCount(s);
     if (n < PERSONAS.length) {
@@ -894,8 +905,45 @@ router.post("/board/review-deck", async (req, res) => {
         `Present to the board once you've interviewed all seven executives — you're at ${n}/7.`,
         `访谈完七位高管后才能向董事会汇报——你目前完成了${n}/7。`) });
     }
-    if (typeof text !== "string" || !text.trim() || text.length > 40000)
-      return res.status(400).json({ error: TT(lang, "Deck text must be 1–40,000 characters.", "汇报内容需为1–40,000字符。") });
+    // Design is now a prerequisite for Present: the C-suite hears a strategy the
+    // Deloitte team has already been through, not a first draft.
+    if (!s.engagement.designReview?.done) {
+      return res.status(403).json({ error: TT(lang,
+        "The team reviews your design before the executives see it — take your draft to the Deloitte managers first.",
+        "高管看到方案之前，项目组要先评审你的设计——请先把草案交给德勤经理们。") });
+    }
+    // ONE attempt, like the design review. The deck is the terminal graded
+    // deliverable; re-submitting until the wording lands would make the grade
+    // meaningless.
+    if (s.board.deckReviewed) {
+      return res.status(409).json({ error: TT(lang,
+        "The executives have already graded your deck — that was your one attempt.",
+        "高管已经为你的方案评分了——这个环节只有一次机会。") });
+    }
+
+    // HARD SPEC, refused at the door: a .pptx of EXACTLY 10 slides. "Fit it into
+    // ten slides" is part of the exercise, so this is validated before a single
+    // executive reads anything. readDeck() returns a machine-readable reason the
+    // client renders in the player's language.
+    if (typeof fileBase64 !== "string" || !fileBase64) {
+      return res.status(400).json({ error: TT(lang,
+        `Upload your strategy deck — a PowerPoint (.pptx) of exactly ${REQUIRED_SLIDES} slides.`,
+        `请上传你的战略方案——必须是恰好${REQUIRED_SLIDES}页的 PowerPoint（.pptx）文件。`), reason: "missing" });
+    }
+    const deck = await readDeck(filename, Buffer.from(fileBase64, "base64"));
+    if (!deck.ok) {
+      const msg = deck.reason === "ext"
+        ? TT(lang, `That's a .${deck.detail} file. The deck must be a PowerPoint (.pptx) — export it and try again.`,
+                   `这是一个 .${deck.detail} 文件。方案必须是 PowerPoint（.pptx）——请导出后重新上传。`)
+        : deck.reason === "slides"
+        ? TT(lang, `The deck has ${deck.detail} slides. It must be exactly ${REQUIRED_SLIDES} — no more, no fewer.`,
+                   `这份方案有 ${deck.detail} 页。必须恰好 ${REQUIRED_SLIDES} 页——不多不少。`)
+        : TT(lang, "That file couldn't be opened as a PowerPoint. Re-save it as .pptx and try again.",
+                   "这个文件无法作为 PowerPoint 打开。请重新保存为 .pptx 后再试。");
+      // 422, not 500: the upload was understood and refused on its merits.
+      return res.status(422).json({ error: msg, reason: deck.reason, detail: deck.detail ?? null });
+    }
+    const text = deck.text;
 
     // Admin: the deck is a graded submission, so it accepts anything — and
     // skipping seven live executive reviews makes a QA pass quick as well.
@@ -1336,49 +1384,92 @@ router.post("/alignment/asis", async (req, res) => {
   }
 });
 
-router.post("/alignment/benchmark", async (req, res) => {
+/**
+ * DESIGN REVIEW — the seven Deloitte managers read the draft strategy together.
+ *
+ * Replaces the old Benchmark Alignment gate. Benchmarking did not disappear; it
+ * moved INTO this review as a criterion, because a comparison is only worth
+ * making in service of a recommendation. Judging it as its own phase taught
+ * learners to produce a competitor table and then never use it.
+ *
+ * ONE attempt, deliberately. This is a review, not a resubmission loop: the
+ * managers' advice IS the deliverable, so the phase completes on submission
+ * whatever they conclude. Gating it on a verdict would let a single harsh
+ * reviewer strand the engagement with no way forward.
+ */
+router.post("/design/review", async (req, res) => {
   try {
     const s = getSession(req.body?.sessionId, false);
-    const { answer } = req.body || {};
+    const { text } = req.body || {};
     const lang = langOf(req);
-    const b = s.engagement.alignments.benchmark;
-    if (b.agreed)
-      return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "The client already agreed the benchmark priorities.", "客户已经认可了对标优先事项。") });
+    const dr = s.engagement.designReview;
+
+    if (dr.done) {
+      return res.status(409).json({ error: TT(lang,
+        "The team has already reviewed your design — that was your one pass at it.",
+        "项目组已经评审过你的设计了——这个环节只有一次机会。") });
+    }
     if (!s.engagement.alignments.asis.agreed) {
       return res.status(403).json({ error: TT(lang,
-        "Benchmark after the as-is is agreed — settle the As-Is Alignment Meeting first.",
-        "对标要在现状对齐之后——请先完成现状对齐会。") });
+        "Design comes after the diagnosis is agreed — settle the As-Is with Manager Lin first.",
+        "先完成现状诊断再做设计——请先与林经理达成现状对齐。") });
     }
-    // Benchmarking is where the executives become mandatory. The as-is can be
-    // built from the engagement team's own material, but judging Nike against
-    // named competitors needs every C-suite lens — you cannot rank priorities
-    // across seven functions having heard from three of them.
-    const met = interviewedCount(s);
-    if (met < PERSONAS.length) {
-      return res.status(403).json({ error: TT(lang,
-        `Benchmark after you've met all seven executives — you're at ${met} of ${PERSONAS.length}.`,
-        `先见完七位高管再做对标——目前${met}/${PERSONAS.length}。`) });
+    // The draft can be typed or uploaded; either way it arrives here as text.
+    const submitted = (typeof text === "string" && text.trim()) ? text : (s.workDoc?.text || "");
+    if (!submitted.trim() || submitted.length > 40000) {
+      return res.status(400).json({ error: TT(lang,
+        "Give the team your draft strategy first — typed here or uploaded as a file (1–40,000 characters).",
+        "请先提交你的战略草案——可以直接输入，也可以上传文件（1–40,000字符）。") });
     }
-    if (typeof answer !== "string" || !answer.trim() || answer.length > 4000)
-      return res.status(400).json({ error: "Answer must be 1–4000 characters" });
 
-    const { agreed, feedback } = s.admin
-      ? { agreed: true, feedback: TT(lang, "[ADMIN] Auto-agreed.", "[管理员] 自动通过。") }
-      : await gradeAlignment({ kind: "benchmark", answer, evidence: alignmentEvidence(s, lang), lang });
-    b.attempts += 1;
-    b.lastFeedback = feedback;
-    const delta = agreed ? 25 : 0;
-    if (agreed) {
-      b.agreed = true;
-      addCredibility(s, delta, TT(lang, "Benchmark alignment agreed", "对标对齐达成"));
-    }
+    const tracks = Object.entries(TRACKS);
+    const reviews = s.admin
+      ? tracks.map(([trackId, t]) => ({
+          trackId, name: LB(gatekeeperNpcFromTrack(trackId).name, lang), workstream: LB(t.name, lang),
+          advice: TT(lang, "[ADMIN] Auto-reviewed.", "[管理员] 自动评审。"),
+        }))
+      : await Promise.all(tracks.map(async ([trackId, t]) => {
+          const npc = gatekeeperNpcFromTrack(trackId);
+          const bench = BENCHMARKS[t.personaId]
+            ? `\nBENCHMARKING REFERENCE (verified figures — hold their comparisons to these):\n${BENCHMARKS[t.personaId]}\n`
+            : "";
+          try {
+            const out = await callAnthropic({
+              model: CHAT_MODEL,
+              max_tokens: 900,
+              system:
+                `You are ${LB(npc.name, "en")}, ${LB(npc.role, "en")}, the Deloitte manager who owns the ${LB(t.name, "en")} workstream on the Nike Greater China engagement. ` +
+                `${t.persona ? `\nWHO YOU ARE:\n${t.persona}\n` : ""}` +
+                `\nWHAT YOU KNOW:\n${t.knowledge}\n${bench}` +
+                `\nThe junior analyst has brought their DRAFT 5-year growth strategy to the team for review. Read it and respond ONLY about the part that belongs to YOUR workstream — do not review the whole document, and do not repeat another workstream's job.\n` +
+                `Cover three things in your own voice: what they should IMPLEMENT as-is, what needs CHANGING and why, and how the weakest part of your area could be STRENGTHENED. Where they benchmark against competitors, check the comparison is like-for-like and say so if it is not. Be specific and concrete — name the recommendation you are reacting to. Be candid: this is the one review they get, so an easy pass helps nobody.\n` +
+                `Stay fully in character. Reply with ONLY JSON: {"advice":"<3-5 sentences in ${lang === "zh" ? "Simplified Chinese" : "English"}>"}`,
+              messages: [{ role: "user", content: submitted.slice(0, 40000) }],
+            });
+            const parsed = parseModelJson(out);
+            const advice = (typeof parsed.advice === "string" && parsed.advice.trim())
+              ? parsed.advice.slice(0, 1200)
+              : TT(lang, "Noted — nothing to add from my workstream.", "了解——我这条线暂时没有补充。");
+            return { trackId, name: LB(npc.name, lang), workstream: LB(t.name, lang), advice };
+          } catch (e) {
+            console.error(`[design review] ${trackId}:`, e.message);
+            return { trackId, name: LB(npc.name, lang), workstream: LB(t.name, lang),
+              advice: TT(lang, "(couldn't reach this manager — their notes will follow)", "（暂时联系不到这位经理——他们的意见稍后补上）") };
+          }
+        }));
+
+    dr.done = true;
+    dr.submittedAt = now();
+    dr.reviews = reviews;
+    const delta = 25;
+    addCredibility(s, delta, TT(lang, "Design reviewed by the team", "设计已通过项目组评审"));
     addQuestEntry(s, "task",
-      TT(lang, agreed ? "Benchmark Alignment agreed" : "Benchmark Alignment — revise", agreed ? "对标对齐达成" : "对标对齐 — 需修改"),
-      TT(lang, "Your benchmark: ", "你的对标：") + answer.slice(0, 280) + "\n" + TT(lang, "Client: ", "客户：") + feedback);
+      TT(lang, "Design Review — the team's advice", "设计评审 — 项目组意见"),
+      reviews.map((r) => `${r.name} (${r.workstream}): ${r.advice}`).join("\n\n").slice(0, 1800));
     touch(s);
-    res.json({ ...publicState(s), result: agreed ? "agreed" : "revise", feedback, delta });
+    res.json({ ...publicState(s), result: "reviewed", reviews, delta });
   } catch (err) {
-    console.error("[alignment benchmark]", err.message, err.detail || "");
+    console.error("[design review]", err.message, err.detail || "");
     res.status(err.status || 500).json({ error: err.message });
   }
 });
@@ -1397,10 +1488,13 @@ router.post("/interim", async (req, res) => {
     const lang = langOf(req);
     if (s.flags.interimDone)
       return res.json({ ...publicState(s), result: "already", feedback: TT(lang, "You've already given your interim readout.", "你已经做过中期汇报了。") });
-    if (!s.engagement.alignments.benchmark.agreed) {
+    // Was gated on the benchmark alignment, which no longer exists — reading
+    // alignments.benchmark.agreed threw once the phase was removed. The design
+    // review is its successor in the spine, so gate on that instead.
+    if (!s.engagement.designReview?.done) {
       return res.status(403).json({ error: TT(lang,
-        "The interim readout comes after benchmarking is aligned — settle the Benchmark Alignment Meeting with Lin first.",
-        "中期汇报要在对标对齐之后——请先和林经理完成对标对齐会。") });
+        "The interim readout comes after the team has reviewed your design — take your draft to the Deloitte managers first.",
+        "中期汇报要在项目组评审过你的设计之后——请先把草案交给德勤经理们。") });
     }
     const n = interviewedCount(s);
     if (n < 3) {

@@ -13,7 +13,7 @@ import { SESSIONS_FILE } from "../paths.js";
 import { PERSONAS, MID_PERSONAS } from "../../shared/personas.config.js";
 import { GAME_CONFIG } from "../../shared/gameConfig.js";
 import { TRACKS } from "../../shared/gameContent.js";
-import { newEngagement, syncEngagement } from "../../shared/phases.js";
+import { newEngagement, migrateEngagement, syncEngagement } from "../../shared/phases.js";
 import { newWorkspace } from "../../shared/workspace.js";
 
 const FILE = SESSIONS_FILE;
@@ -74,7 +74,7 @@ function newSession(id) {
     // POST /api/game/admin with the admin code, never by the client alone.
     admin: false,
     flags: { metSupervisor: false, interimDone: false, boardDone: false, debriefDone: false, workDocDone: false, execBriefingDone: false },
-    engagement: newEngagement(), // 5-phase consulting spine (shared/phases.js)
+    engagement: newEngagement(), // 4-phase consulting spine (shared/phases.js)
     workspace: newWorkspace(), // engagement binder + data packs (shared/workspace.js)
     settings: { recipient: "board" }, // final-pitch recipient: "board" | "professorGuo" (Wave 3)
     tasks: {}, // taskId -> { status: "passed"|"partial"|"failed", delta, feedback }
@@ -114,7 +114,9 @@ export function getSession(id, create = true) {
   if (s.flags.workDocDone === undefined) s.flags.workDocDone = false; // sessions saved before the Lin review mission existed
   if (s.flags.execBriefingDone === undefined) s.flags.execBriefingDone = false; // sessions saved before the mandatory post-diagnostic briefing existed
   // Migrate sessions persisted before the engagement-phase spine existed.
-  if (!s.engagement) s.engagement = newEngagement();
+  // Migrate sessions persisted before the engagement-phase spine existed, and
+  // those saved under the old 5-phase shape that still carries "benchmark".
+  s.engagement = s.engagement ? migrateEngagement(s.engagement) : newEngagement();
   if (!s.workspace) s.workspace = newWorkspace();
   if (s.workspace && !s.workspace.interviews) s.workspace.interviews = [];
   if (!s.settings) s.settings = { recipient: "board" };

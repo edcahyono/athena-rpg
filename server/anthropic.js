@@ -164,11 +164,54 @@ export async function callAnthropicRaw(body) {
   return data;
 }
 
-export async function callAnthropic(body) {
-  const data = await callAnthropicRaw(body);
-  return (data.content || [])
+const textOf = (data) =>
+  (data.content || [])
     .filter((b) => b.type === "text")
     .map((b) => b.text)
-    .join("\n")
-    .trim();
+    .join("\n");
+
+/**
+ * How many times we'll ask the model to carry on past its token ceiling before
+ * giving up and returning what we have. Four rounds is far more headroom than
+ * any prompt here needs; it exists so a pathological loop can't bill forever.
+ */
+const MAX_CONTINUATIONS = 4;
+
+/**
+ * One model request, transparently CONTINUED when it runs out of tokens.
+ *
+ * requestWithRetry() already covers transient upstream failure, but it cannot
+ * see the other way a reply arrives broken: `stop_reason: "max_tokens"` is a
+ * perfectly successful HTTP 200 whose text simply stops mid-sentence. That was
+ * reaching learners as an executive trailing off in the middle of a word, and —
+ * worse, because it fails silently — as truncated JSON in the quiz and grading
+ * paths, where half an object parses to {} and the check reports that it
+ * "couldn't be prepared".
+ *
+ * The fix is the documented continuation pattern: feed the partial answer back
+ * as a prefilled assistant turn so the model resumes exactly where it stopped,
+ * repeating until it ends on its own. An assistant prefill may not carry
+ * trailing whitespace, hence the trimEnd().
+ */
+export async function callAnthropic(body) {
+  let data = await callAnthropicRaw(body);
+  let text = textOf(data);
+
+  for (let round = 0; data.stop_reason === "max_tokens" && round < MAX_CONTINUATIONS; round++) {
+    const prefill = text.trimEnd();
+    if (!prefill) break; // nothing to continue from — don't spin
+    console.warn(`[anthropic] hit max_tokens, continuing (round ${round + 1}/${MAX_CONTINUATIONS})`);
+    data = await callAnthropicRaw({
+      ...body,
+      messages: [...body.messages, { role: "assistant", content: prefill }],
+    });
+    // Resume from the trimmed prefill so the seam neither double-spaces nor
+    // swallows the character the model stopped on.
+    text = prefill + textOf(data);
+  }
+
+  if (data.stop_reason === "max_tokens") {
+    console.error("[anthropic] still truncated after continuations — returning partial text");
+  }
+  return text.trim();
 }

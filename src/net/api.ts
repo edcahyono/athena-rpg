@@ -33,7 +33,13 @@ export interface GameState {
     completed: Record<string, boolean>;
     alignments: {
       asis: { agreed: boolean; attempts: number; lastFeedback: string | null };
-      benchmark: { agreed: boolean; attempts: number; lastFeedback: string | null };
+    };
+    /** Design Review — one pass, by all seven Deloitte managers. */
+    designReview: {
+      done: boolean;
+      submittedAt: number | null;
+      reviews: { trackId: string; name: string; workstream: string; advice: string }[];
+      summary: string | null;
     };
   };
   settings: { recipient: string };
@@ -96,7 +102,8 @@ export const api = {
   endInteraction: (personaId: string) => post("interaction/end", { personaId }),
   boardStart: () => post("board/start"),
   boardChat: (text: string) => post("board/chat", { text }),
-  boardReviewDeck: (text: string) => post("board/review-deck", { text }),
+  // The final deck is a .pptx upload, validated server-side (exactly 10 slides).
+  boardReviewDeck: (filename: string, fileBase64: string) => post("board/review-deck", { filename, fileBase64 }),
   boardEnd: () => post("board/end"),
   setRecipient: (recipient: string) => post("settings", { recipient }),
   workspaceSummary: (personaId: string, summary: string) => post("workspace/summary", { personaId, summary }),
@@ -105,7 +112,8 @@ export const api = {
   workspaceAdd: (kind: string, payload: object) => post("workspace/add", { kind, ...payload }),
   workspaceRemove: (kind: string, id: string) => post("workspace/remove", { kind, id }),
   alignmentAsis: (answer: string) => post("alignment/asis", { answer }),
-  alignmentBenchmark: (answer: string) => post("alignment/benchmark", { answer }),
+  // Design Review — one shot, reviewed by all seven Deloitte managers.
+  designReview: (text: string) => post("design/review", { text }),
   interim: (answer: string) => post("interim", { answer }),
   reviewWork: (reviewerId: string, filename: string, text: string) => post("review-work", { reviewerId, filename, text }),
   extractText: (filename: string, fileBase64: string) => post("extract-text", { filename, fileBase64 }),
