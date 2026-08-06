@@ -12,11 +12,13 @@
  *   Nike executive who'd know. That deflection auto-logs to the notebook as
  *   a lead ("Ask the CMO about the brand-repair budget").
  *
- *   When the player leaves the conversation, the gatekeeper quizzes them
- *   with 2 short questions generated FROM that specific conversation
- *   (Haiku), so the check reflects what was actually discussed. Passing (or
- *   partial) counts toward all seven — no executive's calendar on Floor 15
- *   opens until every track is passed and Manager Lin has debriefed it.
+ *   The check is taken on demand, from a button in the conversation: 5
+ *   multiple-choice questions drawn from the track's OWN knowledge base
+ *   (below), NOT from the transcript — so it tests the domain, not recall of
+ *   a chat still on screen. A wrong answer is explained and the same question
+ *   comes back, so the only outcomes are passed or not-yet-passed; there is no
+ *   partial. Passing counts toward all seven — no executive's calendar on
+ *   Floor 15 opens until every track is passed and Manager Lin has debriefed.
  *
  * All player-facing text is bilingual {en, zh}. Knowledge-base prose feeds
  * an LLM system prompt and stays English (the LANGUAGE directive in the
@@ -44,7 +46,7 @@ export const TASKS = {
 
 /**
  * TRACKS — the mission board. Player picks any track in any order.
- * Passing a track's exit quiz (pass or partial) clears that domain only;
+ * Passing a track's domain check clears that domain only;
  * the whole C-suite opens together once every track is passed and Manager
  * Lin has debriefed the diagnostic. Server enforces the gate (see
  * requireTrackPassed() in server/game/routes.js); this map is the single

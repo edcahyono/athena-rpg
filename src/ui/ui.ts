@@ -93,7 +93,7 @@ export function updateHUD(floor: number) {
 }
 
 /**
- * Engagement Tracker — the always-visible 5-phase spine (the v2 backbone).
+ * Engagement Tracker — the always-visible 4-phase spine (the v2 backbone).
  * Reads the server-authoritative engagement state; each step shows done /
  * in-progress / locked so the player always knows where they are in the
  * consulting lifecycle, not just where they are in the building.
@@ -209,9 +209,6 @@ export function closeDialogue() {
   dlg().hidden = true;
 }
 
-/** A blocking, non-advanceable "…" line held on screen until close() is
- *  called — keeps the player locked in place while something loads (e.g.
- *  the exit quiz), so there's no walk-away gap before it appears. */
 /**
  * A waiting state that visibly ticks. Static text during a slow model call
  * reads as a hang — the player cannot tell "thinking" from "broken" — and
@@ -543,10 +540,12 @@ export function taskPanel(title: string, prompt: string, note?: string, initial?
 }
 
 /**
- * Sequential exit quiz — one question at a time, each with its own answer box
- * and the conversation summary available as reference notes. `initial` lets a
- * revision start from the player's previous answers. Resolves with all answers
- * (in order) or null if they back out. Empty questions array → [].
+ * Sequential free-text questions — one at a time, each with its own answer box
+ * and optional reference notes. Used by the boardroom DEFENCE stage, where the
+ * executives fire challenge questions at the weakest points of the deck; the
+ * gatekeeper domain check is multiple-choice and uses mcqPanel instead.
+ * `initial` lets a revision start from the player's previous answers. Resolves
+ * with all answers (in order) or null if they back out. Empty questions → [].
  */
 /**
  * One multiple-choice question of a domain check. Resolves with the chosen

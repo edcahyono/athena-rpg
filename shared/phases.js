@@ -1,7 +1,7 @@
 /**
  * ENGAGEMENT LIFECYCLE — the consulting methodology backbone (v2).
  *
- * This is the single source of truth for the five-phase engagement spine that
+ * This is the single source of truth for the four-phase engagement spine that
  * Alice's review asked us to make the primary progression (instead of "navigate
  * a building"). The building/floors/people are now *resources consulted within
  * a phase*; this model is the actual ladder the player climbs.
@@ -33,10 +33,10 @@ export const PHASES = [
     name: { en: "As-Is Study", zh: "现状诊断" },
     short: { en: "Diagnose", zh: "诊断" },
     deliverable: { en: "As-is diagnostic — your own document, handed to Manager Lin", zh: "现状诊断——你自己写的文档，交给林经理" },
-    gate: { en: "Manager Lin reads it claim by claim against your interview transcripts and the project files. Anything unsupported comes back with her corrected wording, and you resubmit.", zh: "林经理会逐条拿它比对你的访谈记录与项目文件。凡是没有依据的，都会附上她改好的措辞退回，你需要改完再交。" },
+    gate: { en: "Manager Lin checks it against four things she told you up front: at least 3 distinct pain points in different domains, every claim traceable to your transcripts or the project files, a clear order of priority, and no solutions yet. Anything short comes back with her corrected wording, and you resubmit.", zh: "林经理会按她事先讲明的四条标准检查：至少3个分布在不同领域的痛点、每条主张都能追溯到你的访谈记录或项目文件、明确的优先级排序、且暂不涉及解决方案。不达标的部分会附上她改好的措辞退回，你需要改完再交。" },
     guidance: {
-      en: "Work all seven domain tracks on F10 — passing each manager's check clears that domain, but no Nike executive opens their door until every one of the seven is behind you. Once they are, Manager Lin debriefs you and the whole F15 C-suite opens at once; that's where the real evidence is. Interview them, then write up your as-is diagnosis in your own document: the pain points, the findings, and what each one rests on. Take it to Manager Lin and upload it. She checks every claim against your interview transcripts and the project files, and hands back the ones that aren't supported — with her own corrected wording. Fix those and resubmit until nothing is left standing on air.",
-      zh: "先在10层推进全部七条领域线——通过每位经理的考核只会清掉那一条线，耐克高管的门不会开，直到七条线全部通过。全部通过后，林经理会给你复盘，15层的高管会一次性全部开放——真正的证据在他们那里。访谈他们，然后用你自己的文档写出现状诊断：痛点、发现，以及每一条的依据。交给林经理上传。她会拿你的每一条主张去比对访谈记录与项目文件，把站不住的挑出来还给你——并附上她改好的措辞。改完再交，直到没有一条是凭空而来的。",
+      en: "Work all seven domain tracks on F10 — passing each manager's check clears that domain, but no Nike executive opens their door until every one of the seven is behind you. Once they are, Manager Lin debriefs you and the whole F15 C-suite opens at once; that's where the real evidence is. Interview them, then write up your as-is diagnosis in your own document. Lin's four requirements: (1) at least 3 distinct pain points, in different domains — one finding is an observation, not a diagnosis; (2) every claim traceable to something you were actually told or to the project files; (3) a clear order of priority, not an undifferentiated list; (4) no solutions yet — what is broken and how you know, nothing more. Take it to Manager Lin and upload it. She checks every claim against your interview transcripts and the project files, and hands back the ones that aren't supported — with her own corrected wording — plus what to do next. Fix those and resubmit until nothing is left standing on air.",
+      zh: "先在10层推进全部七条领域线——通过每位经理的考核只会清掉那一条线，耐克高管的门不会开，直到七条线全部通过。全部通过后，林经理会给你复盘，15层的高管会一次性全部开放——真正的证据在他们那里。访谈他们，然后用你自己的文档写出现状诊断。林经理的四条要求：（1）至少3个痛点，且分布在不同领域——单一发现只是观察，还谈不上诊断；（2）每条主张都能追溯到你实际听到的内容或项目文件；（3）有明确的优先级排序，不能是一份不分轻重的清单；（4）暂不谈解决方案——只说清楚哪里出了问题、你怎么知道的。交给林经理上传。她会拿你的每一条主张去比对访谈记录与项目文件，把站不住的挑出来还给你——附上她改好的措辞，以及下一步该怎么做。改完再交，直到没有一条是凭空而来的。",
     },
   },
   {
@@ -80,6 +80,20 @@ export const PHASE_MAP = Object.fromEntries(PHASES.map((p) => [p.id, p]));
  * raising the bar again is a one-line change.
  */
 export const ASIS_MIN_INTERVIEWS = 0;
+
+/**
+ * How many distinct pain points the as-is diagnostic must carry before Manager
+ * Lin signs it off.
+ *
+ * Grounding alone left a hole: one immaculately evidenced observation passed
+ * the claim-by-claim check with nothing to prioritise against, and a single
+ * finding is an observation, not a diagnosis. Three is the lowest number at
+ * which "which of these matters most" is a real question, and it forces the
+ * learner to actually use the seven domain interviews they sat through. Told
+ * to the learner up front in Lin's briefing (`linBriefDiagnose` in
+ * src/i18n.ts), so failing it is never a surprise.
+ */
+export const ASIS_MIN_PAIN_POINTS = 3;
 
 /** Fresh engagement state for a new session. */
 export function newEngagement() {

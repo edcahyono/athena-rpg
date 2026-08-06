@@ -268,9 +268,11 @@ async function supervisor(npc: NpcDef) {
  * Flow: the gatekeeper is a LIVE, unlimited, untimed conversation — ask
  * whatever you want. They know the case deeply but have deliberate blind
  * spots; hitting one auto-logs a lead to the notebook ("ask the CMO about
- * X"). Leaving triggers a 2-question quiz generated from THAT conversation;
- * passing (or partial) counts toward all seven — only once every track is
- * passed, and Lin has debriefed the diagnostic, does Floor 15 open at all.
+ * X"). The check is a separate button, taken when the player decides they're
+ * ready: 5 multiple-choice questions drawn from the track's own knowledge
+ * base, NOT from the transcript. A wrong answer is explained and re-asked, so
+ * there is no partial pass. Passing counts toward all seven — only once every
+ * track is passed, and Lin has debriefed the diagnostic, does Floor 15 open.
  */
 async function taskNpc(npc: NpcDef) {
   const name = nameOf(npc);
@@ -280,8 +282,9 @@ async function taskNpc(npc: NpcDef) {
   const passed = !!t && (t.status === "passed");
   const hasTalked = !!state.gatekeepers[trackId]?.hasTalked;
 
-  // Already cleared this manager's check → just a friendly word; the executive
-  // is already unlocked. (Document review lives with Manager Lin, not here.)
+  // Already cleared this manager's check → just a friendly word; this domain
+  // is done, though Floor 15 stays shut until all seven are and Lin has
+  // debriefed. (Document review lives with Manager Lin, not here.)
   if (t?.status === "failed") {
     await showLines(name, [L(track.retryLine)]);
   }

@@ -16,10 +16,10 @@ import { buildGatekeeperPrompt } from "../../shared/gatekeeperPrompt.js";
 import { resolveTrack } from "./trackKnowledge.js";
 import { REVIEW_CRITERIA, GATEKEEPER_REVIEW } from "../../shared/reviewCriteria.js";
 import { BENCHMARKS } from "../../shared/benchmarks.js";
-import { ASIS_MIN_INTERVIEWS } from "../../shared/phases.js";
+import { ASIS_MIN_INTERVIEWS, ASIS_MIN_PAIN_POINTS } from "../../shared/phases.js";
 import { grantPack, DATA_PACK_MAP, packForSource } from "../../shared/workspace.js";
 import { retrieve } from "../rag/retriever.js";
-import { callAnthropic, CHAT_MODEL, LIGHT_MODEL, parseModelJson } from "../anthropic.js";
+import { callAnthropic, callAnthropicTool, CHAT_MODEL, LIGHT_MODEL } from "../anthropic.js";
 import { readDeck, REQUIRED_SLIDES } from "../pptx.js";
 import { extractText } from "./extract.js";
 import { INJECTION_GUARD } from "./guards.js";
@@ -178,20 +178,38 @@ async function personaReply(session, personaId, lang, extraSystem = "", groupIds
   return reply;
 }
 
-/** Haiku shallow-question classifier — feeds persona warmth (soft-fail tracking). */
+/**
+ * Shallow-question classifier — feeds persona warmth (soft-fail tracking).
+ *
+ * The one-word answer used to be read out of the text stream under a 10-token
+ * ceiling, which measured as truncated on every single call: the model spends
+ * those tokens on a thinking block or on "**shallow**\n\nThis question is too",
+ * and when thinking wins outright the text comes back EMPTY. Empty then failed
+ * the /SHALLOW/ test and scored the learner as SUBSTANTIVE — so a lazy question
+ * was silently rewarded with warmth. An enum tool field cannot come back as
+ * prose, and no-answer is now 0 (no warmth change) rather than a free point.
+ */
 async function classifyQuestion(text, personaTitle) {
   try {
-    const out = await callAnthropic({
+    const out = await callAnthropicTool({
       model: LIGHT_MODEL,
-      max_tokens: 10,
+      max_tokens: 1000, // room for a thinking block; the answer itself is one enum
+      name: "record_depth",
+      description: "Record how substantive the consultant's question was.",
+      schema: {
+        type: "object",
+        properties: { depth: { type: "string", enum: ["SUBSTANTIVE", "SHALLOW"] } },
+        required: ["depth"],
+      },
       system:
         `A junior consultant is interviewing the ${personaTitle} of Nike Greater China to build a growth strategy. The question may be in English or Chinese. ` +
         `Classify it. SUBSTANTIVE = specific, role-relevant, moves the analysis forward (asks about numbers, causes, trade-offs, competitors, execution). ` +
-        `SHALLOW = generic small talk, vague ("tell me everything"), lazy ("what should my strategy be?"), or something they could have looked up. ` +
-        `Reply with exactly one word: SUBSTANTIVE or SHALLOW.`,
+        `SHALLOW = generic small talk, vague ("tell me everything"), lazy ("what should my strategy be?"), or something they could have looked up.`,
       messages: [{ role: "user", content: text.slice(0, 1000) }],
     });
-    return /SHALLOW/i.test(out) ? -1 : 1;
+    if (out?.depth === "SHALLOW") return -1;
+    if (out?.depth === "SUBSTANTIVE") return 1;
+    return 0;
   } catch {
     return 0; // classifier failure never blocks play
   }
@@ -476,11 +494,16 @@ router.post("/gatekeeper/chat", async (req, res) => {
 });
 
 /**
- * Leaving triggers the check: generate 2 short questions AND a concise
- * bullet summary of the main points from THIS conversation (both in one call).
- * The summary is written to the notebook (replacing any prior one for this
- * track) so the player has clean notes to answer from — not a raw transcript.
+ * The {en, zh} pair the whole game renders through LB(). Both sides are
+ * required: a missing translation shows the player an empty string rather than
+ * falling back, so it is cheaper to reject the payload than to render a blank.
  */
+const BILINGUAL = {
+  type: "object",
+  properties: { en: { type: "string" }, zh: { type: "string" } },
+  required: ["en", "zh"],
+};
+
 /** Shape check on model output — a malformed MCQ must never reach the player. */
 function validMcq(m) {
   return m && m.q && m.q.en && m.q.zh
@@ -521,12 +544,35 @@ router.post("/gatekeeper/quiz", async (req, res) => {
     let mcqs = null;
     for (let attempt = 0; attempt < 3 && !mcqs; attempt++) {
       try {
-        const out = await callAnthropic({
+        const out = await callAnthropicTool({
           model: LIGHT_MODEL,
           // Five bilingual MCQs — question + 4 options + a teaching explanation,
           // each in English AND Chinese — is a lot of output, and Chinese runs
           // near one token per character. At 3000 this truncated every time.
-          max_tokens: 8000,
+          // 12000 rather than 8000 because a thinking block is billed from the
+          // same budget and this is the largest payload in the game.
+          max_tokens: 12000,
+          name: "record_quiz",
+          description: "Record the five multiple-choice questions for this domain check.",
+          schema: {
+            type: "object",
+            properties: {
+              mcqs: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    q: BILINGUAL,
+                    options: { type: "array", items: BILINGUAL },
+                    correct: { type: "integer", description: "0-based index of the correct option." },
+                    why: BILINGUAL,
+                  },
+                  required: ["q", "options", "correct", "why"],
+                },
+              },
+            },
+            required: ["mcqs"],
+          },
           system:
             `You write domain checks for junior consultants on a Nike Greater China engagement.\n` +
             `From the DOMAIN MATERIAL below, write EXACTLY 5 multiple-choice questions (not 2, not 4 — five) testing genuine ` +
@@ -538,17 +584,15 @@ router.post("/gatekeeper/quiz", async (req, res) => {
             `credible; only someone who understands it should be able to pick the right one.\n` +
             `Keep each option under 18 words. For each question write "why": TWO sentences the manager says to explain the ` +
             `correct answer to someone who got it wrong — in character, teaching rather than scolding.\n` +
-            `Write BOTH English and Chinese for every question, option and explanation (same meaning).\n` +
-            `Reply with ONLY JSON, no prose before or after: {"mcqs":[{"q":{"en":"","zh":""},"options":[{"en":"","zh":""},{"en":"","zh":""},{"en":"","zh":""},{"en":"","zh":""}],"correct":0,"why":{"en":"","zh":""}}]}`,
+            `Write BOTH English and Chinese for every question, option and explanation (same meaning).`,
           messages: [{ role: "user", content: `DOMAIN: ${LB(track.name, "en")}\n\nDOMAIN MATERIAL:\n${track.knowledge}` }],
         });
-        const parsed = parseModelJson(out);
-        const list = Array.isArray(parsed.mcqs) ? parsed.mcqs.filter(validMcq) : [];
+        const list = Array.isArray(out?.mcqs) ? out.mcqs.filter(validMcq) : [];
         // Over-generation is fine and common; take the first five.
         if (list.length >= 5) mcqs = list.slice(0, 5);
         else {
           console.error(`[gatekeeper quiz] attempt ${attempt + 1} rejected:`, JSON.stringify({
-            chars: out.length, topLevelKeys: Object.keys(parsed), valid: list.length,
+            gotTool: !!out, returned: Array.isArray(out?.mcqs) ? out.mcqs.length : 0, valid: list.length,
           }));
         }
       } catch (e) {
@@ -792,15 +836,33 @@ router.post("/board/chat", async (req, res) => {
     let responders;
     try {
       const roster = PERSONAS.map((p) => `id="${p.id}" — ${p.title.en}: ${p.tagline.en}`).join("\n");
-      const judgment = await callAnthropic({
+      // 80 tokens for a bare JSON array looked like plenty and measured as
+      // truncated on 3 of 4 calls — a thinking block spends the whole budget
+      // before the array starts. The catch below then quietly routed the pitch
+      // to the CEO alone, so most board statements were answered by one
+      // executive regardless of what they were actually about.
+      const judgment = await callAnthropicTool({
         model: LIGHT_MODEL,
-        max_tokens: 80,
+        max_tokens: 1500,
+        name: "route_statement",
+        description: "Name the executives whose domains this statement touches.",
+        schema: {
+          type: "object",
+          properties: {
+            ids: {
+              type: "array",
+              description: "1-3 participant ids, most relevant first.",
+              items: { type: "string", enum: allIds },
+            },
+          },
+          required: ["ids"],
+        },
         system:
           `You route a consultant's statement (English or Chinese) in a board meeting with these participants:\n${roster}\n` +
-          `Output ONLY a JSON array of the 1-3 ids whose domains the statement most genuinely touches, most relevant first. If it addresses the whole room broadly, pick the 2-3 most relevant.`,
+          `Name the 1-3 ids whose domains the statement most genuinely touches, most relevant first. If it addresses the whole room broadly, pick the 2-3 most relevant.`,
         messages: [{ role: "user", content: text.slice(0, 1500) }],
       });
-      const parsed = JSON.parse(judgment.match(/\[.*\]/s)?.[0] || "[]").filter((id) => allIds.includes(id));
+      const parsed = (Array.isArray(judgment?.ids) ? judgment.ids : []).filter((id) => allIds.includes(id));
       responders = parsed.length ? [...new Set(parsed)].slice(0, 3) : ["ceo"];
     } catch {
       responders = ["ceo"];
@@ -845,23 +907,49 @@ router.post("/board/end", async (req, res) => {
       const rubric = PERSONAS.map((p) => `${p.id} (${p.shortTitle.en}): ${p.evaluationMindset.en}`).join("\n");
       const convo = s.board.transcript
         .map((m) => (m.role === "learner" ? `Learner: ${m.text}` : `${m.personaId}: ${m.text}`)).join("\n").slice(-12000);
-      const out = await callAnthropic({
+      // A score plus a seven-row checklist did not fit in 400 tokens once a
+      // thinking block took its cut — measured as truncated on 4 of 4 calls,
+      // which handed the learner 0/100 with every executive unfulfilled no
+      // matter how the pitch actually went.
+      const out = await callAnthropicTool({
         model: LIGHT_MODEL,
-        max_tokens: 400,
+        max_tokens: 3000,
+        name: "record_verdict",
+        description: "Record the board's verdict on the final pitch.",
+        schema: {
+          type: "object",
+          properties: {
+            score: { type: "integer", description: "Overall deliverable score, 0-100." },
+            checklist: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string", enum: PERSONAS.map((p) => p.id) },
+                  fulfilled: { type: "boolean" },
+                },
+                required: ["id", "fulfilled"],
+              },
+            },
+          },
+          required: ["score", "checklist"],
+        },
         system:
           `You grade a trainee consultant's FINAL BOARD PITCH of a 5-year Nike Greater China strategy (transcript below; may be English or Chinese). ` +
           `Each executive's bar:\n${rubric}\n` +
-          `For each executive, decide fulfilled=true only if the pitch genuinely addressed their bar. Then give one overall deliverable score 0-100 ` +
-          `(90+: board-ready with clear thesis, trade-offs, numbers; 70s: solid but gaps; 50s: partial; below 40: unprepared). ` +
-          `Reply with ONLY JSON: {"score":<0-100>,"checklist":[{"id":"ceo","fulfilled":true|false},...one entry per executive id above...]}`,
+          `For each executive, decide fulfilled=true only if the pitch genuinely addressed their bar — one entry per executive id above. Then give one overall deliverable score 0-100 ` +
+          `(90+: board-ready with clear thesis, trade-offs, numbers; 70s: solid but gaps; 50s: partial; below 40: unprepared).`,
         messages: [{ role: "user", content: convo || "(empty)" }],
       });
-      const parsed = parseModelJson(out);
-      const byId = Object.fromEntries((Array.isArray(parsed.checklist) ? parsed.checklist : []).map((c) => [c.id, !!c.fulfilled]));
+      // No tool call means the grader never ran. Leaving s.board.result unset
+      // keeps the pitch ungraded so it can be scored on a later request,
+      // instead of freezing a fabricated 0 into the session.
+      if (!out) throw new Error("board grader returned no verdict");
+      const byId = Object.fromEntries((Array.isArray(out.checklist) ? out.checklist : []).map((c) => [c.id, !!c.fulfilled]));
       const checklist = PERSONAS.map((p) => ({
         personaId: p.id, short: LB(p.shortTitle, lang), name: LB(p.title, lang), fulfilled: byId[p.id] ?? false,
       }));
-      const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+      const score = Math.max(0, Math.min(100, Math.round(Number(out.score) || 0)));
       s.board.result = { score, checklist, mode: "live", t: Date.now() };
       addQuestEntry(s, "board", TT(lang, `Board verdict — deliverable score ${score}/100`, `董事会评定 — 交付物得分 ${score}/100`),
         checklist.map((c) => `${c.fulfilled ? "✓" : "✗"} ${c.short}`).join("  ·  "));
@@ -942,20 +1030,35 @@ router.post("/board/review-deck", async (req, res) => {
       const crit = REVIEW_CRITERIA[p.id]?.criteria || `Judge as the ${p.title.en}, from your functional priorities.`;
       const bench = BENCHMARKS[p.id] ? `\nYOUR BENCHMARKING FILE (verified figures — judge the deck against these):\n${BENCHMARKS[p.id]}\n` : "";
       try {
-        const out = await callAnthropic({
+        const out = await callAnthropicTool({
           model: CHAT_MODEL,
-          max_tokens: 700,
+          max_tokens: 3000,
+          name: "record_evaluation",
+          description: "Record this executive's evaluation of the strategy deck.",
+          schema: {
+            type: "object",
+            properties: {
+              verdict: { type: "string", enum: ["strong", "acceptable", "weak"] },
+              fulfilled: { type: "boolean", description: "Does the deck genuinely address this function's core asks, not merely mention them?" },
+              comments: { type: "string", description: "2-3 concise sentences: what satisfies you, what worries you." },
+            },
+            required: ["verdict", "fulfilled", "comments"],
+          },
           system:
             `You are ${LB(p.title, "en")} of Nike Greater China, sitting on the board hearing a junior consultant's final 5-year strategy pitch (deck text below). ` +
             `Evaluate it ONLY from your functional lens.\nYOUR CRITERIA:\n${crit}\n${bench}\n` +
-            `Stay fully in character. Reply with ONLY JSON: {"verdict":"strong"|"acceptable"|"weak","fulfilled":true|false,"comments":"<2-3 concise sentences from your perspective — what satisfies you, what worries you — written in ${lang === "zh" ? "Simplified Chinese" : "English"}>"} — "fulfilled" means: does this deck genuinely address YOUR function's core asks per your criteria (not merely mention them)?`,
+            `Stay fully in character; write your comments in ${lang === "zh" ? "Simplified Chinese" : "English"}.`,
           messages: [{ role: "user", content: text.slice(0, 40000) }],
         });
-        const parsed = parseModelJson(out);
-        const verdict = ["strong", "acceptable", "weak"].includes(parsed.verdict) ? parsed.verdict : "acceptable";
-        const comments = (typeof parsed.comments === "string" && parsed.comments.trim())
-          ? parsed.comments.slice(0, 800) : TT(lang, "Noted.", "了解。");
-        const fulfilled = typeof parsed.fulfilled === "boolean" ? parsed.fulfilled : verdict !== "weak";
+        // This is the one graded attempt at the terminal deliverable, so an
+        // executive who did not actually answer is reported as an error (and
+        // excluded from the average) rather than defaulted to "acceptable" —
+        // a made-up 70 would move the score the learner is stuck with.
+        if (!out) throw new Error(`${p.id} returned no evaluation`);
+        const verdict = ["strong", "acceptable", "weak"].includes(out.verdict) ? out.verdict : "acceptable";
+        const comments = (typeof out.comments === "string" && out.comments.trim())
+          ? out.comments.slice(0, 800) : TT(lang, "Noted.", "了解。");
+        const fulfilled = typeof out.fulfilled === "boolean" ? out.fulfilled : verdict !== "weak";
         return { personaId: p.id, name: LB(p.title, lang), short: LB(p.shortTitle, lang), verdict, fulfilled, comments };
       } catch (e) {
         return { personaId: p.id, name: LB(p.title, lang), short: LB(p.shortTitle, lang), verdict: "error", fulfilled: false, comments: TT(lang, "(couldn't reach this executive — try again)", "（暂时联系不到这位高管——请重试）") };
@@ -1018,19 +1121,37 @@ router.post("/workspace/summary", async (req, res) => {
     const st = s.personas[personaId];
     const transcript = (st?.transcript || []).map((m) => `${m.role === "learner" ? "You" : LB(persona.shortTitle, "en")}: ${m.text}`).join("\n");
     if (!transcript) return res.status(403).json({ error: TT(lang, "Interview this person before writing your readout.", "先访谈这位高管再写纪要。") });
-    const out = await callAnthropic({
-      model: LIGHT_MODEL, max_tokens: 500,
+    // 500 measured a peak of 370 output tokens with a thinking block in play —
+    // passing, but with too little margin to trust a grade to.
+    const out = await callAnthropicTool({
+      model: LIGHT_MODEL, max_tokens: 2000,
+      name: "record_grade",
+      description: "Record the grade for this interview readout.",
+      schema: {
+        type: "object",
+        properties: {
+          score: { type: "integer", description: "0-100." },
+          feedback: { type: "string", description: "2 sentences as their engagement manager." },
+        },
+        required: ["score", "feedback"],
+      },
       system:
         `A trainee consultant wrote a READOUT summarizing their interview with the ${LB(persona.title, "en")} of Nike Greater China. ` +
         `Grade the summary against the ACTUAL transcript for (a) accuracy — reflects what was said, no invented facts; (b) signal — captures what MATTERED, not trivia; (c) concision. Score 0-100. ` +
-        `Reply with ONLY JSON: {"score":<0-100>,"feedback":"<2 sentences as their engagement manager, in ${lang === "zh" ? "Simplified Chinese" : "English"}>"}\nTRANSCRIPT:\n${transcript.slice(0, 6000)}`,
+        `Write the feedback in ${lang === "zh" ? "Simplified Chinese" : "English"}.\nTRANSCRIPT:\n${transcript.slice(0, 6000)}`,
       messages: [{ role: "user", content: summary.slice(0, 2000) }],
     });
-    const parsed = parseModelJson(out);
-    const score = s.admin ? 100 : Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    // A grader that never answered must not be recorded as a score of 0 — that
+    // is indistinguishable, to the learner, from a readout judged worthless.
+    if (!out && !s.admin) {
+      return res.status(503).json({ error: TT(lang,
+        "Couldn't get your readout graded just now — try again in a moment.",
+        "刚才没能完成纪要评分——请稍后再试。") });
+    }
+    const score = s.admin ? 100 : Math.max(0, Math.min(100, Math.round(Number(out.score) || 0)));
     const feedback = s.admin
       ? TT(lang, "[ADMIN] Auto-accepted.", "[管理员] 自动通过。")
-      : (typeof parsed.feedback === "string" ? parsed.feedback.slice(0, 400) : TT(lang, "Noted.", "了解。"));
+      : (typeof out.feedback === "string" ? out.feedback.slice(0, 400) : TT(lang, "Noted.", "了解。"));
     const rec = { personaId, playerSummary: summary.trim(), score, feedback };
     const i = s.workspace.interviews.findIndex((x) => x.personaId === personaId);
     if (i >= 0) s.workspace.interviews[i] = rec; else s.workspace.interviews.push(rec);
@@ -1059,18 +1180,40 @@ router.post("/board/defense/questions", async (req, res) => {
     const source = s.board.deckText || s.board.transcript.filter((m) => m.role === "learner").map((m) => m.text).join("\n") || "(the pitch)";
     const fr = recipientFraming(s, lang);
     const rubric = PERSONAS.map((p) => `${p.id} (${p.shortTitle.en}): ${p.evaluationMindset.en}`).join("\n");
-    const out = await callAnthropic({
-      model: LIGHT_MODEL, max_tokens: 2600,
+    // 2600 measured a peak of 1295 output tokens, so the ceiling was not the
+    // urgent problem here — the escaping was. Asking the model to avoid double
+    // quotes "so the JSON stays valid" is an admission that the transport is
+    // fragile; a tool call is escaped by the API, so that instruction is gone
+    // and the questions can quote the deck back at the learner.
+    const out = await callAnthropicTool({
+      model: LIGHT_MODEL, max_tokens: 4000,
+      name: "record_challenges",
+      description: "Record the five challenge questions for the defense stage.",
+      schema: {
+        type: "object",
+        properties: {
+          questions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                execId: { type: "string", enum: PERSONAS.map((p) => p.id) },
+                en: { type: "string" },
+                zh: { type: "string" },
+              },
+              required: ["execId", "en", "zh"],
+            },
+          },
+        },
+        required: ["questions"],
+      },
       system:
         `You run the DEFENSE stage of a 5-year strategy pitch for Nike Greater China, in front of ${fr.who}. The consultant just presented (material below). ` +
         `Produce exactly 5 pointed CHALLENGE questions, each from a different executive's lens, targeting the WEAKEST or riskiest parts of the pitch (trade-offs dodged, numbers unsupported, competitor reality ignored, methodology overreach). Each executive's bar:\n${rubric}\n` +
-        `Keep each question to ONE sharp sentence (max ~30 words) — a pointed challenge, not a paragraph. ` +
-        `Reply with ONLY JSON: {"questions":[{"execId":"cfo","en":"...","zh":"..."}, ...exactly 5, distinct execIds...]}. ` +
-        `Do NOT use double-quote characters inside the "en"/"zh" text — if you must quote a phrase, use single quotes, so the JSON stays valid.`,
+        `Keep each question to ONE sharp sentence (max ~30 words) — a pointed challenge, not a paragraph. Write each one in both English ("en") and Simplified Chinese ("zh"), and use five distinct execIds.`,
       messages: [{ role: "user", content: String(source).slice(0, 8000) }],
     });
-    const parsed = parseModelJson(out);
-    let qs = Array.isArray(parsed.questions) ? parsed.questions.filter((q) => q && (q.en || q.zh)).slice(0, 5) : [];
+    let qs = Array.isArray(out?.questions) ? out.questions.filter((q) => q && (q.en || q.zh)).slice(0, 5) : [];
     if (!qs.length) qs = [{ execId: "ceo", en: "What is the single biggest risk to your plan, and how do you de-risk it?", zh: "你计划里最大的风险是什么，你如何降低它？" }];
     s.board.defense = { questions: qs, graded: false };
     touch(s);
@@ -1094,19 +1237,36 @@ router.post("/board/defense/grade", async (req, res) => {
     const qs = s.board.defense.questions;
     const qa = qs.map((q, i) => `Q${i + 1} [${q.execId}]: ${LB(q, "en")}\nA${i + 1}: ${(answers[i] || "").slice(0, 1500)}`).join("\n\n");
     const fr = recipientFraming(s, lang);
-    const out = await callAnthropic({
-      model: LIGHT_MODEL, max_tokens: 400,
+    const out = await callAnthropicTool({
+      model: LIGHT_MODEL, max_tokens: 2000,
+      name: "record_defense",
+      description: "Record the score for the consultant's defense.",
+      schema: {
+        type: "object",
+        properties: {
+          score: { type: "integer", description: "0-100." },
+          feedback: { type: "string", description: "2-3 sentences in the challenger's voice." },
+        },
+        required: ["score", "feedback"],
+      },
       system:
         `You grade the DEFENSE answers a trainee consultant gave when ${fr.who} challenged their Nike Greater China strategy. ` +
         `A strong defense directly answers the challenge, concedes real trade-offs, and cites evidence rather than deflecting. Give one defense score 0-100 (90+: holds up under fire; 70s: mostly solid, some hand-waving; 50s: partial; <40: crumbles). ` +
-        `Reply with ONLY JSON: {"score":<0-100>,"feedback":"<2-3 sentences as ${fr.who}, in ${lang === "zh" ? "Simplified Chinese" : "English"}>"}`,
+        `Write the feedback as ${fr.who}, in ${lang === "zh" ? "Simplified Chinese" : "English"}.`,
       messages: [{ role: "user", content: qa.slice(0, 8000) }],
     });
-    const parsed = parseModelJson(out);
-    const defenseScore = s.admin ? 100 : Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    // The defense is 40% of the final score and gradable exactly once, so a
+    // grader that did not answer must not spend the attempt: fail the request
+    // and let them submit the same answers again.
+    if (!out && !s.admin) {
+      return res.status(503).json({ error: TT(lang,
+        "Couldn't get your defense graded just now — submit it again in a moment.",
+        "刚才没能完成答辩评分——请稍后重新提交。") });
+    }
+    const defenseScore = s.admin ? 100 : Math.max(0, Math.min(100, Math.round(Number(out.score) || 0)));
     const feedback = s.admin
       ? TT(lang, "[ADMIN] Auto-passed.", "[管理员] 自动通过。")
-      : (typeof parsed.feedback === "string" ? parsed.feedback.slice(0, 500) : TT(lang, "Noted.", "了解。"));
+      : (typeof out.feedback === "string" ? out.feedback.slice(0, 500) : TT(lang, "Noted.", "了解。"));
     const deckScore = s.board.result?.deckScore ?? s.board.result?.score ?? 0;
     const finalScore = Math.round(deckScore * 0.6 + defenseScore * 0.4);
     s.board.defense.graded = true;
@@ -1201,18 +1361,35 @@ async function gradeAlignment({ kind, answer, evidence, lang }) {
       `AGREE only if the diagnosis (a) is grounded in what your executives actually said (see excerpts), (b) names real, specific pain points rather than platitudes, and (c) shows some prioritization (not an undifferentiated list). Otherwise CHALLENGE: name what is wrong, missing, or misprioritized, in the client's own voice.`
     : `You are the Nike Greater China client panel (the CEO plus the CFO) sitting in a BENCHMARK ALIGNMENT MEETING. A junior Deloitte consultant presents where Nike stands versus named competitors (Anta, Li-Ning, Adidas, Xtep, 361°) and the growth direction they recommend, before they are allowed to design the strategy.\n` +
       `AGREE only if the benchmark (a) compares like-for-like on metrics that are actually disclosed and relevant (respecting that only EBIT margin and revenue growth are validly benchmarkable for Nike China — undisclosed Nike-China ROE/ROA/ROIC/net profit do NOT exist), (b) names concrete relative strengths and weaknesses versus specific peers, and (c) lands a prioritized direction. Otherwise CHALLENGE: dispute irrelevant comparisons or methodology errors in the client's own voice.`;
-  const out = await callAnthropic({
+  // This is a phase gate, and its old 400-token ceiling sat in the same band as
+  // the board grader that measured truncated on 4 of 4 calls. Truncation here
+  // parsed to {}, which defaulted agreed=false — the gate held the learner back
+  // and told them to tighten a document nobody had read.
+  const out = await callAnthropicTool({
     model: LIGHT_MODEL,
-    max_tokens: 400,
+    max_tokens: 2000,
+    name: "record_alignment",
+    description: "Record whether the client panel agrees with what was presented.",
+    schema: {
+      type: "object",
+      properties: {
+        agreed: { type: "boolean" },
+        feedback: { type: "string", description: "2-3 specific sentences in the client's voice — if agreeing, confirm the shared starting point; if challenging, say exactly what to fix." },
+      },
+      required: ["agreed", "feedback"],
+    },
     system:
       `${framing}\n\nWHAT YOUR EXECUTIVES ACTUALLY TOLD THIS CONSULTANT (interview excerpts):\n${(evidence || "(none captured)").slice(0, 2800)}\n\n` +
-      `Be a realistic senior client: brisk, not effusive. Reply with ONLY JSON: {"agreed":true|false,"feedback":"<2-3 specific sentences in the client's voice, written in ${lang === "zh" ? "Simplified Chinese" : "English"} — if agreeing, confirm the shared starting point; if challenging, say exactly what to fix>"}`,
+      `Be a realistic senior client: brisk, not effusive. Write your feedback in ${lang === "zh" ? "Simplified Chinese" : "English"}.`,
     messages: [{ role: "user", content: answer.slice(0, 4000) }],
   });
-  let agreed = false, feedback = TT(lang, "Let's tighten this before we proceed.", "在推进之前，我们先把这部分收紧。");
-  const parsed = parseModelJson(out);
-  if (typeof parsed.agreed === "boolean") agreed = parsed.agreed;
-  if (typeof parsed.feedback === "string" && parsed.feedback.trim()) feedback = parsed.feedback.slice(0, 600);
+  // Distinguishable from a genuine refusal by the caller, which turns it into a
+  // "try again" rather than an attempt spent on a verdict never reached.
+  if (!out) return { agreed: false, feedback: null, panelFailed: true };
+  const agreed = typeof out.agreed === "boolean" ? out.agreed : false;
+  const feedback = (typeof out.feedback === "string" && out.feedback.trim())
+    ? out.feedback.slice(0, 600)
+    : TT(lang, "Let's tighten this before we proceed.", "在推进之前，我们先把这部分收紧。");
   return { agreed, feedback };
 }
 
@@ -1276,37 +1453,106 @@ async function groundingEvidence(s, text) {
  * supplies the corrected wording herself, so a learner is never left guessing
  * what would have been acceptable.
  *
- * This checks GROUNDING, not truth — whether a claim is supported by the
- * evidence available. It cannot certify that a well-grounded claim is correct.
+ * Two things are checked, and they are different. GROUNDING — is each claim
+ * supported by the evidence available (this cannot certify that a well-grounded
+ * claim is true). COVERAGE — does the document carry at least
+ * ASIS_MIN_PAIN_POINTS distinct pain points, because a single perfectly
+ * evidenced observation used to sail through a pure grounding check while
+ * being, in substance, not a diagnosis at all.
  */
+/**
+ * How much of a diagnosis may rest on thin air and still be signed off.
+ *
+ * Demanding that EVERY claim be supported sounds like rigour and was in
+ * practice an unpassable gate: a document dense enough to satisfy the coverage
+ * bar yields twenty-odd claims, and a verifier working from truncated
+ * transcripts will always call one or two of them unsupported. A real manager
+ * signs off when the spine holds and sends back the loose threads as notes.
+ * Contradicted claims are exempt from this tolerance — saying something the
+ * evidence refutes is a different failure from saying something it is silent
+ * about, and it is never signed off.
+ *
+ * A third rather than a quarter because an LLM judge is not deterministic: at
+ * 0.25 a genuinely strong document sat one claim from the line and passed or
+ * failed on the run of the dice. A document good enough to sign off should
+ * clear the bar with room, not survive it.
+ */
+const ASIS_UNSUPPORTED_TOLERANCE = 1 / 3;
+
 async function verifyAsIs({ answer, transcripts, corpus, lang }) {
   const zh = lang === "zh";
-  const out = await callAnthropic({
+  // Structured tool output, not free JSON in the text stream. This model emits
+  // thinking blocks that ate most of a 2000-token ceiling, so the JSON stopped
+  // mid-array, parsed to {}, and every submission failed with a generic line —
+  // the same truncation bug that turned out to affect every grader in this file.
+  const parsed = await callAnthropicTool({
     model: LIGHT_MODEL,
-    max_tokens: 2000,
+    max_tokens: 8000,
+    name: "record_asis_review",
+    description: "Record the claim-by-claim review of the as-is diagnosis.",
+    schema: {
+      type: "object",
+      properties: {
+        painPoints: { type: "integer", description: "How many DISTINCT pain points the document actually carries." },
+        summary: { type: "string", description: "Manager Lin's spoken feedback: strongest thing, weakest requirement, one next step." },
+        claims: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              claim: { type: "string" },
+              verdict: { type: "string", enum: ["supported", "unsupported", "contradicted"] },
+              evidence: { type: "string" },
+              correction: { type: "string" },
+            },
+            required: ["claim", "verdict", "evidence", "correction"],
+          },
+        },
+      },
+      required: ["painPoints", "summary", "claims"],
+    },
     system:
       `You are Manager Lin, a Deloitte engagement manager reviewing a junior consultant's AS-IS DIAGNOSIS of Nike Greater China before it goes to the client.\n\n` +
-      `Split their document into its distinct factual CLAIMS — pain points, findings, figures, causal statements. Ignore headings and filler. For each claim decide:\n` +
+      `THE FOUR REQUIREMENTS YOU GAVE THEM AT THE BRIEFING — none of these is a surprise to them:\n` +
+      `  1. COVERAGE — at least ${ASIS_MIN_PAIN_POINTS} DISTINCT pain points, in different domains (strategy, finance, marketing, operations, people, technology, product). Restating one problem in three ways is one pain point, not three.\n` +
+      `  2. EVIDENCE — every claim traceable to what an executive actually said or to the project files.\n` +
+      `  3. PRIORITISATION — the pain points are ranked or weighted, not dumped as an undifferentiated list.\n` +
+      `  4. DIAGNOSIS ONLY — what is broken and how they know. Recommendations belong to the next phase.\n\n` +
+      `Count the distinct pain points into "painPoints". Then split the document into its factual CLAIMS — pain points, findings, figures, causal statements. Ignore headings and filler. For each claim decide:\n` +
       `- "supported": the evidence below backs it. Quote the specific line that does.\n` +
       `- "unsupported": nothing in the evidence backs it. This includes invented figures, competitor facts nobody stated, and confident causal claims with no basis.\n` +
       `- "contradicted": the evidence says otherwise. Quote what it actually says.\n\n` +
       `For every claim that is NOT supported, write a correction in your own voice: what the evidence actually supports and how they should restate it. Be concrete — give them the corrected sentence, do not just say "check your sources".\n\n` +
       `INTERVIEW TRANSCRIPTS AND NOTES FROM THIS ENGAGEMENT:\n${transcripts.slice(0, 6000)}\n\n` +
       `PROJECT FILES (the curated corpus behind these executives):\n${corpus.slice(0, 8000)}\n\n` +
-      `Set "clean" true ONLY when every claim is "supported". Write all prose in ${zh ? "Simplified Chinese" : "English"}.\n` +
-      `Reply with ONLY JSON: {"clean":true|false,"summary":"<2 sentences in your voice>","claims":[{"claim":"<their words, trimmed>","verdict":"supported|unsupported|contradicted","evidence":"<the line that backs or refutes it, or empty>","correction":"<your corrected version, empty when supported>"}]}`,
+      `JUDGE THE DOCUMENT THEY WROTE, NOT THE EVIDENCE YOU HOLD. Never credit them with a figure, a competitor comparison or a source that does not actually appear in their text — if they wrote "competitors seem to be doing better online", that is what you are marking, not the Anta numbers sitting in your project files.\n\n` +
+      `VAGUENESS IS NOT GROUNDING. A claim too imprecise to check — "sales are down", "the CTO mentioned some numbers", "an incident a while back", "seems to be" — is "unsupported", because nothing about it can be verified or acted on. The correction is the specific version: the figure, the named executive, the period. Do not reward a learner for hedging their way past a fact check; a wrong specific number is more useful to them than a safe vague one.\n\n` +
+      `THE PROJECT FILES ARE ADMISSIBLE EVIDENCE. A specific claim that matches them is "supported" even when no executive said it aloud in the excerpt above — including competitor figures. Benchmarking is not yet their job, so do not ask for it here, but a learner who correctly cites a disclosed competitor number has grounded that claim, not smuggled it in.\n\n` +
+      `The transcripts above are an excerpt, not the whole engagement — where a claim is specific, plausible for these executives and nothing contradicts it, treat it as supported. Reserve "contradicted" for claims the evidence actually refutes. A missing quote is not, by itself, a fabrication.\n\n` +
+      `YOUR SUMMARY IS COACHING, AND THEY GET ONE EVERY TIME THEY SUBMIT — including when you sign off. Always, in this order: (a) name the strongest thing in the document specifically, (b) name the requirement that is weakest and why, (c) give ONE concrete next step. Brisk and senior, never cruel, never a bare verdict. Write all prose in ${zh ? "Simplified Chinese" : "English"}.`,
     messages: [{ role: "user", content: answer.slice(0, 6000) }],
   });
-  const parsed = parseModelJson(out);
-  const claims = Array.isArray(parsed.claims) ? parsed.claims.slice(0, 30) : [];
-  const bad = claims.filter((c) => c.verdict !== "supported");
-  // Trust the per-claim verdicts over the model's own summary flag: the claims
-  // are what the learner is shown, so the gate must agree with what they read.
-  const clean = claims.length > 0 && bad.length === 0;
-  const summary = typeof parsed.summary === "string" && parsed.summary.trim()
+
+  const claims = Array.isArray(parsed?.claims) ? parsed.claims.slice(0, 30) : [];
+  const contradicted = claims.filter((c) => c.verdict === "contradicted");
+  const unsupportedList = claims.filter((c) => c.verdict === "unsupported");
+  const painPoints = Number.isFinite(parsed?.painPoints) ? Math.max(0, Math.trunc(parsed.painPoints)) : 0;
+  // At least one loose thread is always forgiven, so a short document is not
+  // held to a stricter standard than a long one.
+  const allowance = Math.max(1, Math.ceil(claims.length * ASIS_UNSUPPORTED_TOLERANCE));
+  const groundingOk = contradicted.length === 0 && unsupportedList.length <= allowance;
+  // No tool call, or a call with no claims in it, means the review itself did
+  // not run — a model or network failure, not a bad document. Say so instead of
+  // quietly blaming the learner for something they cannot fix by writing better.
+  const reviewFailed = !parsed || claims.length === 0;
+  const clean = !reviewFailed && groundingOk && painPoints >= ASIS_MIN_PAIN_POINTS;
+  const summary = typeof parsed?.summary === "string" && parsed.summary.trim()
     ? parsed.summary.slice(0, 600)
     : TT(lang, "Let's go through this.", "我们过一遍。");
-  return { clean, claims, unsupported: bad.length, summary };
+  return {
+    clean, claims, summary, painPoints, reviewFailed, allowance,
+    unsupported: contradicted.length + unsupportedList.length,
+  };
 }
 
 router.post("/alignment/asis", async (req, res) => {
@@ -1343,10 +1589,30 @@ router.post("/alignment/asis", async (req, res) => {
     }
 
     const { transcripts, corpus } = await groundingEvidence(s, submitted);
-    const { clean, claims, unsupported, summary } = await verifyAsIs({ answer: submitted, transcripts, corpus, lang });
+    const { clean, claims, unsupported, summary, painPoints, reviewFailed } = await verifyAsIs({ answer: submitted, transcripts, corpus, lang });
+
+    // A review that never ran is not a verdict. Returning it as "revise" burned
+    // an attempt and told the learner to fix a document that was never read.
+    if (reviewFailed) {
+      return res.status(503).json({
+        error: TT(lang,
+          "Manager Lin couldn't get through your document just now — that's on us, not your work. Hand it to her again in a moment.",
+          "林经理刚才没能读完你的文档——这是我们这边的问题，不是你写得不好。稍等片刻再交一次。"),
+      });
+    }
+
+    // The model is told the coverage bar, but a count is not something to leave
+    // to its prose: say it ourselves so a thin document always comes back with
+    // the same unambiguous reason instead of a vaguely worded challenge.
+    const coverageNote = painPoints < ASIS_MIN_PAIN_POINTS
+      ? TT(lang,
+        ` On coverage: I count ${painPoints} distinct pain point(s). I need at least ${ASIS_MIN_PAIN_POINTS}, in different domains — you sat through seven interviews, so use them.`,
+        ` 关于覆盖面：我数下来只有${painPoints}个独立痛点。我至少需要${ASIS_MIN_PAIN_POINTS}个，且分布在不同领域——你访谈了七个人，把他们用上。`)
+      : "";
+    const feedback = summary + coverageNote;
 
     a.attempts += 1;
-    a.lastFeedback = summary;
+    a.lastFeedback = feedback;
     const delta = clean ? 25 : 0;
     if (clean) {
       a.agreed = true;
@@ -1362,9 +1628,9 @@ router.post("/alignment/asis", async (req, res) => {
     addQuestEntry(s, "task",
       TT(lang, clean ? "As-Is Alignment agreed" : `As-Is review — ${unsupported} claim(s) to fix`,
         clean ? "现状对齐达成" : `现状复核 — ${unsupported}处待修正`),
-      summary + (corrections ? "\n" + corrections : ""));
+      feedback + (corrections ? "\n" + corrections : ""));
     touch(s);
-    res.json({ ...publicState(s), result: clean ? "agreed" : "revise", feedback: summary, claims, unsupported, delta });
+    res.json({ ...publicState(s), result: clean ? "agreed" : "revise", feedback, claims, unsupported, painPoints, delta });
   } catch (err) {
     console.error("[alignment asis]", err.message, err.detail || "");
     res.status(err.status || 500).json({ error: err.message });
@@ -1421,21 +1687,33 @@ router.post("/design/review", async (req, res) => {
             ? `\nBENCHMARKING REFERENCE (verified figures — hold their comparisons to these):\n${BENCHMARKS[t.personaId]}\n`
             : "";
           try {
-            const out = await callAnthropic({
+            const out = await callAnthropicTool({
               model: CHAT_MODEL,
-              max_tokens: 900,
+              max_tokens: 3000,
+              name: "record_advice",
+              description: "Record this manager's review of the draft strategy.",
+              schema: {
+                type: "object",
+                properties: {
+                  advice: { type: "string", description: "3-5 sentences covering what to implement as-is, what to change and why, and how to strengthen the weakest part." },
+                },
+                required: ["advice"],
+              },
               system:
                 `You are ${LB(npc.name, "en")}, ${LB(npc.role, "en")}, the Deloitte manager who owns the ${LB(t.name, "en")} workstream on the Nike Greater China engagement. ` +
                 `${t.persona ? `\nWHO YOU ARE:\n${t.persona}\n` : ""}` +
                 `\nWHAT YOU KNOW:\n${t.knowledge}\n${bench}` +
                 `\nThe junior analyst has brought their DRAFT 5-year growth strategy to the team for review. Read it and respond ONLY about the part that belongs to YOUR workstream — do not review the whole document, and do not repeat another workstream's job.\n` +
                 `Cover three things in your own voice: what they should IMPLEMENT as-is, what needs CHANGING and why, and how the weakest part of your area could be STRENGTHENED. Where they benchmark against competitors, check the comparison is like-for-like and say so if it is not. Be specific and concrete — name the recommendation you are reacting to. Be candid: this is the one review they get, so an easy pass helps nobody.\n` +
-                `Stay fully in character. Reply with ONLY JSON: {"advice":"<3-5 sentences in ${lang === "zh" ? "Simplified Chinese" : "English"}>"}`,
+                `Stay fully in character, and write in ${lang === "zh" ? "Simplified Chinese" : "English"}.`,
               messages: [{ role: "user", content: submitted.slice(0, 40000) }],
             });
-            const parsed = parseModelJson(out);
-            const advice = (typeof parsed.advice === "string" && parsed.advice.trim())
-              ? parsed.advice.slice(0, 1200)
+            // Each manager is independent, and the catch below already renders
+            // a missing one as "their notes will follow" — which is honest, and
+            // better than an empty review presented as their considered view.
+            if (!out) throw new Error(`${trackId} returned no advice`);
+            const advice = (typeof out.advice === "string" && out.advice.trim())
+              ? out.advice.slice(0, 1200)
               : TT(lang, "Noted — nothing to add from my workstream.", "了解——我这条线暂时没有补充。");
             return { trackId, name: LB(npc.name, lang), workstream: LB(t.name, lang), advice };
           } catch (e) {
@@ -1494,14 +1772,27 @@ router.post("/interim", async (req, res) => {
 
     const recentQuotes = s.questLog.filter((e) => e.type === "quote").slice(-10)
       .map((e) => `${e.title}: ${e.body.slice(0, 150)}`).join("\n");
-    const out = await callAnthropic({
+    // The tightest ceiling of any live gate at 350 — a grade plus two sentences
+    // of Lin's feedback, sharing the budget with a thinking block that may or
+    // may not appear on any given call.
+    const out = await callAnthropicTool({
       model: LIGHT_MODEL,
-      max_tokens: 350,
+      max_tokens: 2000,
+      name: "record_readout",
+      description: "Record the grade for this interim readout.",
+      schema: {
+        type: "object",
+        properties: {
+          grade: { type: "string", enum: ["pass", "partial", "fail"] },
+          feedback: { type: "string", description: "Two specific sentences as Manager Lin — warm but candid." },
+        },
+        required: ["grade", "feedback"],
+      },
       system:
         `You grade a trainee consultant's INTERIM READOUT on the Nike Greater China case — a mid-engagement synthesis of what they believe so far and why, after interviewing ${n} of 7 executives. It may be in English or Chinese.\n` +
         `WHAT THEY'VE ACTUALLY HEARD (recent interview excerpts):\n${recentQuotes.slice(0, 2500)}\n\n` +
         `PASS if the readout states a current point of view (not just facts), ties it to something they actually heard, and names what they still need to test. PARTIAL if it's a fact summary without a stance or next steps. FAIL if generic, empty, or contradicts the case facts. ` +
-        `Reply with ONLY JSON: {"grade":"pass"|"partial"|"fail","feedback":"<two specific sentences as Manager Lin — warm but candid, written in ${lang === "zh" ? "Simplified Chinese" : "English"}>"}`,
+        `Write the feedback in ${lang === "zh" ? "Simplified Chinese" : "English"}.`,
       messages: [{ role: "user", content: answer }],
     });
     let grade = "partial", feedback = TT(lang, "Noted. Keep testing it.", "记下了。继续验证。");
@@ -1509,9 +1800,15 @@ router.post("/interim", async (req, res) => {
       grade = "pass";
       feedback = TT(lang, "[ADMIN] Auto-passed.", "[管理员] 自动通过。");
     } else {
-      const parsed = parseModelJson(out);
-      if (["pass", "partial", "fail"].includes(parsed.grade)) grade = parsed.grade;
-      if (typeof parsed.feedback === "string") feedback = parsed.feedback.slice(0, 500);
+      // Passing this sets flags.interimDone permanently, so a grader that never
+      // answered must not be allowed to hand out the "partial" default.
+      if (!out) {
+        return res.status(503).json({ error: TT(lang,
+          "Lin couldn't get through your readout just now — give it to her again in a moment.",
+          "林经理刚才没能读完你的汇报——请稍后再交一次。") });
+      }
+      if (["pass", "partial", "fail"].includes(out.grade)) grade = out.grade;
+      if (typeof out.feedback === "string") feedback = out.feedback.slice(0, 500);
     }
 
     // ⚠ PLACEHOLDER credibility values
@@ -1585,22 +1882,36 @@ router.post("/review-work", async (req, res) => {
     }
     const crit = { criteria };
 
-    const out = await callAnthropic({
+    const out = await callAnthropicTool({
       model: CHAT_MODEL,
-      max_tokens: 1000,
+      max_tokens: 3000,
+      name: "record_review",
+      description: "Record this reviewer's audit of the working document.",
+      schema: {
+        type: "object",
+        properties: {
+          verdict: { type: "string", enum: ["strong", "acceptable", "weak"] },
+          comments: { type: "string", description: "3-4 concise sentences: what works, what doesn't, and the single most important fix." },
+        },
+        required: ["verdict", "comments"],
+      },
       system:
         `${identity} A junior consultant has submitted a working document for your review (filename: ${String(filename || "untitled").slice(0, 100)}). ` +
         `REVIEW CRITERIA:\n${crit.criteria}\n\n` +
-        `Audit the document honestly against the criteria. Stay fully in character. ` +
-        `Reply with ONLY JSON: {"verdict":"strong"|"acceptable"|"weak","comments":"<3-4 concise sentences: what works, what doesn't, and the single most important fix — written in ${lang === "zh" ? "Simplified Chinese" : "English"}>"}`,
+        `Audit the document honestly against the criteria. Stay fully in character, and write in ${lang === "zh" ? "Simplified Chinese" : "English"}.`,
       messages: [{ role: "user", content: text.slice(0, 30000) }],
     });
-    let verdict = "acceptable", comments = TT(lang, "Reviewed.", "已审阅。");
-    {
-      const parsed = parseModelJson(out);
-      if (["strong", "acceptable", "weak"].includes(parsed.verdict)) verdict = parsed.verdict;
-      if (typeof parsed.comments === "string" && parsed.comments.trim()) comments = parsed.comments.slice(0, 1000);
+    // Handing this to Manager Lin credits WORKDOC_CREDIBILITY[verdict] once and
+    // sets workDocDone for good, so an unanswered review must not bank the
+    // "acceptable" default on the learner's only crediting submission.
+    if (!out) {
+      return res.status(503).json({ error: TT(lang,
+        "Couldn't get your document reviewed just now — hand it over again in a moment.",
+        "刚才没能完成文档审阅——请稍后再提交一次。") });
     }
+    let verdict = "acceptable", comments = TT(lang, "Reviewed.", "已审阅。");
+    if (["strong", "acceptable", "weak"].includes(out.verdict)) verdict = out.verdict;
+    if (typeof out.comments === "string" && out.comments.trim()) comments = out.comments.slice(0, 1000);
 
     // Handing a document to Manager Lin IS the review mission — any later
     // submission just refreshes the document, it doesn't re-open the task.

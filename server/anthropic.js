@@ -171,47 +171,72 @@ const textOf = (data) =>
     .join("\n");
 
 /**
- * How many times we'll ask the model to carry on past its token ceiling before
- * giving up and returning what we have. Four rounds is far more headroom than
- * any prompt here needs; it exists so a pathological loop can't bill forever.
- */
-const MAX_CONTINUATIONS = 4;
-
-/**
- * One model request, transparently CONTINUED when it runs out of tokens.
+ * One model request, flattened to text.
  *
- * requestWithRetry() already covers transient upstream failure, but it cannot
- * see the other way a reply arrives broken: `stop_reason: "max_tokens"` is a
- * perfectly successful HTTP 200 whose text simply stops mid-sentence. That was
- * reaching learners as an executive trailing off in the middle of a word, and —
- * worse, because it fails silently — as truncated JSON in the quiz and grading
- * paths, where half an object parses to {} and the check reports that it
- * "couldn't be prepared".
+ * There used to be a continuation loop here: on `stop_reason: "max_tokens"` it
+ * fed the partial answer back as a prefilled assistant turn so the model could
+ * resume mid-sentence. That is the documented pattern, and it is unusable on
+ * the model this game runs on — Sonnet 5 rejects assistant prefill with a hard
+ * 400 ("This model does not support assistant message prefill"), so every
+ * truncated reply became a 502 and the as-is gate became impossible to pass.
+ * Catching the 400 made it merely useless: a guaranteed-failing extra API round
+ * trip on exactly the requests that were already in trouble.
  *
- * The fix is the documented continuation pattern: feed the partial answer back
- * as a prefilled assistant turn so the model resumes exactly where it stopped,
- * repeating until it ends on its own. An assistant prefill may not carry
- * trailing whitespace, hence the trimEnd().
+ * It is gone rather than reimplemented because the only prefill-free
+ * alternative — re-asking with the partial text as a user turn — cannot resume
+ * mid-token and tends to restate what it already said. The structural answer is
+ * not to repair truncation but to avoid it: anything whose output must PARSE
+ * now goes through callAnthropicTool(), where the answer arrives as a validated
+ * tool_use block instead of JSON embedded in a prose stream. What still calls
+ * this helper is prose — dialogue, a manager's debrief — where the ceiling is
+ * generous and a rare clipped sentence is cosmetic rather than a silently wrong
+ * grade.
  */
 export async function callAnthropic(body) {
-  let data = await callAnthropicRaw(body);
-  let text = textOf(data);
-
-  for (let round = 0; data.stop_reason === "max_tokens" && round < MAX_CONTINUATIONS; round++) {
-    const prefill = text.trimEnd();
-    if (!prefill) break; // nothing to continue from — don't spin
-    console.warn(`[anthropic] hit max_tokens, continuing (round ${round + 1}/${MAX_CONTINUATIONS})`);
-    data = await callAnthropicRaw({
-      ...body,
-      messages: [...body.messages, { role: "assistant", content: prefill }],
-    });
-    // Resume from the trimmed prefill so the seam neither double-spaces nor
-    // swallows the character the model stopped on.
-    text = prefill + textOf(data);
-  }
-
+  const data = await callAnthropicRaw(body);
   if (data.stop_reason === "max_tokens") {
-    console.error("[anthropic] still truncated after continuations — returning partial text");
+    console.warn(`[anthropic] reply hit max_tokens (${body.max_tokens}) — returning partial text`);
   }
-  return text.trim();
+  return textOf(data).trim();
+}
+
+/**
+ * One model request whose answer must PARSE — resolves to the tool input
+ * object, or null when the model did not produce a usable one.
+ *
+ * Free-form "reply with ONLY JSON" in the text stream is not safe on this
+ * model, for two compounding reasons. It emits `thinking` blocks
+ * unpredictably — measured on the same prompt: present in one call, absent in
+ * the next — and those blocks are billed against the SAME max_tokens ceiling as
+ * the answer, so a budget that fits the JSON on a quiet run stops mid-array on
+ * a thinky one. And the failure is silent: parseModelJson() hands back {}, the
+ * caller falls through to its default, and the learner reads that default as a
+ * grade they actually earned.
+ *
+ * A forced tool call fixes the parse half outright — the API validates the
+ * input against the schema, so it arrives whole or not at all. Give it real
+ * headroom anyway: a truncated tool_use block is still truncated, and it is
+ * reported here as failure (null) rather than as a half-filled object, so
+ * callers can tell "the model judged this harshly" from "the model never
+ * answered".
+ */
+export async function callAnthropicTool({ name, description, schema, ...body }) {
+  const data = await callAnthropicRaw({
+    ...body,
+    tools: [{ name, description, input_schema: schema }],
+    tool_choice: { type: "tool", name },
+  });
+  const block = (data.content || []).find((b) => b.type === "tool_use" && b.name === name);
+  if (!block || !block.input || typeof block.input !== "object") {
+    console.error(`[anthropic] ${name}: no tool_use block (stop_reason=${data.stop_reason})`);
+    return null;
+  }
+  // A tool call cut off by the ceiling can still surface as a block holding
+  // whatever fields it managed to emit — trusting that is how a partial answer
+  // becomes a confident wrong verdict. Raise max_tokens instead of accepting it.
+  if (data.stop_reason === "max_tokens") {
+    console.error(`[anthropic] ${name}: truncated at max_tokens=${body.max_tokens} — discarding partial input`);
+    return null;
+  }
+  return block.input;
 }

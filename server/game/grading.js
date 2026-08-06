@@ -3,7 +3,7 @@
  * offline eval harness (server/eval/graderEval.js), so calibration tests run
  * through the exact same prompt as production.
  */
-import { callAnthropic, LIGHT_MODEL, parseModelJson } from "../anthropic.js";
+import { callAnthropicTool, LIGHT_MODEL } from "../anthropic.js";
 
 /**
  * Grade a 2-question exit quiz.
@@ -13,9 +13,25 @@ import { callAnthropic, LIGHT_MODEL, parseModelJson } from "../anthropic.js";
  * @returns { grade: "pass"|"partial"|"fail", feedback: string }
  */
 export async function gradeQuizAnswers(convo, qa, lang = "en") {
-  const out = await callAnthropic({
+  // Tool output rather than JSON in the text stream, and 2000 rather than 300.
+  // The model emits thinking blocks unpredictably and they are billed from the
+  // same ceiling, so 300 tokens for a grade plus two sentences of feedback was
+  // a coin flip — and losing it parsed to {}, which fell through to the "fail"
+  // default below. A learner could be failed by a truncated reply and told, in
+  // the same breath, that their answer was hard to follow.
+  const out = await callAnthropicTool({
     model: LIGHT_MODEL,
-    max_tokens: 300,
+    max_tokens: 2000,
+    name: "record_quiz_grade",
+    description: "Record the grade for the trainee's exit-quiz answers.",
+    schema: {
+      type: "object",
+      properties: {
+        grade: { type: "string", enum: ["pass", "partial", "fail"] },
+        feedback: { type: "string", description: "Two specific sentences naming what was right and what falls short — never the correct answer itself." },
+      },
+      required: ["grade", "feedback"],
+    },
     system:
       `You grade a trainee consultant's answers to a 2-question exit quiz about Nike Greater China, based on a conversation they just had with a Deloitte domain manager. Answers may be in English or Chinese.\n` +
       `CONVERSATION CONTEXT:\n${convo.slice(0, 2000)}\n\n` +
@@ -24,14 +40,16 @@ export async function gradeQuizAnswers(convo, qa, lang = "en") {
       `- PARTIAL if one answer is solid but the other is vague, off-topic, or misses the central point entirely.\n` +
       `- FAIL if the answers are generic filler, guessed, evasive, empty, or state a case fact backwards. Confidently wrong is worse than vague. Never give credit for plausible-sounding non-answers.\n` +
       `Then write specific feedback: name what was right, and for anything short of PASS, point at WHICH question falls short and what KIND of thing is missing (a number, a cause, a trade-off) — but NEVER state the correct answer or the missing fact itself. The learner must go dig it out of their notes or the conversation; feedback that hands them the answer defeats the check. ` +
-      `Reply with ONLY JSON: {"grade":"pass"|"partial"|"fail","feedback":"<two specific sentences, written in ${lang === "zh" ? "Simplified Chinese" : "English"}>"}`,
+      `Write the feedback in ${lang === "zh" ? "Simplified Chinese" : "English"}.`,
     messages: [{ role: "user", content: qa }],
   });
-  // Default to FAIL on unparseable output — never award credit for garbage.
+  // Default to FAIL when the model does not answer — never award credit for
+  // garbage. This is now reached only on a real model failure rather than on
+  // ordinary truncation, so the message no longer lands on learners whose
+  // answers were fine.
   let grade = "fail";
   let feedback = lang === "zh" ? "我没太看懂你的回答——再具体讲一遍。" : "I couldn't follow that — walk me through it again, specifically.";
-  const parsed = parseModelJson(out);
-  if (["pass", "partial", "fail"].includes(parsed.grade)) grade = parsed.grade;
-  if (typeof parsed.feedback === "string") feedback = parsed.feedback.slice(0, 500);
+  if (["pass", "partial", "fail"].includes(out?.grade)) grade = out.grade;
+  if (typeof out?.feedback === "string") feedback = out.feedback.slice(0, 500);
   return { grade, feedback };
 }
