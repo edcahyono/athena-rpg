@@ -10,7 +10,7 @@ import { PERSONA_MAP } from "../../shared/personas.config.js";
 import { api, state } from "../net/api";
 import {
   showLines, showChoice, chatMode, sequentialQuiz, mcqPanel, prepPanel, taskPanel, reviewWorkPanel, boardDeckPanel, boardResultPanel, showLoading, toast,
-  startTimer, stopTimer, updateHUD,
+  startTimer, stopTimer, updateHUD, withEngagement,
 } from "../ui/ui";
 import { L, fmt, UI, lang } from "../i18n";
 
@@ -54,22 +54,28 @@ export async function interactProp(char: string): Promise<void> {
 }
 
 export async function interact(npc: NpcDef, currentFloor: number): Promise<void> {
-  try {
-    if (npc.kind === "flavor") return await flavor(npc);
-    if (!state.flags.metSupervisor && npc.kind !== "supervisor") {
-      return await showLines(nameOf(npc), [L(UI.talkSupervisorFirst)]);
+  // Held for the whole dispatched exchange. Flows like Manager Lin's document
+  // submissions close their panel BEFORE awaiting the server, leaving nothing
+  // on screen for seconds at a time; without this the escorted NPC reads that
+  // silence as the end of the conversation and walks back to their desk.
+  return withEngagement(async () => {
+    try {
+      if (npc.kind === "flavor") return await flavor(npc);
+      if (!state.flags.metSupervisor && npc.kind !== "supervisor") {
+        return await showLines(nameOf(npc), [L(UI.talkSupervisorFirst)]);
+      }
+      switch (npc.kind) {
+        case "supervisor": return await supervisor(npc);
+        case "task": return await taskNpc(npc);
+        case "persona": return await personaNpc(npc);
+        case "board": return await boardTable(npc);
+      }
+    } catch (err: any) {
+      toast(err.message || "Something went wrong.");
+    } finally {
+      updateHUD(currentFloor);
     }
-    switch (npc.kind) {
-      case "supervisor": return await supervisor(npc);
-      case "task": return await taskNpc(npc);
-      case "persona": return await personaNpc(npc);
-      case "board": return await boardTable(npc);
-    }
-  } catch (err: any) {
-    toast(err.message || "Something went wrong.");
-  } finally {
-    updateHUD(currentFloor);
-  }
+  });
 }
 
 /* ------------------------------ flavor --------------------------------- */

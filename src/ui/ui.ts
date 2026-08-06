@@ -21,10 +21,34 @@ export const ui = {
   dialogueOpen: false,
   panelOpen: false,
   cutscene: false,
+  /**
+   * Depth counter for "an NPC engagement is under way", held across the WHOLE
+   * exchange rather than only while something is on screen.
+   *
+   * dialogueOpen/panelOpen legitimately dip to false mid-interaction — between
+   * an MCQ panel closing and the answer returning from the server, nothing is
+   * open at all. OfficeScene.untilIdle() polls ui.busy every 150ms to decide
+   * when an escorted NPC may walk back to their desk, so those dips read as
+   * "conversation over" and the manager wandered off mid-check. A counter
+   * rather than a boolean because engagements nest: chatMode holds one, and
+   * the check it launches holds another inside it.
+   */
+  engaged: 0,
   get busy() {
-    return this.dialogueOpen || this.panelOpen || this.cutscene;
+    return this.dialogueOpen || this.panelOpen || this.cutscene || this.engaged > 0;
   },
 };
+
+/** Hold an NPC engagement open for the duration of `fn`, so the escorted NPC
+ *  stays put through panel-to-panel gaps and network waits. Always released. */
+export async function withEngagement<T>(fn: () => Promise<T>): Promise<T> {
+  ui.engaged++;
+  try {
+    return await fn();
+  } finally {
+    ui.engaged--;
+  }
+}
 
 /* ------------------------------- HUD ---------------------------------- */
 
@@ -306,7 +330,7 @@ export function chatMode(opts: {
   onLeave: () => void;
   /** Optional second exit button (e.g. the gatekeeper's "take check") — LEAVE
    *  then just leaves, so stepping out never forces the assessment. */
-  check?: { label: string; onCheck: () => void };
+  check?: { label: string; onCheck: () => void | Promise<void> };
 }) {
   openBox(opts.name);
   const input = $<HTMLInputElement>("dlg-input");
@@ -324,18 +348,22 @@ export function chatMode(opts: {
     }
   };
 
-  const finish = (msg?: string, after: () => void = opts.onLeave) => {
+  const finish = (msg?: string, after: () => void | Promise<void> = opts.onLeave) => {
     if (closed) return;
     closed = true;
     row.hidden = true;
     input.onkeydown = null;
     stopTimer();
+    // The engagement is held until `after()` RESOLVES, not until the dialogue
+    // closes. `after` is how the check is launched, and closeDialogue() runs
+    // first — without awaiting it the NPC is free to walk home the moment the
+    // chat box shuts, i.e. exactly when the check is starting.
     const wrap = async () => {
       if (msg) { $("dlg-name").textContent = opts.name; await typewriter(dlgText(), msg); $("dlg-hint").hidden = false; await waitAdvance(); }
       closeDialogue();
-      after();
+      await after();
     };
-    wrap();
+    void withEngagement(wrap);
   };
 
   const submit = async () => {
