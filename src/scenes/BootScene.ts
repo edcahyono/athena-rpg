@@ -301,6 +301,31 @@ export default class BootScene extends Phaser.Scene {
       g.fillStyle(0xd8442f); g.fillCircle(5, 15, 1);               // red = locked
     });
 
+    // Design Review room door — same glazed leaf as the filing door, but the
+    // badge reader reads GREEN and the room beyond is lit. The player actually
+    // walks through this one; OfficeScene decides when.
+    this.tex("tile-meeting-door", T, T, (g) => {
+      g.fillStyle(OUTLINE); g.fillRect(0, 0, T, T);
+      g.fillStyle(0xa8bfcb); g.fillRect(2, 1, T - 4, T - 2);       // frosted glass leaf
+      g.fillStyle(0xd2e2ea); g.fillRect(4, 3, T - 8, 10);          // upper pane sheen
+      g.fillStyle(0x89a0af); g.fillRect(4, 16, T - 8, 12);         // lower pane
+      g.fillStyle(0x3d4b56); g.fillRect(T / 2 - 1, 2, 2, T - 4);   // centre stile
+      g.fillStyle(0x2b343d); g.fillRect(T - 9, 13, 3, 7);          // pull handle
+      g.fillStyle(0x1a1d24); g.fillRect(3, 12, 5, 8);              // badge reader
+      g.fillStyle(0x4fbf6a); g.fillCircle(5, 15, 1);               // green = open
+    });
+
+    // The wall screen at the head of the meeting-room table.
+    this.tex("tile-screen", T, T, (g) => {
+      g.fillStyle(OUTLINE); g.fillRect(0, 0, T, T);
+      g.fillStyle(0x8d9aa6); g.fillRect(1, 1, T - 2, T - 2);       // wall panel
+      g.fillStyle(0x14181d); g.fillRect(3, 5, T - 6, 20);          // bezel
+      g.fillStyle(0x1f2933); g.fillRect(5, 7, T - 10, 16);         // dark display
+      g.fillStyle(0x2b3a47); g.fillRect(5, 7, T - 10, 5);          // faint top sheen
+      g.fillStyle(0x3a4b59); g.fillRect(T / 2 - 1, 25, 2, 3);      // mount stalk
+      g.fillStyle(0x2b343d); g.fillRect(T / 2 - 5, 28, 10, 2);     // bracket
+    });
+
     // Polished marble floor for the elevator lobby (matches the real building —
     // the lift opens onto a stone lobby, distinct from the carpeted workspace).
     this.tex("tile-marble", T, T, (g) => {

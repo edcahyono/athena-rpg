@@ -5,6 +5,7 @@
  * Layout chars: '#' wall · '.' floor · 'd' desk · 'p' plant · 't' table
  *               'E' elevator (interactable) · 'r' reception desk · 'c' carpet
  *               'k' water cooler (comedic prop) · 'o' copier (comedic prop)
+ *               'M' meeting-room door (F12 Design Review) · 'S' wall screen
  */
 import { PERSONAS } from "../../shared/personas.config.js";
 import type { BL } from "../i18n";
@@ -15,7 +16,11 @@ export const TILE = 32;
 // to block, with E teleporting you across it, which meant the only way out of a
 // room competed with talking to the executive standing in it. Walking is the
 // mechanic; nothing needs to arbitrate.
-export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D", "n", "N", "G", "B", "F"]);
+// "M" (meeting-room door) is deliberately NOT here. The Design Review room is
+// the one place on F12 the player walks into, and the door is gated by the
+// engagement state rather than by the tile: OfficeScene blocks it until the
+// seven Deloitte managers are actually waiting inside.
+export const BLOCKING = new Set(["#", "d", "p", "t", "E", "r", "k", "o", "W", "D", "n", "N", "G", "B", "F", "S"]);
 
 // Palette for the decorative filler workers that fill the open floors.
 export const FILLER_COLORS = [0x76808f, 0x8f7680, 0x7f8f76, 0x76778f, 0x8f8676, 0x6f8087];
@@ -34,8 +39,8 @@ const LOBBY = [
   "#......................G.......G#",
   "#......................GBBBBBBBG#",
   "#......................G.......G#",
-  "#E.....................F.......G#",
-  "#E.....................G.......G#",
+  "#E.....................M.ttttt.S#",
+  "#E.....................G.ttttt.S#",
   "#......................G.......G#",
   "#......................GBBBBBBBG#",
   "#......................G.......G#",
@@ -128,13 +133,18 @@ export interface NpcDef {
   tx: number; // tile coords
   ty: number;
   color: number;
-  kind: "supervisor" | "task" | "flavor" | "persona" | "board" | "prop";
+  kind: "supervisor" | "task" | "flavor" | "persona" | "board" | "design" | "prop";
   taskId?: string;
   personaId?: string;
   trackId?: string;
   lines?: BL[];
   /** Initial facing for a seated/standing NPC (default "down"). */
   facing?: "down" | "up" | "left" | "right";
+  /** Seated at the Design Review table rather than at their own workstation.
+   *  Suppresses the cubicle, the desk and the walk-over-to-greet escort — a
+   *  manager in a meeting is not at a desk, and seven of them standing up to
+   *  come and shake your hand is not a meeting. */
+  atTable?: boolean;
 }
 
 const personaColors: Record<string, number> = {};
@@ -233,6 +243,12 @@ export const NPCS: NpcDef[] = [
       { en: "Pass all seven managers' checks and Manager Lin clears you to meet the whole floor upstairs. Any order you like.", zh: "通过全部七位经理的考核后，林经理会批准你去见楼上全部高管。顺序随你。" },
     ] },
 
+  // The Design Review table itself, the way the boardroom table is a target
+  // rather than a person: the review belongs to the room, not to whichever
+  // manager you happen to stand nearest. Invisible (OfficeScene renders it as a
+  // transparent sprite) and unreachable until the door opens.
+  { id: "design-table", name: { en: "Design Review", zh: "设计评审" }, role: { en: "The Deloitte team", zh: "德勤项目组" }, floor: 12, tx: 27, ty: 7, color: 0x333333, kind: "design" },
+
   // ---- Floor 16: Boardroom ----
   { id: "board-table", name: { en: "Boardroom", zh: "董事会会议室" }, role: { en: "Final pitch", zh: "最终汇报" }, floor: 16, tx: 16, ty: 7, color: 0x333333, kind: "board" },
   { id: "board-ea", name: { en: "Ms. Guan", zh: "关女士" }, role: { en: "Board Secretary", zh: "董事会秘书" }, floor: 16, tx: 5, ty: 10, color: 0x8a7a5a, kind: "flavor",
@@ -241,6 +257,56 @@ export const NPCS: NpcDef[] = [
       { en: "When you're ready, take your place at the table.", zh: "准备好了，就到桌前就座吧。" },
     ] },
 ];
+
+/**
+ * Where the seven Deloitte managers sit once the Design Review is convened.
+ *
+ * The table occupies cols 25-29 of rows 7-8 in the LOBBY layout, with the wall
+ * screen at col 31 and the door at col 23. Three managers down each long side
+ * and one at the head by the screen — Zhou Mingzhe, whose workstream is
+ * Strategy, chairs it. The seats deliberately skip a column between neighbours
+ * so their colliders leave the player a way round the table; sitting them
+ * shoulder to shoulder walls the room off with its own occupants.
+ *
+ * The player walks in at col 24, row 7, so nobody is seated on that tile.
+ */
+export const DESIGN_REVIEW_SEATS: Record<string, { tx: number; ty: number; facing: "down" | "up" | "left" }> = {
+  "gk-finance":   { tx: 25, ty: 6, facing: "down" },
+  "gk-product":   { tx: 27, ty: 6, facing: "down" },
+  "gk-marketing": { tx: 29, ty: 6, facing: "down" },
+  "gk-tech":      { tx: 25, ty: 9, facing: "up" },
+  "gk-ops":       { tx: 27, ty: 9, facing: "up" },
+  "gk-hr":        { tx: 29, ty: 9, facing: "up" },
+  "gk-strategy":  { tx: 30, ty: 7, facing: "left" },
+};
+
+/** The floor the Design Review room is on — F12, off reception. */
+export const DESIGN_REVIEW_FLOOR = 12;
+
+/**
+ * Who is standing on a given floor right now.
+ *
+ * NPCS is a static roster, but the seven managers are not always at their F10
+ * desks: when the Design Review is due they are in the room on F12 waiting for
+ * the draft. They move rather than being duplicated — finding Fang Yuan at her
+ * desk while she is also sitting in the meeting would make the review read as
+ * optional set dressing, and the whole point of the room is that the team has
+ * actually convened.
+ */
+export function npcsOnFloor(floor: number, designDue: boolean): NpcDef[] {
+  const out: NpcDef[] = [];
+  for (const n of NPCS) {
+    const seat = designDue ? DESIGN_REVIEW_SEATS[n.id] : undefined;
+    if (seat) {
+      if (floor === DESIGN_REVIEW_FLOOR) {
+        out.push({ ...n, floor, tx: seat.tx, ty: seat.ty, facing: seat.facing, atTable: true });
+      }
+      continue; // in the meeting, therefore not at their desk
+    }
+    if (n.floor === floor) out.push(n);
+  }
+  return out;
+}
 
 /** First row of the LOWER cubicle band on floors 10-12. Everything from this
  *  row down sits facing up, with its cubicle mirrored to match, so the two
@@ -400,6 +466,16 @@ export const PROP_LINES: Record<string, BL[]> = {
   F: [
     { en: "The badge reader blinks red. FILING ROOM — RESTRICTED. Your access level doesn't open this door.", zh: "刷卡器亮起红灯。档案室 — 限制进入。你的权限打不开这扇门。" },
     { en: "You peer through the glass: rows of bookshelves and archive boxes. Client files. Definitely not for new analysts.", zh: "你透过玻璃望进去：一排排书架和档案箱。客户档案。绝对不是给新分析师看的。" },
+  ],
+  // The Design Review room. Read when the room is dark — OfficeScene shows the
+  // booked-room line instead once the seven managers are inside.
+  M: [
+    { en: "MEETING ROOM 2 — the long table, the screen at the far end, twelve chairs nobody has straightened. Empty. Nothing is booked in here yet.", zh: "2号会议室——长条桌，尽头一块屏幕，十二把没人扶正的椅子。空着。目前还没有会议预订。" },
+    { en: "The room is dark. You'll be back here when your draft strategy is ready and the team sits down to read it.", zh: "房间黑着。等你的战略草案写好、项目组坐下来评审时，你会回到这里。" },
+  ],
+  // The screen at the head of the table.
+  S: [
+    { en: "A wall-mounted display, asleep. Someone's HDMI cable is still coiled on the sill.", zh: "壁挂显示屏，休眠中。窗台上还盘着谁的 HDMI 线。" },
   ],
 };
 

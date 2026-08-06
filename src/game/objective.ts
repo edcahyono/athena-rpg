@@ -4,7 +4,7 @@
  * check → executive interview. With no active mission it points at the board
  * itself. Drives the HUD banner + in-world guide arrow.
  */
-import { NPCS, NpcDef } from "../config/world";
+import { NPCS, NpcDef, DESIGN_REVIEW_FLOOR } from "../config/world";
 import { TRACKS } from "../../shared/gameContent.js";
 import { GameState } from "../net/api";
 import { L, fmt, UI } from "../i18n";
@@ -17,6 +17,27 @@ export interface Objective {
 }
 
 const npcById = (id: string): NpcDef | undefined => NPCS.find((n) => n.id === id);
+
+/**
+ * Is the Design Review convened right now?
+ *
+ * The single source of truth for it, because four things have to agree: the
+ * waypoint, the F12 door collider, whether the seven managers are at their
+ * desks or around the table, and whether the table accepts a draft. Deriving it
+ * separately in each place is how you get a room full of managers behind a
+ * locked door, or an arrow pointing at an empty table.
+ *
+ * All seven interviews are part of the condition, not just the as-is sign-off:
+ * the team reviews a strategy built on the whole diagnosis, and the server
+ * refuses the submission otherwise.
+ */
+export function designReviewDue(state: GameState | undefined): boolean {
+  if (!state) return false;
+  const interviewed = Object.values(state.personas).filter((p) => p.used > 0).length;
+  return !!state.engagement?.alignments?.asis?.agreed
+    && !state.engagement?.designReview?.done
+    && interviewed >= 7;
+}
 
 export function computeObjective(state: GameState | undefined): Objective {
   if (!state) return { npcId: null, floor: null, label: "…", why: "" };
@@ -55,15 +76,13 @@ export function computeObjective(state: GameState | undefined): Objective {
   }
 
   // Design Review — the phase that replaced Benchmark Alignment. It is held by
-  // the seven Deloitte managers on F10, NOT by Lin, so the arrow points at a
-  // gatekeeper. Any of them can convene the team, so aim at the first one
-  // rather than inventing a "correct" desk to knock on.
-  if (state.engagement?.alignments?.asis?.agreed
-    && !state.engagement?.designReview?.done
-    && interviewed >= 7) {
-    const anyGk = npcById((Object.values(TRACKS)[0] as any).npcId);
+  // the seven Deloitte managers, NOT by Lin. It used to point at whichever
+  // gatekeeper happened to be declared first on F10, which meant knocking on an
+  // arbitrary desk to convene a meeting of seven people. The team now sits in
+  // the room on F12, so the arrow points at the table they are sitting around.
+  if (designReviewDue(state)) {
     return {
-      npcId: anyGk?.id ?? null, floor: 10,
+      npcId: "design-table", floor: DESIGN_REVIEW_FLOOR,
       label: L(UI.designObjective), why: L(UI.designObjectiveWhy),
     };
   }

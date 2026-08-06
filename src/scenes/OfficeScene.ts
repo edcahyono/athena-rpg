@@ -1,10 +1,10 @@
 /** OfficeScene — one floor at a time; elevator restarts the scene with a new floor. */
 import Phaser from "phaser";
-import { TILE, BLOCKING, LAYOUTS, NPCS, NpcDef, PROP_LINES, spawnPoint, EXEC_OFFICES, FILLER_COLORS, LOWER_BAND_ROW } from "../config/world";
+import { TILE, BLOCKING, LAYOUTS, NPCS, NpcDef, PROP_LINES, spawnPoint, EXEC_OFFICES, FILLER_COLORS, LOWER_BAND_ROW, npcsOnFloor } from "../config/world";
 import { api, state } from "../net/api";
 import { ui, updateHUD, updateObjectiveBanner, elevatorPanel, elevatorClose, elevatorOpen, questLogPanel, menuPanel, toast, applyStaticLabels, welcomePanel, setRelabelHandler } from "../ui/ui";
 import { interact, interactProp } from "../game/interactions";
-import { computeObjective, Objective } from "../game/objective";
+import { computeObjective, designReviewDue, Objective } from "../game/objective";
 import { L, fmt, UI } from "../i18n";
 import { toggleFullscreen } from "../main";
 import { FONT_UI } from "../ui/fonts";
@@ -22,6 +22,8 @@ const TEX: Record<string, string> = {
   G: "tile-glass", b: "tile-black",
   // Filing room: B = bookshelf, F = locked badge-controlled door
   B: "tile-bookshelf", F: "tile-filing-door",
+  // F12 Design Review room: M = its door, S = the screen at the head of the table
+  M: "tile-meeting-door", S: "tile-screen",
 };
 
 // Walkable rug tiles render under the player (low depth) instead of at row depth.
@@ -91,6 +93,9 @@ export default class OfficeScene extends Phaser.Scene {
     this.elevators = [];
     const layout = LAYOUTS[this.floor];
     const walls = this.physics.add.staticGroup();
+    // Read once per build: the door, the seating and the waypoint all have to
+    // agree about whether the team has convened.
+    const designDue = designReviewDue(state);
 
     layout.forEach((row, ty) => {
       for (let tx = 0; tx < row.length; tx++) {
@@ -102,7 +107,12 @@ export default class OfficeScene extends Phaser.Scene {
           // tiled table sprite reads as a wall of cabinets), so skip the tiles.
           const boardTable = this.floor === 16 && ch === "t";
           if (!boardTable) this.add.image(x, y, TEX[ch]).setDepth(RUG.has(ch) ? 1 : y);
-          if (BLOCKING.has(ch)) {
+          // The Design Review door is the one tile on any floor whose solidity
+          // depends on the engagement rather than on the map. It is left out of
+          // BLOCKING so that when the team is waiting the player simply walks
+          // in; until then it is sealed here, and pressing E on it reads the
+          // "nothing booked" line instead of doing nothing.
+          if (BLOCKING.has(ch) || (ch === "M" && !designDue)) {
             const body = walls.create(x, y, TEX[ch]) as Phaser.Physics.Arcade.Sprite;
             body.setVisible(false).refreshBody();
             // Only elevators + a couple of comedic props respond to E.
@@ -151,8 +161,8 @@ export default class OfficeScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, layout[0].length * TILE, layout.length * TILE);
 
     // NPCs on this floor — name + role title stacked above each sprite.
-    for (const def of NPCS.filter((n) => n.floor === this.floor)) {
-      if (def.kind === "board") {
+    for (const def of npcsOnFloor(this.floor, designDue)) {
+      if (def.kind === "board" || def.kind === "design") {
         this.npcs.push({ def, sprite: this.add.sprite(def.tx * TILE + TILE / 2, def.ty * TILE + TILE / 2, "shadow").setAlpha(0.01) });
         continue;
       }
@@ -166,8 +176,8 @@ export default class OfficeScene extends Phaser.Scene {
       // up/down like the F10-12 bands — her desk/chair/cubicle rotate 90°
       // instead of mirroring vertically.
       const facesLeft = def.facing === "left";
-      if (seated && def.kind !== "persona" && [10, 11, 12].includes(this.floor)) this.drawCubicle(x, y, facesUp);
-      else if (seated && facesLeft) this.drawCubicleLeft(x, y);
+      if (seated && !def.atTable && def.kind !== "persona" && [10, 11, 12].includes(this.floor)) this.drawCubicle(x, y, facesUp);
+      else if (seated && !def.atTable && facesLeft) this.drawCubicleLeft(x, y);
       // Chair behind the worker — flipped/rotated too, or its back rest points
       // the wrong way for someone sitting a different direction.
       if (seated && facesLeft) this.add.image(x + 2, y, "tile-chair").setAngle(90).setDepth(y - 1);
@@ -177,7 +187,9 @@ export default class OfficeScene extends Phaser.Scene {
       // Never put a desk on row 8: that is the lane the player walks along
       // when stepping out of the lift, and a collider there strands them.
       const deskRow = def.ty + (facesUp ? -1 : 1);
-      const giveDesk = seated && def.kind !== "persona" && !facesLeft && deskRow !== 8;
+      // A manager at the meeting table gets no desk: the nearest one would land
+      // on the conference table itself, and its collider would wall the room in.
+      const giveDesk = seated && !def.atTable && def.kind !== "persona" && !facesLeft && deskRow !== 8;
       if (giveDesk) {
         const dyPix = y + (facesUp ? -TILE : TILE);
         const deskImg = this.add.image(x, dyPix, "tile-work-0").setDepth(dyPix + 4);
@@ -196,7 +208,13 @@ export default class OfficeScene extends Phaser.Scene {
       const shadow = this.add.image(x, y + 10, "shadow").setDepth(y - 1);
       const s = this.add.sprite(x, y + (seated ? 3 : 0), `char-${def.color}-${def.facing || "down"}-0`).setDepth(y);
       // Strollers move freely, so they get no static collider (won't block paths).
-      if (!wander) {
+      // Nor do the managers seated at the Design Review table: the walkway around
+      // that table is ONE tile wide, so seven colliders seal the room — the player
+      // walks in and is penned into the doorway column, unable to reach the table
+      // they came for or to address five of the seven people in the room. They are
+      // seated behind chairs at a conference table, so brushing past one costs a
+      // little physicality and buys back the entire room.
+      if (!wander && !def.atTable) {
         const body = walls.create(x, y, `char-${def.color}-down-0`) as Phaser.Physics.Arcade.Sprite;
         body.setVisible(false).setSize(20, 20).refreshBody();
       }
@@ -542,7 +560,11 @@ export default class OfficeScene extends Phaser.Scene {
    */
   private async escortToPlayer(npc: { def: NpcDef; sprite: Phaser.GameObjects.Sprite }): Promise<boolean> {
     const def = npc.def;
-    const cubicled = !STANDING.has(def.id) && def.kind !== "persona" && def.kind !== "board"
+    // atTable excluded: the managers are already sitting in the meeting you
+    // came to, so getting up to escort you to the doorway would be backwards —
+    // and with seven of them it would empty the room you just walked into.
+    const cubicled = !STANDING.has(def.id) && !def.atTable
+      && def.kind !== "persona" && def.kind !== "board" && def.kind !== "design"
       && [10, 11, 12].includes(this.floor);
     if (!cubicled) return false;
 
@@ -697,7 +719,9 @@ export default class OfficeScene extends Phaser.Scene {
     let best: any = null, bestD = Infinity;
     for (const n of this.npcs) {
       const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, n.sprite.x, n.sprite.y);
-      const reach = n.def.kind === "board" ? 80 : 72;
+      // Table targets sit ON the table, so the nearest a player can stand is
+      // the far side of a tile they cannot walk onto — they need the longer reach.
+      const reach = n.def.kind === "board" || n.def.kind === "design" ? 80 : 72;
       if (d < reach && d < bestD) { best = n; bestD = d; }
     }
     return best;

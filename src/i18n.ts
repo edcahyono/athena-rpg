@@ -190,8 +190,9 @@ export const UI = {
   asisPrompt: { en: "Present your AS-IS diagnosis of Nike Greater China: the 3-5 pain points you've found, each tied to what an executive actually told you. What's your evidence? (the client will only sign off if it's grounded and prioritized)", zh: "汇报你对耐克大中华区的【现状】诊断：你发现的3-5个痛点，每一个都要对应某位高管的原话。你的证据是什么？（只有言之有据、分清主次，客户才会认可）" },
   asisObjective: { en: "Take your as-is diagnosis to Manager Lin (F12)", zh: "把现状诊断交给林经理（12层）" },
   asisObjectiveWhy: { en: "Every domain check is passed. Write up the pain points and findings, with what each one rests on, and hand it to Lin — she checks every claim against your transcripts and the project files before the client sees it.", zh: "所有领域考核都已通过。把痛点与发现写出来，并写明每一条的依据，然后交给林经理——在客户看到之前，她会拿你的每一条主张去比对访谈记录与项目文件。" },
-  designObjective: { en: "Take your design to the Deloitte team (F10)", zh: "把设计方案交给德勤项目组（10层）" },
-  designObjectiveWhy: { en: "Your diagnosis is agreed and you've heard all seven executives. Draft the 5-year strategy — recommendations, owners, sequencing, trade-offs, and benchmarking that holds up — then bring it to any manager on Floor 10; they'll convene all seven for the review. One attempt only.", zh: "诊断已获认可，七位高管也都访谈过了。把五年战略草案写出来——建议、责任人、推进节奏、取舍，以及经得起推敲的对标——然后交给10层任意一位经理，他们会召集七人一起评审。只有一次机会。" },
+  designObjective: { en: "Design Review — Meeting Room 2 (F12)", zh: "设计评审——2号会议室（12层）" },
+  designObjectiveWhy: { en: "Your diagnosis is agreed and you've heard all seven executives. Draft the 5-year strategy — recommendations, owners, sequencing, trade-offs, and benchmarking that holds up — then take it to Meeting Room 2 on Floor 12. All seven managers have left their desks and are sitting in there waiting for it. One attempt only.", zh: "诊断已获认可，七位高管也都访谈过了。把五年战略草案写出来——建议、责任人、推进节奏、取舍，以及经得起推敲的对标——然后带到12层的2号会议室。七位经理都已经离开工位，在里面等着了。只有一次机会。" },
+  designReviewOver: { en: "The team has already read your draft — that was the one review.", zh: "项目组已经评审过你的草案了——机会只有那一次。" },
   // Design Review — one shot, with all seven Deloitte managers.
   designReviewPrompt: { en: "Your draft strategy is due for team review. Convene it now?", zh: "你的战略草案该交项目组评审了。现在召集吗？" },
   designReviewYes: { en: "Yes — call the team together", zh: "好，召集项目组" },

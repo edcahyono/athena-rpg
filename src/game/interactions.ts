@@ -64,6 +64,13 @@ export async function interact(npc: NpcDef, currentFloor: number): Promise<void>
       if (!state.flags.metSupervisor && npc.kind !== "supervisor") {
         return await showLines(nameOf(npc), [L(UI.talkSupervisorFirst)]);
       }
+      // Anything you press E on inside the Design Review room convenes the
+      // review — the table itself, or any of the seven managers sitting around
+      // it. The table is what the waypoint points at, but it is ringed by the
+      // team, so whoever you happen to stand nearest is usually a manager;
+      // routing only the table here would leave the player pressing E on the
+      // people who called the meeting and getting ordinary small talk.
+      if (npc.atTable || npc.kind === "design") return await designReviewMeeting(npc);
       switch (npc.kind) {
         case "supervisor": return await supervisor(npc);
         case "task": return await taskNpc(npc);
@@ -262,6 +269,56 @@ async function supervisor(npc: NpcDef) {
   await showLines(name, [fmt(LIN_LINES.hint, { n })]);
 }
 
+/* ------------------------- design review (F12) ------------------------- */
+
+/**
+ * DESIGN REVIEW — held in the meeting room on F12, by the seven Deloitte
+ * managers rather than by Manager Lin, because the reviewers ARE the seven
+ * managers.
+ *
+ * It used to hang off any gatekeeper's desk on F10, which asked the player to
+ * knock on one arbitrary desk to convene a meeting of seven people, and put a
+ * "shall we review your strategy?" prompt in front of anyone who wandered over
+ * to ask an ordinary question. The room makes the convening literal: the team
+ * is sitting in it, the door only opens when they are, and the draft is handed
+ * to the room.
+ *
+ * ONE attempt. The server refuses a second, so once it is spent the door seals
+ * again and this is unreachable — no need to hide the offer by hand.
+ */
+async function designReviewMeeting(npc: NpcDef) {
+  const name = L(UI.designReviewRoom);
+  // Reachable only through a door that is open only when this is true, so this
+  // is a guard against a stale client state rather than an expected path.
+  if (state.engagement?.designReview?.done) {
+    return await showLines(name, [L(UI.designReviewOver)]);
+  }
+  const choice = await showChoice(name, L(UI.designReviewPrompt), [L(UI.designReviewYes), L(UI.designReviewLater)]);
+  if (choice !== 0) return;
+
+  await showLines(name, [L(UI.designReviewIntro)]);
+  const draft = await taskPanel(L(UI.designReviewTitle), L(UI.designReviewBrief), L(UI.designReviewOneShot));
+  if (draft === null) return;
+
+  const loading = showLoading(name, L(UI.designReviewLoading), 26000);
+  let res: any;
+  try {
+    res = await api.designReview(draft);
+  } catch (e: any) {
+    loading.close();
+    toast(e.message);
+    return updateHUD(npc.floor);
+  }
+  loading.close();
+  if (res.delta) toast(fmt(UI.credToast, { n: res.delta }));
+  // Each manager speaks in turn, named with their workstream, so the advice
+  // reads as a room of people rather than one blob of feedback.
+  await showLines(name, (res.reviews || []).map(
+    (r: any) => `${r.name} · ${r.workstream}\n${r.advice}`));
+  await showLines(name, [L(UI.designReviewDone)]);
+  return updateHUD(npc.floor);
+}
+
 /* --------------------------- gatekeeper NPCs --------------------------- */
 
 /**
@@ -287,38 +344,6 @@ async function taskNpc(npc: NpcDef) {
   // debriefed. (Document review lives with Manager Lin, not here.)
   if (t?.status === "failed") {
     await showLines(name, [L(track.retryLine)]);
-  }
-
-  // DESIGN REVIEW — convened here rather than with Lin, because the reviewers
-  // ARE the seven managers. Any of them can call the team together, so the
-  // player doesn't have to guess which desk holds the meeting. One attempt: the
-  // server refuses a second, so the offer disappears once it's been used.
-  const align0 = state.engagement?.alignments;
-  if (align0?.asis?.agreed && !state.engagement?.designReview?.done) {
-    const choice = await showChoice(name, L(UI.designReviewPrompt), [L(UI.designReviewYes), L(UI.designReviewLater)]);
-    if (choice === 0) {
-      await showLines(name, [L(UI.designReviewIntro)]);
-      const draft = await taskPanel(L(UI.designReviewTitle), L(UI.designReviewBrief), L(UI.designReviewOneShot));
-      if (draft !== null) {
-        const loading = showLoading(name, L(UI.designReviewLoading), 26000);
-        let res: any;
-        try {
-          res = await api.designReview(draft);
-        } catch (e: any) {
-          loading.close();
-          toast(e.message);
-          return updateHUD(npc.floor);
-        }
-        loading.close();
-        if (res.delta) toast(fmt(UI.credToast, { n: res.delta }));
-        // Each manager speaks in turn, named with their workstream, so the
-        // advice reads as a room of people rather than one blob of feedback.
-        await showLines(L(UI.designReviewRoom), (res.reviews || []).map(
-          (r: any) => `${r.name} · ${r.workstream}\n${r.advice}`));
-        await showLines(name, [L(UI.designReviewDone)]);
-        return updateHUD(npc.floor);
-      }
-    }
   }
 
   chatMode({
