@@ -6,7 +6,7 @@
  *               'E' elevator (interactable) · 'r' reception desk · 'c' carpet
  *               'k' water cooler (comedic prop) · 'o' copier (comedic prop)
  */
-import { PERSONAS, MID_PERSONAS } from "../../shared/personas.config.js";
+import { PERSONAS } from "../../shared/personas.config.js";
 import type { BL } from "../i18n";
 
 export const TILE = 32;
@@ -128,7 +128,7 @@ export interface NpcDef {
   tx: number; // tile coords
   ty: number;
   color: number;
-  kind: "supervisor" | "task" | "flavor" | "persona" | "midpersona" | "board" | "prop";
+  kind: "supervisor" | "task" | "flavor" | "persona" | "board" | "prop";
   taskId?: string;
   personaId?: string;
   trackId?: string;
@@ -146,7 +146,7 @@ const PERSONA_NAMES: Record<string, BL> = {
   cfo: { en: "Zhou Mingyuan", zh: "周明远" },
   cmo: { en: "Zhang Aiwei", zh: "张艾薇" },
   coo: { en: "Zhao Zhengping", zh: "赵正平" },
-  chro: { en: "Shen Ruolin", zh: "沈若琳" },
+  chro: { en: "Gu Minglan", zh: "顾明岚" },
   cto: { en: "Lin Zhiyao", zh: "林知遥" },
   cpo: { en: "Song Zhixing", zh: "宋知行" },
 };
@@ -226,7 +226,7 @@ export const NPCS: NpcDef[] = [
   { id: "gk-strategy", name: { en: "Zhou Mingzhe", zh: "周明哲" }, role: { en: "Manager · Strategy & Business Design", zh: "经理 · 战略与业务设计" }, floor: 10, tx: 4, ty: 3, color: 0x2f4f6f, kind: "task", taskId: "track-strategy", trackId: "strategy" },
   { id: "gk-finance", name: { en: "Priya", zh: "普莉亚" }, role: { en: "Manager · Finance Transformation", zh: "经理 · 财务转型" }, floor: 10, tx: 8, ty: 3, color: 0x6e3b8a, kind: "task", taskId: "track-finance", trackId: "finance" },
   { id: "gk-ops", name: { en: "Fang Yuan", zh: "方远" }, role: { en: "Manager · Operations & Supply Chain", zh: "经理 · 运营与供应链" }, floor: 10, tx: 24, ty: 3, color: 0x6f2f4f, kind: "task", taskId: "track-ops", trackId: "ops" },
-  { id: "gk-hr", name: { en: "Coco Ye", zh: "叶可可" }, role: { en: "Manager · Human Capital", zh: "经理 · 人力资本" }, floor: 10, tx: 28, ty: 3, color: 0x7a5c8a, kind: "task", taskId: "track-hr", trackId: "hr" },
+  { id: "gk-hr", name: { en: "Su Ruoheng", zh: "苏若衡" }, role: { en: "Manager · Organization & Talent Transformation", zh: "经理 · 组织与人才转型" }, floor: 10, tx: 28, ty: 3, color: 0x7a5c8a, kind: "task", taskId: "track-hr", trackId: "hr" },
   { id: "sm-ea", name: { en: "Joyce", zh: "乔伊丝" }, role: { en: "Team Assistant · Deloitte", zh: "团队助理 · 德勤" }, floor: 10, tx: 16, ty: 11, color: 0xb08a9a, kind: "flavor",
     lines: [
       { en: "Everyone here bills by the six-minute increment. Make it count.", zh: "这里每个人都是按六分钟一个计费单元收费的。别浪费。" },
@@ -242,17 +242,6 @@ export const NPCS: NpcDef[] = [
     ] },
 ];
 
-// Floor 11: the seven Nike mid-level digital humans, spread across the open
-// office (names from the mid-level character cards).
-const MID_NAMES: Record<string, BL> = {
-  vpfin: { en: "Karen Lin", zh: "林嘉怡" },
-  brand: { en: "Lin Qingyan", zh: "林清妍" },
-  scops: { en: "Chen Zhengyang", zh: "陈正阳" },
-  digital: { en: "Howard Chen", zh: "陈昊" },
-  merch: { en: "Vivian Li", zh: "李蔚然" },
-  talent: { en: "Cindy Zhao", zh: "赵欣" },
-  stratplan: { en: "Hans Zhou", zh: "周子涵" },
-};
 /** First row of the LOWER cubicle band on floors 10-12. Everything from this
  *  row down sits facing up, with its cubicle mirrored to match, so the two
  *  rows face each other across the central aisle. Shared with OfficeScene so
@@ -274,17 +263,51 @@ function faceLowerBandUp() {
     }
   }
 }
-MID_PERSONAS.forEach((p: any, i: number) => {
+// Floor 11: seven Nike deputies, kept as decoration — a walk-by nod to who
+// backs up each C-suite line, not an interviewable source. They used to be a
+// full LLM-backed "mid-manager" tier (untimed, unlimited chat), which the 14
+// persona docs never covered; scripted flavor lines instead of an undocumented
+// improvised character.
+const MID_FLAVOR: { id: string; name: BL; role: BL; color: number; lines: BL[] }[] = [
+  { id: "mid-vpfin", name: { en: "Karen Lin", zh: "林嘉怡" }, role: { en: "FP&A Analyst · Nike China", zh: "财务规划与分析 · 耐克中国" }, color: 0x3b6e8a,
+    lines: [
+      { en: "Don't ask me for the real numbers — that's above my export permissions. I just build the models Zhou Mingyuan actually looks at.", zh: "别问我要真实数字——那超出我的导出权限了。我只是搭建周明远真正会看的模型。" },
+      { en: "Every quarter-end I disappear for three days straight. If you can't find me, check the finance war room.", zh: "每逢季末我会消失整整三天。找不到我，就去财务作战室看看。" },
+    ] },
+  { id: "mid-brand", name: { en: "Lin Qingyan", zh: "林清妍" }, role: { en: "Brand Marketing · Nike China", zh: "品牌营销 · 耐克中国" }, color: 0xb0567a,
+    lines: [
+      { en: "Everyone wants a campaign yesterday. I want a brief that survives contact with the media plan.", zh: "所有人都想要昨天就上线的campaign。我只想要一份能扛住媒介排期的brief。" },
+      { en: "If Zhang Aiwei greenlights it, I'm the one who finds three problems with it by Friday.", zh: "张艾薇一点头，到周五我就会发现三个问题——那是我的工作。" },
+    ] },
+  { id: "mid-scops", name: { en: "Chen Zhengyang", zh: "陈正阳" }, role: { en: "Channel Operations · Nike China", zh: "渠道运营 · 耐克中国" }, color: 0x7a6034,
+    lines: [
+      { en: "Half my life is airports. The other half is convincing dealers the new POS standard isn't optional.", zh: "我一半的人生在机场度过。另一半在说服经销商，新的陈列标准不是选择题。" },
+      { en: "Excel models look great until you've stood in a Chengdu store on a Tuesday afternoon.", zh: "Excel模型看着都挺好——直到你周二下午真站在成都的店里。" },
+    ] },
+  { id: "mid-digital", name: { en: "Howard Chen", zh: "陈昊" }, role: { en: "Digital Platforms & Membership · Nike China", zh: "数字平台与会员 · 耐克中国" }, color: 0x3b7a8a,
+    lines: [
+      { en: "Ask me for a number and I'll ask you which platform, which cohort, and which week. Precision or nothing.", zh: "问我要数字之前，先想清楚哪个平台、哪个人群、哪一周。要么精确，要么别问。" },
+      { en: "The App team ships every Tuesday. Don't talk to me on Mondays.", zh: "App团队每周二发版。周一别跟我说话。" },
+    ] },
+  { id: "mid-merch", name: { en: "Vivian Li", zh: "李蔚然" }, role: { en: "Merchandising & Pricing · Nike China", zh: "商品企划与定价 · 耐克中国" }, color: 0x8a5c3b,
+    lines: [
+      { en: "I think in SKUs, not slogans. Tell me the price band before you tell me the vision.", zh: "我用SKU思考，不用口号。先告诉我价格带，再跟我谈愿景。" },
+      { en: "End-of-season discounting isn't failure — it's a plan I wrote three months ago.", zh: "季末折扣不是失败——那是我三个月前就写好的计划。" },
+    ] },
+  { id: "mid-talent", name: { en: "Cindy Zhao", zh: "赵欣" }, role: { en: "Talent & Organization Development · Nike China", zh: "人才与组织发展 · 耐克中国" }, color: 0x7a5c8a,
+    lines: [
+      { en: "Everyone asks about hiring. Nobody asks why people are leaving. I know both answers.", zh: "所有人都在问招聘的事。没人问离职的原因。这两个答案我都有。" },
+      { en: "Retail talent pipeline is a marathon. HQ keeps asking for sprint results.", zh: "零售人才梯队是场马拉松。总部却总要短跑成绩。" },
+    ] },
+  { id: "mid-stratplan", name: { en: "Hans Zhou", zh: "周子涵" }, role: { en: "Strategic Planning · Nike China", zh: "战略规划 · 耐克中国" }, color: 0x2f4f6f,
+    lines: [
+      { en: "Ex-consultant, now I sit on the other side of the table. Ask me how the org chart actually works — not the PowerPoint version.", zh: "前咨询顾问，现在坐在桌子的另一边。想知道组织架构真正怎么运作——不是PPT上那版——可以问我。" },
+      { en: "Annual planning season starts in August and never really ends. Ask again in July.", zh: "年度规划季八月开始，其实从没真正结束过。七月的时候再问我一次。" },
+    ] },
+];
+MID_FLAVOR.forEach((m, i) => {
   const [tx, ty] = midSpots[i % midSpots.length];
-  NPCS.push({
-    id: `mid-${p.id}`,
-    name: MID_NAMES[p.id] || { en: p.shortTitle.en, zh: p.shortTitle.zh },
-    role: { en: `${p.shortTitle.en} · Nike China`, zh: `${p.shortTitle.zh} · 耐克中国` },
-    floor: 11, tx, ty,
-    color: parseInt(p.accent.slice(1), 16),
-    kind: "midpersona",
-    personaId: p.id,
-  });
+  NPCS.push({ id: m.id, name: m.name, role: m.role, floor: 11, tx, ty, color: m.color, kind: "flavor", lines: m.lines });
 });
 // Every desk worker on floors 10-12 now exists, so turn the lower band around.
 faceLowerBandUp();

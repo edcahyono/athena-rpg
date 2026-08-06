@@ -63,7 +63,6 @@ export async function interact(npc: NpcDef, currentFloor: number): Promise<void>
       case "supervisor": return await supervisor(npc);
       case "task": return await taskNpc(npc);
       case "persona": return await personaNpc(npc);
-      case "midpersona": return await midNpc(npc);
       case "board": return await boardTable(npc);
     }
   } catch (err: any) {
@@ -484,38 +483,6 @@ async function personaNpc(npc: NpcDef) {
         toast(err?.message || "Couldn't save that readout.");
       }
     },
-  });
-}
-
-/* ------------------- mid-level staff (untimed, unlimited) --------------- */
-
-/**
- * Mid-level Nike digital humans (F11) — one per C-suite line, unlocked with
- * their boss's track. No meeting slots, no clock: they hold the frontline
- * detail (batch data, funnels, price bands, exit interviews) and route
- * strategy questions UP to their C-suite, cross-line questions SIDEWAYS.
- */
-async function midNpc(npc: NpcDef) {
-  const pid = npc.personaId!;
-  const persona: any = PERSONA_MAP[pid];
-  const name = nameOf(npc);
-  const track: any = trackForPersona(persona.parent);
-  const passed = track && state.tasks[track.taskId]?.status === "passed";
-  if (!passed) {
-    const gk = NPCS.find((n) => n.id === track.npcId)!;
-    const boss: any = PERSONA_MAP[persona.parent];
-    return await showLines(name, [
-      fmt(UI.midLocked, { boss: L(boss.shortTitle), gk: L(gk.name), floor: gk.floor }),
-    ]);
-  }
-  chatMode({
-    name,
-    greeting: L(persona.greeting),
-    send: async (text) => {
-      const res = await api.chat(pid, text);
-      return { entries: [{ name, text: res.text }], ended: false };
-    },
-    onLeave: () => updateHUD(npc.floor),
   });
 }
 

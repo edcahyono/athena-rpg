@@ -404,7 +404,7 @@ function gatekeeperNpcFromTrack(trackId) {
     finance: { name: { en: "Priya", zh: "普莉亚" }, role: { en: "Manager, Finance Transformation", zh: "经理，财务转型" } },
     marketing: { name: { en: "Tang Yawen", zh: "唐雅文" }, role: { en: "Manager, Brand & Consumer Insight", zh: "经理，品牌与消费者洞察" } },
     ops: { name: { en: "Fang Yuan", zh: "方远" }, role: { en: "Manager, Operations & Supply Chain", zh: "经理，运营与供应链" } },
-    hr: { name: { en: "Coco Ye", zh: "叶可可" }, role: { en: "Manager, Human Capital", zh: "经理，人力资本" } },
+    hr: { name: { en: "Su Ruoheng", zh: "苏若衡" }, role: { en: "Manager, Organization & Talent Transformation", zh: "经理，组织与人才转型" } },
     tech: { name: { en: "Lu Xingzhi", zh: "陆行知" }, role: { en: "Manager, Enterprise Technology & Performance", zh: "经理，企业技术与绩效" } },
     product: { name: { en: "Chen Jing", zh: "陈静" }, role: { en: "Manager, Consumer Products & Product Strategy", zh: "经理，消费品行业与产品战略" } },
   };
@@ -679,19 +679,6 @@ router.post("/chat", async (req, res) => {
     if (typeof text !== "string" || !text.trim() || text.length > 2000)
       return res.status(400).json({ error: "Message must be 1–2000 characters" });
     const st = s.personas[personaId];
-
-    // Mid-level staff: untimed, unlimited conversations — no meeting slot, no
-    // clock, no mood cutoff. Access still requires the parent line's check.
-    if (persona.tier === "mid") {
-      requireTrackPassed(s, persona.parent, lang);
-      grantWorkspacePack(s, persona.parent, lang); // the deputy hands over their line's pack
-      st.transcript.push({ role: "learner", text: text.trim() });
-      if (st.transcript.length > 60) st.transcript.splice(0, st.transcript.length - 60);
-      const reply = await personaReply(s, personaId, lang, FOCUSED_ANSWER_RULE);
-      st.transcript.push({ role: "persona", personaId, text: reply });
-      touch(s);
-      return res.json({ ...publicState(s), text: reply, ended: false });
-    }
 
     if (!st.active) return res.status(409).json({ error: TT(lang, "No active meeting with this persona.", "当前没有与这位高管的进行中会面。") });
     if (now() >= st.active.expiresAt) {

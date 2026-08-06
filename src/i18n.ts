@@ -86,7 +86,6 @@ export const UI = {
   boardChecklistTitle: { en: "Stakeholder asks — fulfilled?", zh: "各高管诉求 — 是否达成？" },
   fulfilledYes: { en: "✓ Fulfilled", zh: "✓ 已达成" },
   fulfilledNo: { en: "✗ Not fulfilled", zh: "✗ 未达成" },
-  midLocked: { en: "I sit in the {boss}'s line — I only talk shop with analysts the engagement team has vouched for on that line. Pass {gk}'s check (F{floor}) first, then come back. I'll have time for you; I always do.", zh: "我在{boss}条线上——只有项目组在这条线担保过的分析师，我才能跟你聊业务。先通过{gk}的考核（F{floor}层），再回来找我。我有的是时间。" },
   execWarning: { en: "⚠️ Executive time is scarce. Visits are LIMITED and each meeting is TIMED — once you walk in, a visit is spent whether you use it well or not. Write your questions below BEFORE you start, so none of your chances go to waste.", zh: "⚠️ 高管的时间非常稀缺。会面次数有限、每次限时——一旦进门，无论用得好不好都算消耗一次。开始之前先在下方写好你的问题，别浪费任何一次机会。" },
   // menu
   menuTitle: { en: "☰ Menu — Engagement Status", zh: "☰ 菜单 — 项目进度" },

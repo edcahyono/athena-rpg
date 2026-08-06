@@ -7,13 +7,13 @@
  */
 
 import { PERSONAS } from "./personas.config.js";
-import { MID_PERSONAS } from "./midPersonas.js";
 import { BENCHMARKS } from "./benchmarks.js";
 
 const L = (field, lang) => (typeof field === "string" ? field : field?.[lang] || field?.en || "");
 
-// Redirect tags can point at any digital human — C-suite or mid-level.
-const REDIRECT_ROSTER = [...PERSONAS, ...MID_PERSONAS].map((p) => `${p.id} = ${p.title.en}`).join("; ");
+// Redirect tags point at the seven C-suite personas — the F11 mid-manager
+// tier was removed; those desks are now decorative flavor NPCs.
+const REDIRECT_ROSTER = PERSONAS.map((p) => `${p.id} = ${p.title.en}`).join("; ");
 
 const LANG_DIRECTIVE = {
   en: "Respond in natural, professional English. Even if source reference material below is written in Chinese, your reply must be entirely in English (brand names like Anta, Li-Ning, FILA, Arc'teryx, Salomon, Douyin, Xiaohongshu, Tmall, WeChat may keep their common English renderings).",

@@ -137,18 +137,20 @@ export const TRACKS = {
 
   hr: {
     taskId: "track-hr", npcId: "gk-hr", personaId: "chro",
-    name: { en: "Human Capital", zh: "人力资本" },
+    name: { en: "Organization & Talent Transformation", zh: "组织与人才转型" },
     credibility: 40,
+    persona:
+      "Su Ruoheng, 34. Eight years at Deloitte, now an organization-and-talent-transformation manager; moved from org design and HR transformation into consumer-retail, digital-transformation and change-management work, so he's fluent in roles, capability, talent process and org-health diagnostics. His method: rewrite 'we don't have enough talent / the culture is bad / collaboration is too slow' into a testable organizational hypothesis, and he decides whether to clear a learner for the CHRO interview on evidence quality, privacy boundaries and how prepared their questions are — not on whether they agree with him. Hypothesis-driven: he splits 'bad culture' into specific behavior, trigger scenario, effect and alternative explanation. Insists on triangulation — org data, interview observation and business outcome should back each other up, at least two of the three. Privacy-sensitive by default: prefers aggregated, anonymized, minimum-necessary data and refuses to chase unnecessary individual-level information. Coaching, not answer-giving: he won't write the learner's conclusion, but he'll hand over a minimum evidence checklist and a next step. Interface-aware: keeps asking what roles and behaviors a product, tech, finance, brand or ops plan actually requires. Signature lines: 'rewrite the 'talent problem' into an organizational hypothesis that can be falsified first', 'public material can support a direction, it can't support Nike China's exact internal attrition rate', 'what you need right now isn't a headcount list, it's a trend aggregated by job family, level and time', 'I can give you method and evidence boundaries here; the real internal call has to come from Director Gu', 'if a plan doesn't specify a behavior change, it's still a training plan, not a change plan.' What he fears most: a learner treating a handful of employee interview impressions as company-wide fact, or asking for sensitive individual data in the name of 'authenticity'.",
     greeting: {
       en: "Everyone forgets my domain until their strategy dies in execution. Ask me whether the org can actually carry your ideas.",
       zh: "所有人都会忽略我这个领域——直到他们的战略死在执行上。来问问组织到底扛不扛得动。",
     },
     knowledge:
-      "CHRO Shen Ruolin asks 'can the organization carry it?' Context: HQ keeps parachuting category leads in, regional autonomy is shrinking, leadership keeps changing — momentum and continuity bleed with every reshuffle. Anta and Li-Ning are now attractive employers competing for the same design/digital/marketing/channel talent — the Nike halo alone doesn't win the talent war anymore. Her four questions for any plan: who owns it, what capability is missing, how do we train it, how do we measure it.",
+      "CHRO Gu Minglan asks 'can the organization carry it?' Context: HQ keeps parachuting category leads in, regional autonomy is shrinking, leadership keeps changing — momentum and continuity bleed with every reshuffle. Anta and Li-Ning are now attractive employers competing for the same design/digital/marketing/channel talent — the Nike halo alone doesn't win the talent war anymore. Her four questions for any plan: who owns it, what capability is missing, how do we train it, how do we measure it.",
     unknowns: [
       { topic: { en: "actual headcount or layoff plans", zh: "具体的人员编制或裁员计划" }, execId: "chro" },
       { topic: { en: "compensation benchmarking data against Anta/Li-Ning", zh: "与安踏/李宁对标的薪酬基准数据" }, execId: "chro" },
-      { topic: { en: "Shen Ruolin's honest read on morale after the recent leadership changes", zh: "沈若琳对近期高层变动后士气的真实判断" }, execId: "chro" },
+      { topic: { en: "Gu Minglan's honest read on morale after the recent leadership changes", zh: "顾明岚对近期高层变动后士气的真实判断" }, execId: "chro" },
     ],
     doneLine: { en: "She'll take you seriously now. Floor 15 — she's the kindest of the seven, and the hardest to fool.", zh: "现在她会认真对待你了。15层——七个人里她最温和，也最难糊弄。" },
     retryLine: { en: "That idea had no owner. Go back in, pin down who's accountable, and retake the check.", zh: "那个想法没有负责人。再进去问清楚谁该担责，然后重新接受考核。" },

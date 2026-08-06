@@ -10,7 +10,7 @@
  */
 import fs from "node:fs";
 import { SESSIONS_FILE } from "../paths.js";
-import { PERSONAS, MID_PERSONAS } from "../../shared/personas.config.js";
+import { PERSONAS } from "../../shared/personas.config.js";
 import { GAME_CONFIG } from "../../shared/gameConfig.js";
 import { TRACKS } from "../../shared/gameContent.js";
 import { newEngagement, migrateEngagement, syncEngagement } from "../../shared/phases.js";
@@ -46,10 +46,7 @@ export function persist() {
 
 function newSession(id) {
   const personas = {};
-  // Mid-level personas share the same state shape; their chats are untimed and
-  // unlimited so `used`/`active` simply stay 0/null — interview counts and the
-  // board gate only ever see used>0 on the seven executives.
-  for (const p of [...PERSONAS, ...MID_PERSONAS]) {
+  for (const p of PERSONAS) {
     personas[p.id] = {
       used: 0, // consumed interview sessions
       warmth: 0, // shallow questions decrease, substantive increase
@@ -120,10 +117,6 @@ export function getSession(id, create = true) {
   if (!s.workspace) s.workspace = newWorkspace();
   if (s.workspace && !s.workspace.interviews) s.workspace.interviews = [];
   if (!s.settings) s.settings = { recipient: "board" };
-  // Migrate sessions persisted before the mid-level roster existed.
-  for (const p of MID_PERSONAS) {
-    if (!s.personas[p.id]) s.personas[p.id] = { used: 0, warmth: 0, active: null, transcript: [] };
-  }
   return s;
 }
 

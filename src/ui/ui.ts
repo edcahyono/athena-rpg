@@ -822,11 +822,6 @@ export function menuPanel(objective: { label: string; why: string }) {
         status = passed
           ? fmt(UI.meetingsLeftShort, { a: state.config.csuite.maxInteractions - p.used, b: state.config.csuite.maxInteractions })
           : fmt(UI.lockedShort, { name: L(gk.name) });
-      } else if (n.kind === "midpersona") {
-        const parent = (PERSONA_MAP[n.personaId!] as any)?.parent;
-        const track = Object.values(TRACKS).find((t: any) => t.personaId === parent) as any;
-        const passed = track && ["passed"].includes(state.tasks[track.taskId]?.status);
-        status = passed ? L(UI.chat) : "🔒";
       } else if (n.kind === "board") status = state.board.done ? L(UI.pitchMade) : locked ? "🔒" : L(UI.finalPitch);
       else status = L(UI.chat);
       // Profile row: portrait, name over role, status on the right. The face
